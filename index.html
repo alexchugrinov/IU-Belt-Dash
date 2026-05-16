@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="IU Belts Dash — a Geometry Dash inspired game by Intelligent University. Climb the eight belts from white to black. Three secret trials await.">
+<meta property="og:title" content="IU Belts Dash — Climb 8 belts from white to black">
+<meta property="og:description" content="A Geometry Dash inspired game by Intelligent University. Train, then ascend through 8 belts. Unlock 3 secret trials.">
+<meta property="og:type" content="website">
+<title>IU Belts Dash · Intelligent University</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="bgStripes"></div>
+
+<!-- =========== LANDING =========== -->
+<div id="landingPage">
+
+  <div class="lp-hero">
+    <div class="lp-left">
+      <div class="brand">INTELLIGENT UNIVERSITY PRESENTS</div>
+      <h1>IU BELT DASH</h1>
+      <div class="tagline">FROM WHITE <span class="player-cube"></span> TO BLACK</div>
+
+      <div class="belt-strip">
+        <div style="background:#fff;color:#fff"></div>
+        <div style="background:#f5cd2f;color:#f5cd2f"></div>
+        <div style="background:#f5b079;color:#f5b079"></div>
+        <div style="background:#5cba8a;color:#5cba8a"></div>
+        <div style="background:#ec5826;color:#ec5826"></div>
+        <div style="background:#8a93cf;color:#8a93cf"></div>
+        <div style="background:#9b7250;color:#9b7250"></div>
+        <div style="background:#222;border:1px solid #444;color:#222"></div>
+      </div>
+
+      <button class="play-btn" id="playBtnTop">
+        <span>PLAY NOW</span><span class="play-arrow">▶</span>
+      </button>
+      <div class="quick-info">PHONE &amp; DESKTOP &nbsp;·&nbsp; NO INSTALL &nbsp;·&nbsp; FREE</div>
+    </div>
+
+    <div class="lp-right">
+      <div class="section-label">— HOW TO PLAY —</div>
+      <div class="tip-list">
+        <div class="tip-item"><span class="tip-num">01</span>TAP / <kbd>SPACE</kbd> / <kbd>↑</kbd> — jump over spikes, blocks, saws and pits of lava</div>
+        <div class="tip-item"><span class="tip-num">02</span>Reach checkpoints to save progress &nbsp;·&nbsp; <kbd>R</kbd> to respawn &nbsp;·&nbsp; <kbd>P</kbd> to pause</div>
+        <div class="tip-item"><span class="tip-num">03</span>Climb 8 belts from White to Black — each belt is faster and longer than the last</div>
+        <div class="tip-item"><span class="tip-num">✦</span>Complete achievements to unlock 3 secret trials &nbsp;·&nbsp; 5% chance of a random detour at every belt transition</div>
+      </div>
+
+      <div class="section-label" style="margin-top:20px">— SECRET TRIALS —</div>
+      <div class="trial-progress" id="trialProgress">0 OF 3 TRIALS UNLOCKED</div>
+      <div class="trials" id="trialsContainer">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <footer>INTELLIGENT UNIVERSITY · OMAN</footer>
+</div>
+
+<!-- =========== GAME =========== -->
+<div id="gameWrap">
+  <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+  <div class="hud" id="beltName">TRAINING</div>
+  <div class="hud" id="subtitle">PRESS Q TO BEGIN ASCENT</div>
+  <div class="hud" id="beltBar"></div>
+  <div class="hud" id="stats">
+    <div class="label">ATTEMPTS</div><div id="attempts">1</div>
+    <div class="label" style="margin-top:6px">LEVEL TIME</div><div id="levelTimeHud">0:00</div>
+    <div class="label" style="margin-top:6px">TOTAL TIME</div><div id="timeHud">0:00</div>
+    <div class="label" style="margin-top:6px">IU TALENTS</div><div id="talentsHud">0.00</div>
+  </div>
+
+  <div class="btnRow" id="mobileCtrls">
+    <div class="ctrlGroup">
+      <button class="ctrlBtn" id="pauseBtn" aria-label="Pause">||</button>
+      <button class="ctrlBtn" id="respawnBtn" aria-label="Respawn">RESPAWN</button>
+    </div>
+  </div>
+
+  <div class="hud" id="desktopHint">SPACE / ↑ / CLICK = JUMP &nbsp;·&nbsp; R = RESPAWN AT CHECKPOINT &nbsp;·&nbsp; P = PAUSE</div>
+
+  <div id="pauseOverlay">
+    <h2 id="pauseTitle">PAUSED</h2>
+    <div class="pauseBtns">
+      <button class="pauseBtn primary" id="resumeBtn">RESUME</button>
+      <button class="pauseBtn" id="restartBtn">RESTART LEVEL</button>
+      <button class="pauseBtn hidden" id="abandonBtn">ABANDON TRIAL</button>
+      <button class="pauseBtn" id="quitBtn">RETURN TO MENU</button>
+    </div>
+  </div>
+
+  <div id="rotate">
+    <div class="rotateIco">📱</div>
+    <h2>ROTATE YOUR DEVICE</h2>
+    <p>play in landscape for the best experience</p>
+  </div>
+</div>
+
+<!-- Achievement popup -->
+<div id="achievement">
+  <div class="ach-label">ACHIEVEMENT UNLOCKED</div>
+  <div class="ach-name" id="achName">NOVICE</div>
+  <div class="ach-desc" id="achDesc">Reach orange belt</div>
+  <div class="ach-trial" id="achTrial">CRIMSON TRIAL UNLOCKED</div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
