@@ -23,81 +23,6 @@ const BELTS = [
   { name: 'BLACK',    bg1:'#1a1a1a', bg2:'#000000', floor:'#660000', fg:'#ffffff', accent:'#cc0000', spike:'#cc0000', block:'#262626', glow:'#660000', stripe:'#0d0d0d' },
 ];
 
-const LEVEL_SKINS = [
-  null,
-  { id:'belt-1', name:'WHITE SPARK', main:'#f4f4f4', accent:'#ff4d4d', shape:'cube', pattern:'stripe' },
-  { id:'belt-2', name:'GOLD RUSH', main:'#ffd43b', accent:'#fff4a3', shape:'diamond', pattern:'cross' },
-  { id:'belt-3', name:'SUNSET', main:'#ff8a4c', accent:'#ffe0a8', shape:'hexagon', pattern:'split' },
-  { id:'belt-4', name:'JUNGLE BYTE', main:'#25c777', accent:'#b7ff51', shape:'circle', pattern:'dots' },
-  { id:'belt-5', name:'INFERNO', main:'#f04432', accent:'#ffd43b', shape:'cube', pattern:'cross' },
-  { id:'belt-6', name:'FROST PIXEL', main:'#788cff', accent:'#c8f5ff', shape:'diamond', pattern:'stripe' },
-  { id:'belt-7', name:'EARTH SHAKER', main:'#9b6949', accent:'#f1c27d', shape:'hexagon', pattern:'dots' },
-  { id:'belt-8', name:'VOID KING', main:'#17131f', accent:'#ff3158', shape:'circle', pattern:'split' },
-];
-const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
-const SKIN_STORAGE_KEY = 'iuBeltDashSkins';
-
-function reportSkinStorageError(action, error) {
-  console.error('Could not ' + action + ' skin data:', error);
-  const status = document.getElementById('skinEditorStatus');
-  if (status) {
-    status.textContent = action === 'load' ? 'SAVED SKIN DATA COULD NOT BE LOADED' : 'SKIN DATA COULD NOT BE SAVED';
-    status.style.color = '#ff7777';
-  }
-}
-
-function loadSkinSave() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(SKIN_STORAGE_KEY) || '{}');
-    const customSkins = Array.isArray(saved.customSkins) ? saved.customSkins.filter((skin) =>
-      skin && typeof skin.name === 'string' && skin.name.trim() &&
-      /^#[0-9a-f]{6}$/i.test(skin.main) && /^#[0-9a-f]{6}$/i.test(skin.accent) &&
-      SKIN_SHAPES.includes(skin.shape)
-    ).map((skin) => ({
-      id: typeof skin.id === 'string' ? skin.id : '',
-      name: skin.name.trim().slice(0, 16),
-      main: skin.main,
-      accent: skin.accent,
-      shape: skin.shape,
-      pattern: 'stripe',
-    })) : [];
-    return {
-      maxBeltReached: Number.isInteger(saved.maxBeltReached) ? Math.max(0, Math.min(8, saved.maxBeltReached)) : 0,
-      selectedSkinId: typeof saved.selectedSkinId === 'string' ? saved.selectedSkinId : 'level',
-      customSkins,
-    };
-  } catch (error) {
-    reportSkinStorageError('load', error);
-    return { maxBeltReached: 0, selectedSkinId: 'level', customSkins: [] };
-  }
-}
-
-const skinSave = loadSkinSave();
-let selectedSkinId = skinSave.selectedSkinId;
-const customSkins = skinSave.customSkins;
-
-function saveSkinProgress() {
-  try {
-    localStorage.setItem(SKIN_STORAGE_KEY, JSON.stringify({
-      maxBeltReached: stats.maxBeltReached,
-      selectedSkinId,
-      customSkins,
-    }));
-    return true;
-  } catch (error) {
-    reportSkinStorageError('save', error);
-    return false;
-  }
-}
-
-function getPlayerSkin() {
-  if (selectedSkinId === 'level') return LEVEL_SKINS[belt] || LEVEL_SKINS[1];
-  return customSkins.find((skin) => skin.id === selectedSkinId) ||
-    LEVEL_SKINS.find((skin) => skin && skin.id === selectedSkinId) ||
-    LEVEL_SKINS[Math.min(stats.maxBeltReached, LEVEL_SKINS.length - 1)] ||
-    LEVEL_SKINS[1];
-}
-
 // ============== Secret trials ==============
 const SECRETS = [
   {
@@ -136,18 +61,13 @@ const ACHIEVEMENTS = {
 };
 
 const stats = {
-  maxBeltReached: skinSave.maxBeltReached,
+  maxBeltReached: 0,
   totalDeaths: 0,
   currentBeltDeaths: 0,
   flawlessBeltAchieved: false,
   unlockedSecrets: new Set(),
   achievements: new Set(),
 };
-const savedBuiltInSkin = LEVEL_SKINS.find((skin) => skin && skin.id === selectedSkinId);
-if ((!savedBuiltInSkin && selectedSkinId !== 'level' && !customSkins.some((skin) => skin.id === selectedSkinId)) ||
-    (savedBuiltInSkin && Number(savedBuiltInSkin.id.slice(5)) > stats.maxBeltReached)) {
-  selectedSkinId = 'level';
-}
 
 // ============== State ==============
 let belt = 0;            // current campaign belt index (0 = training)
@@ -525,8 +445,6 @@ function startLevel(b) {
   stats.currentBeltDeaths = 0;
   if (b > stats.maxBeltReached) {
     stats.maxBeltReached = b;
-    saveSkinProgress();
-    refreshSkinGallery();
     checkAchievements();
   }
   updateHUD();
@@ -929,153 +847,35 @@ function drawBeltMotif(B) {
 
 function drawPlayer(B) {
   if (flightMode) {
-    drawAirplane(B, getPlayerSkin());
+    drawAirplane(B);
     return;
   }
-  const skin = getPlayerSkin();
   ctx.save();
   ctx.translate(player.x + player.size/2, player.y + player.size/2);
   ctx.rotate(player.rotation);
-  drawSkinBody(skin);
-  ctx.shadowColor = skin.accent;
-  ctx.shadowBlur = 7;
-  ctx.strokeStyle = skin.accent;
-  ctx.lineWidth = 2;
-  drawSkinPath(skin.shape, player.size - 2);
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = 'rgba(255,255,255,0.72)';
-  ctx.lineWidth = 1;
-  drawSkinPath(skin.shape, player.size - 7);
-  ctx.stroke();
-  drawSkinPattern(skin);
-  ctx.fillStyle = 'rgba(0,0,0,0.68)';
-  ctx.beginPath();
-  ctx.ellipse(7, -7, 5, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.beginPath();
-  ctx.arc(8, -8, 3, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#151515';
-  ctx.beginPath();
-  ctx.arc(9, -8, 1.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.8)';
-  ctx.fillRect(-player.size / 2 + 5, -player.size / 2 + 5, 4, 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(-player.size/2 + 3, -player.size/2 + 4, player.size, player.size);
+  ctx.fillStyle = B.fg;
+  ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
+  ctx.strokeStyle = B.accent;
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(-player.size/2 + 1, -player.size/2 + 1, player.size - 2, player.size - 2);
+  ctx.fillStyle = B.accent;
+  ctx.fillRect(-player.size/2 + 5, -3, player.size - 10, 6);
+  ctx.fillStyle = B.bg1;
+  ctx.fillRect(-5, -player.size/2 + 7, 10, 6);
+  ctx.fillStyle = B.fg;
+  ctx.fillRect(-2, -player.size/2 + 9, 4, 3);
   ctx.restore();
 }
 
-function drawSkinPath(shape, size) {
-  const half = size / 2;
-  ctx.beginPath();
-  if (shape === 'circle') {
-    ctx.arc(0, 0, half, 0, Math.PI * 2);
-  } else if (shape === 'diamond') {
-    ctx.moveTo(0, -half);
-    ctx.lineTo(half, 0);
-    ctx.lineTo(0, half);
-    ctx.lineTo(-half, 0);
-    ctx.closePath();
-  } else if (shape === 'hexagon') {
-    for (let i = 0; i < 6; i++) {
-      const angle = Math.PI / 3 * i - Math.PI / 6;
-      const x = Math.cos(angle) * half;
-      const y = Math.sin(angle) * half;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.closePath();
-  } else {
-    ctx.rect(-half, -half, size, size);
-  }
-}
-
-function drawSkinBody(skin) {
-  const half = player.size / 2;
-  const gradient = ctx.createLinearGradient(-half, -half, half, half);
-  gradient.addColorStop(0, skin.accent);
-  gradient.addColorStop(0.28, skin.main);
-  gradient.addColorStop(1, skin.main);
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.55)';
-  ctx.shadowBlur = 5;
-  ctx.shadowOffsetY = 3;
-  ctx.fillStyle = gradient;
-  drawSkinPath(skin.shape, player.size);
-  ctx.fill();
-  ctx.save();
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
-  drawSkinPath(skin.shape, player.size - 2);
-  ctx.clip();
-  ctx.fillStyle = skin.accent;
-  if (skin.pattern === 'cross') {
-    ctx.fillRect(-4, -half, 8, player.size);
-    ctx.fillRect(-half, -4, player.size, 8);
-  } else if (skin.pattern === 'split') {
-    ctx.beginPath();
-    ctx.moveTo(-2, -half);
-    ctx.lineTo(half, -half);
-    ctx.lineTo(half, half);
-    ctx.lineTo(-half, half);
-    ctx.closePath();
-    ctx.fill();
-  } else if (skin.pattern === 'dots') {
-    for (let x = -8; x <= 8; x += 8) {
-      for (let y = -8; y <= 8; y += 8) {
-        ctx.beginPath();
-        ctx.arc(x, y, 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-  } else {
-    ctx.save();
-    ctx.rotate(-Math.PI / 4);
-    for (let y = -player.size; y <= player.size; y += 9) {
-      ctx.fillRect(-player.size, y, player.size * 2, 3);
-    }
-    ctx.restore();
-  }
-  ctx.restore();
-  ctx.restore();
-}
-
-function drawSkinPattern(skin) {
-  const half = player.size / 2;
-  ctx.save();
-  drawSkinPath(skin.shape, player.size - 5);
-  ctx.clip();
-  ctx.fillStyle = 'rgba(255,255,255,0.65)';
-  ctx.fillRect(-half + 5, -half + 4, player.size - 10, 2);
-  ctx.fillStyle = 'rgba(0,0,0,0.28)';
-  ctx.fillRect(-half + 5, half - 6, player.size - 10, 2);
-  if (skin.pattern === 'cross') {
-    ctx.fillStyle = 'rgba(255,255,255,0.65)';
-    ctx.fillRect(-2, -half + 5, 4, player.size - 10);
-  } else if (skin.pattern === 'dots') {
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.beginPath();
-    ctx.arc(-7, -7, 2, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-}
-
-function drawAirplane(B, skin) {
+function drawAirplane(B) {
   ctx.save();
   ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
   ctx.rotate(Math.max(-0.35, Math.min(0.35, player.vy * 0.035)));
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.beginPath();
-  ctx.ellipse(0, 8, 16, 5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  const planeGradient = ctx.createLinearGradient(0, -11, 0, 11);
-  planeGradient.addColorStop(0, skin.accent);
-  planeGradient.addColorStop(0.35, skin.main);
-  planeGradient.addColorStop(1, skin.main);
-  ctx.fillStyle = planeGradient;
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(-15, 7, 30, 5);
+  ctx.fillStyle = B.fg;
   ctx.beginPath();
   ctx.moveTo(17, 0);
   ctx.lineTo(-10, -5);
@@ -1087,13 +887,10 @@ function drawAirplane(B, skin) {
   ctx.lineTo(-10, 5);
   ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.75)';
-  ctx.lineWidth = 3;
+  ctx.strokeStyle = B.accent;
+  ctx.lineWidth = 2;
   ctx.stroke();
-  ctx.strokeStyle = skin.accent;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.fillStyle = skin.accent;
+  ctx.fillStyle = B.accent;
   ctx.beginPath();
   ctx.moveTo(2, 0);
   ctx.lineTo(-7, -15);
@@ -1103,32 +900,10 @@ function drawAirplane(B, skin) {
   ctx.lineTo(-7, 15);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.beginPath();
-  ctx.moveTo(0, -1);
-  ctx.lineTo(-7, -12);
-  ctx.lineTo(-8, -11);
-  ctx.lineTo(-3, -1);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = '#b9f4ff';
-  ctx.beginPath();
-  ctx.ellipse(8, -2, 4, 2.5, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.fillRect(-14, -1, 21, 1.5);
-  const exhaust = 0.55 + Math.sin(frame * 0.8) * 0.2;
-  ctx.globalAlpha = exhaust;
+  ctx.fillStyle = B.bg1;
+  ctx.fillRect(6, -2, 6, 4);
   ctx.fillStyle = B.glow;
-  ctx.beginPath();
-  ctx.moveTo(-16, -2);
-  ctx.lineTo(-23 - Math.sin(frame) * 2, 0);
-  ctx.lineTo(-16, 2);
-  ctx.closePath();
-  ctx.fill();
+  ctx.fillRect(-17, -2, 3, 4);
   ctx.restore();
 }
 
@@ -1498,97 +1273,6 @@ function updateHUD() {
   }
 }
 
-// ============== Player skin gallery ==============
-function addSkinCard(container, skin, id, description, unlocked) {
-  const selected = selectedSkinId === id;
-  const card = document.createElement('button');
-  card.type = 'button';
-  card.className = 'skin-card' + (selected ? ' selected' : '');
-  card.disabled = !unlocked;
-  card.setAttribute('aria-pressed', String(selected));
-  card.setAttribute('aria-label', skin.name + (unlocked ? ', equip skin' : ', locked'));
-  card.style.setProperty('--skin-main', skin.main);
-  card.style.setProperty('--skin-accent', skin.accent);
-
-  const preview = document.createElement('span');
-  preview.className = 'skin-swatch ' + skin.shape;
-  const copy = document.createElement('span');
-  copy.className = 'skin-card-copy';
-  copy.textContent = skin.name;
-  const detail = document.createElement('small');
-  detail.textContent = description;
-  copy.appendChild(detail);
-  card.appendChild(preview);
-  card.appendChild(copy);
-  if (unlocked) {
-    card.addEventListener('click', () => {
-      selectedSkinId = id;
-      saveSkinProgress();
-      refreshSkinGallery();
-    });
-  }
-  container.appendChild(card);
-}
-
-function refreshSkinGallery() {
-  const gallery = document.getElementById('skinGallery');
-  if (!gallery) return;
-  gallery.replaceChildren();
-
-  const autoBelt = Math.max(1, Math.min(8, stats.maxBeltReached));
-  addSkinCard(gallery, LEVEL_SKINS[autoBelt], 'level', 'AUTO · NEW EACH BELT', true);
-  for (let i = 1; i < LEVEL_SKINS.length; i++) {
-    const skin = LEVEL_SKINS[i];
-    const unlocked = i <= stats.maxBeltReached;
-    addSkinCard(
-      gallery,
-      skin,
-      skin.id,
-      unlocked ? BELTS[i].name + ' BELT SKIN' : 'LOCKED · REACH ' + BELTS[i].name,
-      unlocked
-    );
-  }
-  for (const skin of customSkins) {
-    addSkinCard(gallery, skin, skin.id, 'YOUR CUSTOM SKIN', true);
-  }
-
-  const progress = document.getElementById('skinProgress');
-  if (progress) {
-    progress.textContent = stats.maxBeltReached
-      ? 'BELT ' + stats.maxBeltReached + ' OF 8 REACHED · ' + stats.maxBeltReached + ' BELT SKIN' + (stats.maxBeltReached === 1 ? '' : 'S') + ' UNLOCKED'
-      : 'REACH YOUR FIRST BELT TO UNLOCK A SKIN';
-  }
-}
-
-document.getElementById('customSkinForm').addEventListener('submit', (event) => {
-  event.preventDefault();
-  const nameInput = document.getElementById('customSkinName');
-  const name = nameInput.value.trim();
-  const status = document.getElementById('skinEditorStatus');
-  if (!name) {
-    status.textContent = 'ENTER A NAME FOR YOUR SKIN';
-    nameInput.focus();
-    return;
-  }
-
-  const skin = {
-    id: 'custom-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
-    name: name.slice(0, 16),
-    main: document.getElementById('customSkinMain').value,
-    accent: document.getElementById('customSkinAccent').value,
-    shape: document.getElementById('customSkinShape').value,
-    pattern: 'stripe',
-  };
-  customSkins.push(skin);
-  selectedSkinId = skin.id;
-  const saved = saveSkinProgress();
-  status.textContent = saved
-    ? skin.name.toUpperCase() + ' CREATED & EQUIPPED'
-    : skin.name.toUpperCase() + ' EQUIPPED, BUT COULD NOT SAVE';
-  status.style.color = saved ? '#8de7a4' : '#ff7777';
-  refreshSkinGallery();
-});
-
 // ============== Trials UI on landing ==============
 function refreshTrialsUI() {
   const cont = document.getElementById('trialsContainer');
@@ -1633,7 +1317,6 @@ function refreshTrialsUI() {
   });
   prog.textContent = unlocked + ' OF 3 TRIALS UNLOCKED';
 }
-refreshSkinGallery();
 refreshTrialsUI();
 
 // ============== Loop ==============
