@@ -54,6 +54,34 @@
         <div class="tip-item"><span class="tip-num">✦</span>Complete achievements to unlock 3 secret trials &nbsp;·&nbsp; 5% chance of a random detour at every belt transition</div>
       </div>
 
+      <section class="skin-section" aria-labelledby="skinsHeading">
+        <div class="section-label" id="skinsHeading">— RUNNER SKINS —</div>
+        <p class="skin-help">Unlock a new skin at every belt, or make your own. Skins are saved on this device.</p>
+        <div class="skin-gallery" id="skinGallery"></div>
+        <div class="skin-editor-status" id="skinProgress" aria-live="polite"></div>
+        <form class="skin-editor" id="customSkinForm">
+          <label class="skin-field skin-name-field">YOUR SKIN NAME
+            <input id="customSkinName" type="text" maxlength="16" placeholder="MY RUNNER" required>
+          </label>
+          <label class="skin-field">BODY
+            <input id="customSkinMain" type="color" value="#38e8ff" aria-label="Skin body color">
+          </label>
+          <label class="skin-field">DETAIL
+            <input id="customSkinAccent" type="color" value="#ff4d4d" aria-label="Skin detail color">
+          </label>
+          <label class="skin-field skin-shape-field">SHAPE
+            <select id="customSkinShape">
+              <option value="cube">CUBE</option>
+              <option value="diamond">DIAMOND</option>
+              <option value="circle">CIRCLE</option>
+              <option value="hexagon">HEXAGON</option>
+            </select>
+          </label>
+          <button class="skin-create-btn" type="submit">CREATE &amp; EQUIP</button>
+        </form>
+        <div class="skin-editor-status" id="skinEditorStatus" aria-live="polite"></div>
+      </section>
+
       <div class="section-label" style="margin-top:20px">— SECRET TRIALS —</div>
       <div class="trial-progress" id="trialProgress">0 OF 3 TRIALS UNLOCKED</div>
       <div class="trials" id="trialsContainer">
