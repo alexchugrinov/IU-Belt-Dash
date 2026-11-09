@@ -489,28 +489,6 @@
   .skin-swatch.diamond { transform: rotate(45deg) scale(0.72); }
   .skin-swatch.circle { border-radius: 50%; }
   .skin-swatch.hexagon { clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); }
-  .skin-swatch.chameleon {
-    background:
-      radial-gradient(circle at 30% 30%, #e8ff91 0 2px, transparent 2.5px),
-      radial-gradient(circle at 70% 65%, #e8ff91 0 2px, transparent 2.5px),
-      linear-gradient(135deg, #c7ff60, #69d84e 58%, #319c54);
-    border-radius: 50%;
-  }
-  .skin-swatch.lion {
-    background: radial-gradient(circle, #f4bd4f 0 54%, #e87932 58% 100%);
-    border: 2px solid #713319;
-    border-radius: 50%;
-  }
-  .skin-swatch.leopard {
-    background:
-      radial-gradient(circle at 25% 30%, #493020 0 2px, transparent 2.5px),
-      radial-gradient(circle at 68% 28%, #493020 0 2px, transparent 2.5px),
-      radial-gradient(circle at 46% 65%, #493020 0 2px, transparent 2.5px),
-      radial-gradient(circle at 78% 72%, #493020 0 2px, transparent 2.5px),
-      #e8b44e;
-    border-color: #493020;
-    border-radius: 50%;
-  }
   .skin-card-copy { min-width: 0; overflow-wrap: anywhere; }
   .skin-card-copy small { display: block; color: #777; font-size: 8px; }
   .skin-editor {
