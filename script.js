@@ -1101,11 +1101,11 @@ function drawSkinBody(skin) {
     ctx.fillStyle = skin.accent;
     for (const [x, y, radius] of [[-8,-8,3], [1,-10,2.5], [9,-5,3], [-10,1,2.5], [0,0,3.5], [9,5,2.5], [-6,9,3], [3,10,2]]) {
       ctx.beginPath();
-      ctx.ellipse(x, y, radius, radius * 0.78, (x + y) * 0.04, 0, Math.PI * 2);
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#f6d381';
       ctx.beginPath();
-      ctx.ellipse(x, y, radius * 0.38, radius * 0.28, (x + y) * 0.04, 0, Math.PI * 2);
+      ctx.arc(x, y, radius * 0.32, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = skin.accent;
     }
@@ -1128,20 +1128,6 @@ function drawSkinBody(skin) {
     }
     ctx.restore();
   }
-
-  const volume = ctx.createLinearGradient(0, -half, 0, half);
-  volume.addColorStop(0, 'rgba(255,255,255,0.2)');
-  volume.addColorStop(0.38, 'rgba(255,255,255,0.015)');
-  volume.addColorStop(1, 'rgba(0,0,0,0.22)');
-  ctx.fillStyle = volume;
-  ctx.fillRect(-half, -half, player.size, player.size);
-  ctx.strokeStyle = 'rgba(255,255,255,0.46)';
-  ctx.lineWidth = 1.5;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(-half * 0.48, -half * 0.52);
-  ctx.quadraticCurveTo(-half * 0.08, -half * 0.68, half * 0.28, -half * 0.48);
-  ctx.stroke();
   ctx.restore();
   ctx.restore();
 }
@@ -1208,41 +1194,16 @@ function drawSkinFace(skin) {
     return;
   }
 
-  const eyeColor = skin.pattern === 'lion' || skin.pattern === 'leopard' ? '#30251d' : '#182331';
+  ctx.fillStyle = '#30251d';
   for (const x of [-6, 6]) {
-    ctx.fillStyle = eyeColor;
     ctx.beginPath();
-    ctx.ellipse(x, -3, 3.1, 4.1, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#fffaf1';
-    ctx.beginPath();
-    ctx.ellipse(x + 0.3, -3.2, 2.05, 2.9, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = eyeColor;
-    ctx.beginPath();
-    ctx.ellipse(x + 0.8, -2.7, 1.25, 2.1, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, -3, 2.3, 3.2, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#fff';
     ctx.beginPath();
-    ctx.arc(x + 0.25, -4.1, 0.8, 0, Math.PI * 2);
+    ctx.arc(x + 0.5, -4, 0.8, 0, Math.PI * 2);
     ctx.fill();
-  }
-  ctx.strokeStyle = skin.pattern === 'lion' ? '#81401f' : 'rgba(48,37,29,0.85)';
-  ctx.lineWidth = 1.4;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(-10, -8);
-  ctx.quadraticCurveTo(-6, -10, -2, -8);
-  ctx.moveTo(2, -8);
-  ctx.quadraticCurveTo(6, -10, 10, -8);
-  ctx.stroke();
-  if (skin.pattern === 'lion' || skin.pattern === 'leopard') {
-    ctx.fillStyle = skin.pattern === 'lion' ? 'rgba(255,223,157,0.72)' : 'rgba(255,238,199,0.72)';
-    for (const x of [-11, 11]) {
-      ctx.beginPath();
-      ctx.arc(x, 5, 1.8, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    ctx.fillStyle = '#30251d';
   }
   ctx.fillStyle = skin.pattern === 'lion' ? '#fff0bd' : '#f6d9a1';
   for (const x of [-3, 3]) {
@@ -1252,8 +1213,8 @@ function drawSkinFace(skin) {
   }
   ctx.fillStyle = '#493020';
   ctx.beginPath();
-  ctx.moveTo(-2.2, 3);
-  ctx.quadraticCurveTo(0, 1.5, 2.2, 3);
+  ctx.moveTo(-2, 3);
+  ctx.lineTo(2, 3);
   ctx.lineTo(0, 6);
   ctx.closePath();
   ctx.fill();
