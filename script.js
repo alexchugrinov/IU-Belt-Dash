@@ -431,6 +431,7 @@ function startLevel(b) {
   inSecret = false;
   belt = b;
   flightMode = false;
+  pointerHeld = false;
   // Faster speed scaling with each belt
   speed = 5 + b * 0.5;
   player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
@@ -454,6 +455,7 @@ function startSecretLevel(idx, mode) {
   secretIdx = idx;
   secretMode = mode;
   flightMode = false;
+  pointerHeld = false;
   speed = SECRETS[idx].speed;
   player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
   player.onGround = true; player.rotation = 0;
@@ -473,6 +475,7 @@ function respawn() {
   player.x = lastCheckpointX;
   player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
   flightMode = false;
+  pointerHeld = false;
   player.onGround = true; player.rotation = 0;
   cameraX = Math.max(0, player.x - 280);
   particles = [];
@@ -614,7 +617,7 @@ function update() {
   player.onGround = false;
 
   if (flightMode) {
-    player.vy += jumpHeld ? -0.72 : 0.58;
+    player.vy += jumpHeld ? -0.72 : 1.15;
     player.vy = Math.max(-8.5, Math.min(8.5, player.vy));
   } else {
     player.vy += 0.88;
