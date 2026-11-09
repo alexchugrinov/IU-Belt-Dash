@@ -23,6 +23,87 @@ const BELTS = [
   { name: 'BLACK',    bg1:'#1a1a1a', bg2:'#000000', floor:'#660000', fg:'#ffffff', accent:'#cc0000', spike:'#cc0000', block:'#262626', glow:'#660000', stripe:'#0d0d0d' },
 ];
 
+const BELT_SKINS = [
+  null,
+  { id:'belt-1', name:'PORCELAIN', main:'#eef4ff', accent:'#77c8ff', shape:'cube', pattern:'glow', unlockBelt:1 },
+  { id:'belt-2', name:'SUNFORGED', main:'#ffc94d', accent:'#fff0a6', shape:'diamond', pattern:'flare', unlockBelt:2 },
+  { id:'belt-3', name:'EMBERFOX', main:'#f47b45', accent:'#ffd18a', shape:'hexagon', pattern:'ember', unlockBelt:3 },
+  { id:'belt-4', name:'MOSSBYTE', main:'#29c982', accent:'#b9ff79', shape:'circle', pattern:'leaf', unlockBelt:4 },
+  { id:'belt-5', name:'DRAGONFIRE', main:'#ed493f', accent:'#ffd25e', shape:'cube', pattern:'flare', unlockBelt:5 },
+  { id:'belt-6', name:'GLACIER', main:'#647de8', accent:'#b7f5ff', shape:'diamond', pattern:'crystal', unlockBelt:6 },
+  { id:'belt-7', name:'TERRA NOVA', main:'#9b6949', accent:'#f1c27d', shape:'hexagon', pattern:'stone', unlockBelt:7 },
+  { id:'belt-8', name:'NIGHTFALL', main:'#17131f', accent:'#ff4f86', shape:'circle', pattern:'nebula', unlockBelt:8 },
+];
+const SPECIAL_SKINS = [
+  { id:'special-chameleon', name:'CHAMELEON', main:'#69d84e', accent:'#c7ff60', shape:'circle', pattern:'chameleon', unlockBelt:3 },
+  { id:'special-lion', name:'LIONHEART', main:'#f4bd4f', accent:'#e87932', shape:'circle', pattern:'lion', unlockBelt:5 },
+  { id:'special-leopard', name:'LEOPARD', main:'#e8b44e', accent:'#493020', shape:'circle', pattern:'leopard', unlockBelt:7 },
+];
+const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
+const SKIN_STORAGE_KEY = 'iuBeltDashSkins';
+
+function reportSkinStorageError(action, error) {
+  console.error('Could not ' + action + ' skin data:', error);
+  const status = document.getElementById('skinEditorStatus');
+  if (status) {
+    status.textContent = action === 'load' ? 'Saved skin data could not be loaded.' : 'Skin data could not be saved.';
+    status.dataset.state = 'error';
+  }
+}
+
+function loadSkinSave() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SKIN_STORAGE_KEY) || '{}');
+    const customSkins = Array.isArray(saved.customSkins) ? saved.customSkins.filter((skin) =>
+      skin && typeof skin.name === 'string' && skin.name.trim() &&
+      /^#[0-9a-f]{6}$/i.test(skin.main) && /^#[0-9a-f]{6}$/i.test(skin.accent) &&
+      SKIN_SHAPES.includes(skin.shape)
+    ).map((skin, index) => ({
+      id: typeof skin.id === 'string' && skin.id ? skin.id : 'custom-saved-' + index,
+      name: skin.name.trim().slice(0, 16),
+      main: skin.main,
+      accent: skin.accent,
+      shape: skin.shape,
+      pattern: 'custom',
+    })) : [];
+    return {
+      maxBeltReached: Number.isInteger(saved.maxBeltReached) ? Math.max(0, Math.min(8, saved.maxBeltReached)) : 0,
+      selectedSkinId: typeof saved.selectedSkinId === 'string' ? saved.selectedSkinId : 'level',
+      customSkins,
+    };
+  } catch (error) {
+    reportSkinStorageError('load', error);
+    return { maxBeltReached: 0, selectedSkinId: 'level', customSkins: [] };
+  }
+}
+
+const skinSave = loadSkinSave();
+let selectedSkinId = skinSave.selectedSkinId;
+const customSkins = skinSave.customSkins;
+
+function saveSkinProgress() {
+  try {
+    localStorage.setItem(SKIN_STORAGE_KEY, JSON.stringify({
+      maxBeltReached: stats.maxBeltReached,
+      selectedSkinId,
+      customSkins,
+    }));
+    return true;
+  } catch (error) {
+    reportSkinStorageError('save', error);
+    return false;
+  }
+}
+
+function getPlayerSkin() {
+  if (selectedSkinId === 'level') return BELT_SKINS[belt] || BELT_SKINS[1];
+  return customSkins.find((skin) => skin.id === selectedSkinId) ||
+    BELT_SKINS.find((skin) => skin && skin.id === selectedSkinId && skin.unlockBelt <= stats.maxBeltReached) ||
+    SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId && skin.unlockBelt <= stats.maxBeltReached) ||
+    BELT_SKINS[Math.max(1, Math.min(stats.maxBeltReached, BELT_SKINS.length - 1))] ||
+    BELT_SKINS[1];
+}
+
 // ============== Secret trials ==============
 const SECRETS = [
   {
@@ -61,13 +142,20 @@ const ACHIEVEMENTS = {
 };
 
 const stats = {
-  maxBeltReached: 0,
+  maxBeltReached: skinSave.maxBeltReached,
   totalDeaths: 0,
   currentBeltDeaths: 0,
   flawlessBeltAchieved: false,
   unlockedSecrets: new Set(),
   achievements: new Set(),
 };
+const savedBeltSkin = BELT_SKINS.find((skin) => skin && skin.id === selectedSkinId);
+const savedSpecialSkin = SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId);
+if ((!savedBeltSkin && !savedSpecialSkin && selectedSkinId !== 'level' && !customSkins.some((skin) => skin.id === selectedSkinId)) ||
+  (savedBeltSkin && savedBeltSkin.unlockBelt > stats.maxBeltReached) ||
+  (savedSpecialSkin && savedSpecialSkin.unlockBelt > stats.maxBeltReached)) {
+  selectedSkinId = 'level';
+}
 
 // ============== State ==============
 let belt = 0;            // current campaign belt index (0 = training)
@@ -445,6 +533,8 @@ function startLevel(b) {
   stats.currentBeltDeaths = 0;
   if (b > stats.maxBeltReached) {
     stats.maxBeltReached = b;
+    saveSkinProgress();
+    refreshSkinGallery();
     checkAchievements();
   }
   updateHUD();
@@ -846,36 +936,405 @@ function drawBeltMotif(B) {
 }
 
 function drawPlayer(B) {
+  const skin = getPlayerSkin();
   if (flightMode) {
-    drawAirplane(B);
+    drawAirplane(B, skin);
     return;
   }
   ctx.save();
   ctx.translate(player.x + player.size/2, player.y + player.size/2);
   ctx.rotate(player.rotation);
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(-player.size/2 + 3, -player.size/2 + 4, player.size, player.size);
-  ctx.fillStyle = B.fg;
-  ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
-  ctx.strokeStyle = B.accent;
-  ctx.lineWidth = 2.5;
-  ctx.strokeRect(-player.size/2 + 1, -player.size/2 + 1, player.size - 2, player.size - 2);
-  ctx.fillStyle = B.accent;
-  ctx.fillRect(-player.size/2 + 5, -3, player.size - 10, 6);
-  ctx.fillStyle = B.bg1;
-  ctx.fillRect(-5, -player.size/2 + 7, 10, 6);
-  ctx.fillStyle = B.fg;
-  ctx.fillRect(-2, -player.size/2 + 9, 4, 3);
+  drawSkinAccessories(skin);
+  drawSkinBody(skin);
+  ctx.shadowColor = skin.accent;
+  ctx.shadowBlur = 7;
+  ctx.strokeStyle = skin.accent;
+  ctx.lineWidth = 2;
+  drawSkinPath(skin.shape, player.size - 2);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.lineWidth = 1;
+  drawSkinPath(skin.shape, player.size - 7);
+  ctx.stroke();
+  drawSkinPattern(skin);
+  drawSkinFace(skin);
   ctx.restore();
 }
 
-function drawAirplane(B) {
+function drawSkinAccessories(skin) {
+  const half = player.size / 2;
+  if (skin.pattern === 'lion') {
+    const mane = ctx.createRadialGradient(-5, -7, 2, 0, 0, half * 1.45);
+    mane.addColorStop(0, '#ffdc72');
+    mane.addColorStop(0.65, '#d77b32');
+    mane.addColorStop(1, '#713319');
+    ctx.fillStyle = mane;
+    ctx.beginPath();
+    for (let i = 0; i < 32; i++) {
+      const angle = Math.PI * 2 * i / 32;
+      const radius = i % 2 === 0 ? half * 1.42 : half * 1.17;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#713319';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,226,139,0.72)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 16; i++) {
+      const angle = Math.PI * 2 * i / 16;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * half * 0.9, Math.sin(angle) * half * 0.9);
+      ctx.lineTo(Math.cos(angle) * half * 1.3, Math.sin(angle) * half * 1.3);
+      ctx.stroke();
+    }
+  } else if (skin.pattern === 'chameleon' || skin.pattern === 'leopard') {
+    const tailColor = skin.pattern === 'chameleon' ? '#54ba43' : '#c58a38';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#26321e';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(-half * 0.55, half * 0.3);
+    ctx.bezierCurveTo(-half * 1.25, half * 0.7, -half * 1.55, half * 1.3, -half * 1.85, half * 0.9);
+    ctx.bezierCurveTo(-half * 2.1, half * 0.45, -half * 1.55, half * 0.15, -half * 1.4, half * 0.6);
+    ctx.stroke();
+    ctx.strokeStyle = tailColor;
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    if (skin.pattern === 'leopard') {
+      ctx.fillStyle = '#f6d381';
+      for (const [x, y] of [[-25, 16], [-35, 18]]) {
+        ctx.beginPath();
+        ctx.arc(x, y, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  if (skin.pattern === 'lion' || skin.pattern === 'leopard') {
+    ctx.fillStyle = skin.pattern === 'lion' ? '#d98a39' : skin.main;
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(side * half * 0.58, -half * 0.72, half * 0.32, half * 0.38, side * -0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = skin.accent;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = skin.pattern === 'lion' ? '#f5ae5b' : '#f6c39a';
+      ctx.beginPath();
+      ctx.ellipse(side * half * 0.58, -half * 0.7, half * 0.16, half * 0.22, side * -0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = skin.pattern === 'lion' ? '#d98a39' : skin.main;
+    }
+  }
+
+  if (skin.pattern === 'chameleon') {
+    ctx.strokeStyle = '#387e35';
+    ctx.lineWidth = 2.3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(half * 0.25, -half * 0.55);
+    ctx.quadraticCurveTo(half * 0.38, -half * 1.45, half * 0.32, -half * 1.7);
+    ctx.moveTo(half * 0.75, -half * 0.5);
+    ctx.quadraticCurveTo(half * 0.95, -half * 1.3, half * 0.95, -half * 1.55);
+    ctx.stroke();
+  }
+}
+
+function drawSkinPath(shape, size) {
+  const half = size / 2;
+  ctx.beginPath();
+  if (shape === 'circle') {
+    ctx.arc(0, 0, half, 0, Math.PI * 2);
+  } else if (shape === 'diamond') {
+    ctx.moveTo(0, -half);
+    ctx.lineTo(half, 0);
+    ctx.lineTo(0, half);
+    ctx.lineTo(-half, 0);
+    ctx.closePath();
+  } else if (shape === 'hexagon') {
+    for (let i = 0; i < 6; i++) {
+      const angle = Math.PI / 3 * i - Math.PI / 6;
+      const x = Math.cos(angle) * half;
+      const y = Math.sin(angle) * half;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+  } else {
+    ctx.rect(-half, -half, size, size);
+  }
+}
+
+function drawSkinBody(skin) {
+  const half = player.size / 2;
+  const gradient = ctx.createLinearGradient(-half, -half, half, half);
+  gradient.addColorStop(0, skin.accent);
+  gradient.addColorStop(0.28, skin.main);
+  gradient.addColorStop(1, skin.main);
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 3;
+  ctx.fillStyle = gradient;
+  drawSkinPath(skin.shape, player.size);
+  ctx.fill();
+  ctx.save();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  drawSkinPath(skin.shape, player.size - 2);
+  ctx.clip();
+  if (skin.pattern === 'chameleon') {
+    ctx.strokeStyle = 'rgba(35, 115, 49, 0.72)';
+    ctx.lineWidth = 1.2;
+    for (let row = -1; row <= 1; row++) {
+      for (let col = -1; col <= 1; col++) {
+        const x = col * 8 + (row % 2 ? 4 : 0);
+        const y = row * 8;
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  } else if (skin.pattern === 'leopard') {
+    for (const [x, y, radius] of [[-8,-8,3], [1,-10,2.5], [9,-5,3], [-10,1,2.5], [0,0,3.5], [9,5,2.5], [-6,9,3], [3,10,2]]) {
+      ctx.fillStyle = skin.accent;
+      ctx.beginPath();
+      ctx.ellipse(x, y, radius, radius * 0.78, (x + y) * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f6d381';
+      ctx.beginPath();
+      ctx.ellipse(x, y, radius * 0.38, radius * 0.28, (x + y) * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (skin.pattern === 'leaf') {
+    ctx.fillStyle = skin.accent;
+    for (const [x, y, angle] of [[-8,-7,-0.6], [7,-8,0.7], [-8,7,0.5], [8,6,-0.6]]) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 3, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  } else if (skin.pattern === 'stone') {
+    ctx.fillStyle = 'rgba(61,42,33,0.36)';
+    for (const [x, y, width, height] of [[-10,-9,7,4], [1,-10,8,5], [-7,1,9,5], [5,4,8,6], [-2,10,6,3]]) {
+      ctx.fillRect(x, y, width, height);
+      ctx.strokeStyle = 'rgba(255,231,190,0.36)';
+      ctx.strokeRect(x, y, width, height);
+    }
+  } else if (skin.pattern === 'nebula') {
+    for (const [x, y, radius] of [[-8,-8,2], [6,-7,1.5], [0,0,3], [-7,7,1.4], [8,6,2]]) {
+      ctx.fillStyle = skin.accent;
+      ctx.shadowColor = skin.accent;
+      ctx.shadowBlur = 5;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, -2.6, -0.2);
+    ctx.stroke();
+  } else if (skin.pattern === 'flare' || skin.pattern === 'ember') {
+    ctx.strokeStyle = skin.pattern === 'ember' ? 'rgba(127,39,28,0.75)' : 'rgba(255,246,191,0.78)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(0, -13);
+    ctx.lineTo(2, -4);
+    ctx.lineTo(9, -8);
+    ctx.lineTo(5, 0);
+    ctx.lineTo(12, 4);
+    ctx.lineTo(3, 5);
+    ctx.lineTo(0, 13);
+    ctx.lineTo(-3, 5);
+    ctx.lineTo(-12, 4);
+    ctx.lineTo(-5, 0);
+    ctx.lineTo(-9, -8);
+    ctx.lineTo(-2, -4);
+    ctx.closePath();
+    ctx.stroke();
+  } else if (skin.pattern === 'crystal') {
+    ctx.fillStyle = 'rgba(222,252,255,0.62)';
+    ctx.beginPath();
+    ctx.moveTo(0, -12);
+    ctx.lineTo(5, -2);
+    ctx.lineTo(1, 1);
+    ctx.lineTo(7, 11);
+    ctx.lineTo(-2, 3);
+    ctx.lineTo(-6, -4);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    ctx.strokeStyle = skin.pattern === 'glow' ? 'rgba(255,255,255,0.68)' : 'rgba(255,255,255,0.48)';
+    ctx.lineWidth = skin.pattern === 'glow' ? 2 : 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-half + 6, -half + 7);
+    ctx.lineTo(half - 6, -half + 7);
+    ctx.stroke();
+    if (skin.pattern === 'glow') {
+      ctx.fillStyle = 'rgba(102,206,255,0.82)';
+      ctx.fillRect(-half + 5, half - 7, player.size - 10, 2);
+    }
+  }
+
+  const volume = ctx.createLinearGradient(0, -half, 0, half);
+  volume.addColorStop(0, 'rgba(255,255,255,0.2)');
+  volume.addColorStop(0.42, 'rgba(255,255,255,0.015)');
+  volume.addColorStop(1, 'rgba(0,0,0,0.22)');
+  ctx.fillStyle = volume;
+  ctx.fillRect(-half, -half, player.size, player.size);
+  ctx.restore();
+  ctx.restore();
+}
+
+function drawSkinPattern(skin) {
+  const half = player.size / 2;
+  ctx.save();
+  drawSkinPath(skin.shape, player.size - 5);
+  ctx.clip();
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 1;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-half + 6, -half + 4);
+  ctx.quadraticCurveTo(-half * 0.15, -half + 1, half * 0.35, -half + 5);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.fillRect(-half + 5, half - 6, player.size - 10, 2);
+  if (skin.pattern === 'glow') {
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = skin.accent;
+    ctx.shadowBlur = 7;
+    ctx.beginPath();
+    ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawSkinFace(skin) {
+  if (skin.pattern === 'chameleon') {
+    for (const [x, y] of [[5, -16], [13, -15]]) {
+      ctx.fillStyle = '#f6ffff';
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#387e35';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.fillStyle = '#25351f';
+      ctx.beginPath();
+      ctx.arc(x + 1, y, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x, y - 1.5, 1.2, 1.2);
+    }
+    ctx.strokeStyle = '#31542b';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-6, 5);
+    ctx.quadraticCurveTo(0, 9, 7, 5);
+    ctx.stroke();
+    ctx.strokeStyle = '#ff7893';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(7, 5);
+    ctx.lineTo(15, 7);
+    ctx.stroke();
+    ctx.fillStyle = '#ffb0bd';
+    ctx.beginPath();
+    ctx.arc(15, 7, 2, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+
+  if (skin.pattern === 'lion' || skin.pattern === 'leopard') {
+    const eyeColor = skin.pattern === 'lion' ? '#4a2718' : '#38251b';
+    for (const x of [-6, 6]) {
+      ctx.fillStyle = '#fffaf1';
+      ctx.beginPath();
+      ctx.ellipse(x, -3, 3.2, 4.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = eyeColor;
+      ctx.beginPath();
+      ctx.ellipse(x + 0.6, -2.5, 1.25, 2.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(x - 0.3, -4, 0.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = skin.pattern === 'lion' ? '#fff0bd' : '#f6d9a1';
+    for (const x of [-3, 3]) {
+      ctx.beginPath();
+      ctx.ellipse(x, 5, 4, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#493020';
+    ctx.beginPath();
+    ctx.moveTo(-2.2, 3);
+    ctx.quadraticCurveTo(0, 1.5, 2.2, 3);
+    ctx.lineTo(0, 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#493020';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 6);
+    ctx.lineTo(0, 9);
+    ctx.moveTo(0, 9);
+    ctx.quadraticCurveTo(-3, 11, -5, 9);
+    ctx.moveTo(0, 9);
+    ctx.quadraticCurveTo(3, 11, 5, 9);
+    ctx.stroke();
+    return;
+  }
+
+  ctx.fillStyle = 'rgba(10,18,32,0.8)';
+  ctx.beginPath();
+  ctx.rect(-11, -5, 22, 10);
+  ctx.fill();
+  ctx.strokeStyle = skin.accent;
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  for (const x of [-6, 6]) {
+    ctx.fillStyle = skin.pattern === 'nebula' ? '#ff8db8' : '#e9fbff';
+    ctx.shadowColor = skin.accent;
+    ctx.shadowBlur = 4;
+    ctx.beginPath();
+    ctx.ellipse(x, -1, 2.3, 2.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,0.68)';
+  ctx.fillRect(-3, 7, 6, 1);
+}
+
+function drawAirplane(B, skin) {
   ctx.save();
   ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
   ctx.rotate(Math.max(-0.35, Math.min(0.35, player.vy * 0.035)));
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(-15, 7, 30, 5);
-  ctx.fillStyle = B.fg;
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath();
+  ctx.ellipse(0, 8, 17, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  const planeGradient = ctx.createLinearGradient(0, -11, 0, 11);
+  planeGradient.addColorStop(0, skin.accent);
+  planeGradient.addColorStop(0.38, skin.main);
+  planeGradient.addColorStop(1, skin.main);
+  ctx.fillStyle = planeGradient;
   ctx.beginPath();
   ctx.moveTo(17, 0);
   ctx.lineTo(-10, -5);
@@ -887,10 +1346,13 @@ function drawAirplane(B) {
   ctx.lineTo(-10, 5);
   ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = B.accent;
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(0,0,0,0.78)';
+  ctx.lineWidth = 3;
   ctx.stroke();
-  ctx.fillStyle = B.accent;
+  ctx.strokeStyle = skin.accent;
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+  ctx.fillStyle = skin.accent;
   ctx.beginPath();
   ctx.moveTo(2, 0);
   ctx.lineTo(-7, -15);
@@ -900,10 +1362,28 @@ function drawAirplane(B) {
   ctx.lineTo(-7, 15);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = B.bg1;
-  ctx.fillRect(6, -2, 6, 4);
+  ctx.fillStyle = '#b9f4ff';
+  ctx.beginPath();
+  ctx.ellipse(8, -2, 4, 2.5, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-12, 0);
+  ctx.lineTo(5, 0);
+  ctx.stroke();
   ctx.fillStyle = B.glow;
-  ctx.fillRect(-17, -2, 3, 4);
+  const exhaust = 0.55 + Math.sin(frame * 0.8) * 0.2;
+  ctx.globalAlpha = exhaust;
+  ctx.beginPath();
+  ctx.moveTo(-16, -2);
+  ctx.lineTo(-23 - Math.sin(frame) * 2, 0);
+  ctx.lineTo(-16, 2);
+  ctx.closePath();
+  ctx.fill();
   ctx.restore();
 }
 
@@ -1272,6 +1752,123 @@ function updateHUD() {
     bar.appendChild(pip);
   }
 }
+
+// ============== Player skin gallery ==============
+function addSkinCard(container, skin, id, description, unlocked) {
+  const selected = selectedSkinId === id;
+  const card = document.createElement('button');
+  card.type = 'button';
+  card.className = 'skin-card' + (selected ? ' selected' : '');
+  card.disabled = !unlocked;
+  card.dataset.skinId = id;
+  card.setAttribute('aria-pressed', String(selected));
+  card.setAttribute('aria-label', skin.name + (unlocked ? ', equip skin' : ', locked'));
+  card.style.setProperty('--skin-main', skin.main);
+  card.style.setProperty('--skin-accent', skin.accent);
+
+  const preview = document.createElement('span');
+  preview.className = 'skin-swatch ' + skin.shape + ' ' + skin.pattern;
+  const copy = document.createElement('span');
+  copy.className = 'skin-card-copy';
+  copy.textContent = skin.name;
+  const detail = document.createElement('small');
+  detail.textContent = description;
+  copy.appendChild(detail);
+  card.appendChild(preview);
+  card.appendChild(copy);
+  if (unlocked) {
+    card.addEventListener('click', () => {
+      selectedSkinId = id;
+      const saved = saveSkinProgress();
+      const status = document.getElementById('skinEditorStatus');
+      if (status && saved) {
+        status.textContent = skin.name + ' EQUIPPED';
+        status.dataset.state = 'success';
+      }
+      refreshSkinGallery();
+    });
+  }
+  container.appendChild(card);
+}
+
+function refreshSkinGallery() {
+  const gallery = document.getElementById('skinGallery');
+  if (!gallery) return;
+  gallery.replaceChildren();
+
+  const autoBelt = Math.max(1, Math.min(8, stats.maxBeltReached));
+  addSkinCard(gallery, BELT_SKINS[autoBelt], 'level', 'AUTO · NEW EACH BELT', true);
+  for (let i = 1; i < BELT_SKINS.length; i++) {
+    const skin = BELT_SKINS[i];
+    const unlocked = skin.unlockBelt <= stats.maxBeltReached;
+    addSkinCard(
+      gallery,
+      skin,
+      skin.id,
+      unlocked ? BELTS[skin.unlockBelt].name + ' BELT REWARD' : 'LOCKED · REACH ' + BELTS[skin.unlockBelt].name,
+      unlocked
+    );
+  }
+  for (const skin of SPECIAL_SKINS) {
+    const unlocked = skin.unlockBelt <= stats.maxBeltReached;
+    addSkinCard(
+      gallery,
+      skin,
+      skin.id,
+      unlocked ? 'ANIMAL · BELT ' + skin.unlockBelt : 'LOCKED · REACH ' + BELTS[skin.unlockBelt].name,
+      unlocked
+    );
+  }
+  for (const skin of customSkins) addSkinCard(gallery, skin, skin.id, 'YOUR ORIGINAL SKIN', true);
+
+  const unlockedCount = stats.maxBeltReached +
+    SPECIAL_SKINS.filter((skin) => skin.unlockBelt <= stats.maxBeltReached).length;
+  const progress = document.getElementById('skinProgress');
+  if (progress) {
+    progress.textContent = stats.maxBeltReached
+      ? 'BELT ' + stats.maxBeltReached + ' / 8  ·  ' + unlockedCount + ' GAME SKIN' + (unlockedCount === 1 ? '' : 'S') + ' UNLOCKED'
+      : 'REACH YOUR FIRST BELT TO UNLOCK A SKIN';
+  }
+  const beltProgress = document.getElementById('menuBeltProgress');
+  if (beltProgress) beltProgress.textContent = 'BELT ' + Math.max(1, stats.maxBeltReached) + ' / 8';
+  const skinCount = document.getElementById('menuSkinCount');
+  if (skinCount) {
+    const availableCount = Math.max(1, unlockedCount);
+    skinCount.textContent = String(availableCount).padStart(2, '0') + ' SKIN' +
+      (availableCount === 1 ? '' : 'S') + (unlockedCount ? ' UNLOCKED' : ' AVAILABLE');
+  }
+}
+
+document.getElementById('customSkinForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const nameInput = document.getElementById('customSkinName');
+  const name = nameInput.value.trim();
+  const status = document.getElementById('skinEditorStatus');
+  if (!name) {
+    status.textContent = 'ENTER A NAME FOR YOUR SKIN';
+    status.dataset.state = 'error';
+    nameInput.focus();
+    return;
+  }
+
+  const skin = {
+    id: 'custom-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    name: name.slice(0, 16),
+    main: document.getElementById('customSkinMain').value,
+    accent: document.getElementById('customSkinAccent').value,
+    shape: document.getElementById('customSkinShape').value,
+    pattern: 'custom',
+  };
+  customSkins.push(skin);
+  selectedSkinId = skin.id;
+  const saved = saveSkinProgress();
+  nameInput.value = '';
+  status.textContent = saved ? skin.name + ' CREATED & EQUIPPED' : 'CREATED FOR THIS SESSION · SAVE FAILED';
+  status.dataset.state = saved ? 'success' : 'error';
+  refreshSkinGallery();
+});
+
+refreshSkinGallery();
 
 // ============== Trials UI on landing ==============
 function refreshTrialsUI() {
