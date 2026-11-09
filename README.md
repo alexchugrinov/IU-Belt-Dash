@@ -9,7 +9,7 @@ Open `index.html` in a modern browser.
 - Press Space, Up, or W, or tap/click, to jump.
 - In airplane mode, hold jump to climb and release to descend.
 - Reach checkpoints to save your place. Press R to respawn and P or Escape to pause.
-- Reach new belts to unlock belt skins. Green, yellow, and orange bonus cubes unlock at belts 3, 5, and 7.
+- Each belt has its own plain color-cube runner; choose **AUTO · NEW EACH BELT** in the garage to change colors as you progress. Green, yellow, and orange bonus cubes also unlock at belts 3, 5, and 7.
 - Pick a skin in the Runner Garage, or open **Create your own skin** to preview and choose its name, colors, and shape.
 - Skin selection, custom skins, and belt unlocks are saved on this device.
 

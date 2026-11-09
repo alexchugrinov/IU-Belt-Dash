@@ -25,22 +25,23 @@ const BELTS = [
 
 const BELT_SKINS = [
   null,
-  { id:'belt-1', name:'PORCELAIN', main:'#eef4ff', accent:'#77c8ff', shape:'cube', pattern:'glow', unlockBelt:1 },
-  { id:'belt-2', name:'SUNFORGED', main:'#ffd21f', accent:'#fff58a', shape:'diamond', pattern:'flare', unlockBelt:2 },
-  { id:'belt-3', name:'EMBERFOX', main:'#ff7626', accent:'#ffd166', shape:'hexagon', pattern:'ember', unlockBelt:3 },
-  { id:'belt-4', name:'MOSSBYTE', main:'#20ce68', accent:'#baff45', shape:'circle', pattern:'leaf', unlockBelt:4 },
-  { id:'belt-5', name:'DRAGONFIRE', main:'#ed493f', accent:'#ffd25e', shape:'cube', pattern:'flare', unlockBelt:5 },
-  { id:'belt-6', name:'GLACIER', main:'#647de8', accent:'#b7f5ff', shape:'diamond', pattern:'crystal', unlockBelt:6 },
-  { id:'belt-7', name:'TERRA NOVA', main:'#9b6949', accent:'#f1c27d', shape:'hexagon', pattern:'stone', unlockBelt:7 },
-  { id:'belt-8', name:'NIGHTFALL', main:'#17131f', accent:'#ff4f86', shape:'circle', pattern:'nebula', unlockBelt:8 },
+  { id:'belt-1', name:'PORCELAIN', main:'#eef4ff', accent:'#77c8ff', shape:'cube', pattern:'plain', unlockBelt:1 },
+  { id:'belt-2', name:'SUNFORGED', main:'#ffd21f', accent:'#fff58a', shape:'cube', pattern:'plain', unlockBelt:2 },
+  { id:'belt-3', name:'EMBERFOX', main:'#ff7626', accent:'#ffd166', shape:'cube', pattern:'plain', unlockBelt:3 },
+  { id:'belt-4', name:'MOSSBYTE', main:'#20ce68', accent:'#baff45', shape:'cube', pattern:'plain', unlockBelt:4 },
+  { id:'belt-5', name:'DRAGONFIRE', main:'#ed493f', accent:'#ffd25e', shape:'cube', pattern:'plain', unlockBelt:5 },
+  { id:'belt-6', name:'GLACIER', main:'#647de8', accent:'#b7f5ff', shape:'cube', pattern:'plain', unlockBelt:6 },
+  { id:'belt-7', name:'TERRA NOVA', main:'#9b6949', accent:'#f1c27d', shape:'cube', pattern:'plain', unlockBelt:7 },
+  { id:'belt-8', name:'NIGHTFALL', main:'#17131f', accent:'#ff4f86', shape:'cube', pattern:'plain', unlockBelt:8 },
 ];
 const SPECIAL_SKINS = [
-  { id:'special-chameleon', name:'GREEN CUBE', main:'#20ce68', accent:'#baff45', shape:'cube', pattern:'plain', unlockBelt:3 },
-  { id:'special-lion', name:'YELLOW CUBE', main:'#ffd21f', accent:'#fff58a', shape:'cube', pattern:'plain', unlockBelt:5 },
-  { id:'special-leopard', name:'ORANGE CUBE', main:'#ff7626', accent:'#ffd166', shape:'cube', pattern:'plain', unlockBelt:7 },
+  { id:'bonus-green', name:'GREEN CUBE', main:'#20ce68', accent:'#baff45', shape:'cube', pattern:'plain', unlockBelt:3 },
+  { id:'bonus-yellow', name:'YELLOW CUBE', main:'#ffd21f', accent:'#fff58a', shape:'cube', pattern:'plain', unlockBelt:5 },
+  { id:'bonus-orange', name:'ORANGE CUBE', main:'#ff7626', accent:'#ffd166', shape:'cube', pattern:'plain', unlockBelt:7 },
 ];
 const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
 const SKIN_STORAGE_KEY = 'iuBeltDashSkins';
+const LEGACY_ANIMAL_SKIN_IDS = ['special-chameleon', 'special-lion', 'special-leopard'];
 
 function reportSkinStorageError(action, error) {
   console.error('Could not ' + action + ' skin data:', error);
@@ -68,7 +69,9 @@ function loadSkinSave() {
     })) : [];
     return {
       maxBeltReached: Number.isInteger(saved.maxBeltReached) ? Math.max(0, Math.min(8, saved.maxBeltReached)) : 0,
-      selectedSkinId: typeof saved.selectedSkinId === 'string' ? saved.selectedSkinId : 'level',
+      selectedSkinId: LEGACY_ANIMAL_SKIN_IDS.includes(saved.selectedSkinId)
+        ? 'level'
+        : typeof saved.selectedSkinId === 'string' ? saved.selectedSkinId : 'level',
       customSkins,
     };
   } catch (error) {
