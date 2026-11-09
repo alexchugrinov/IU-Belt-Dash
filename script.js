@@ -1013,12 +1013,36 @@ function drawSkinAccessories(skin) {
     const tailColor = skin.pattern === 'chameleon' ? '#54ba43' : '#c58a38';
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    if (skin.pattern === 'chameleon') {
+      ctx.strokeStyle = '#387e35';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(-half * 0.42, half * 0.52);
+      ctx.lineTo(-half * 0.82, half * 0.9);
+      ctx.lineTo(-half * 1.15, half * 0.86);
+      ctx.moveTo(half * 0.42, half * 0.52);
+      ctx.lineTo(half * 0.82, half * 0.9);
+      ctx.lineTo(half * 1.15, half * 0.86);
+      ctx.stroke();
+      ctx.fillStyle = '#baff45';
+      for (const x of [-half * 1.15, half * 1.15]) {
+        ctx.beginPath();
+        ctx.ellipse(x, half * 0.86, 3.5, 2.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
     ctx.strokeStyle = '#26321e';
     ctx.lineWidth = 8;
     ctx.beginPath();
     ctx.moveTo(-half * 0.55, half * 0.3);
-    ctx.bezierCurveTo(-half * 1.25, half * 0.7, -half * 1.55, half * 1.3, -half * 1.85, half * 0.9);
-    ctx.bezierCurveTo(-half * 2.1, half * 0.45, -half * 1.55, half * 0.15, -half * 1.4, half * 0.6);
+    if (skin.pattern === 'chameleon') {
+      ctx.bezierCurveTo(-half * 1.3, half * 0.55, -half * 1.72, half * 1.25, -half * 1.95, half * 0.9);
+      ctx.bezierCurveTo(-half * 2.18, half * 0.55, -half * 1.72, half * 0.3, -half * 1.5, half * 0.65);
+      ctx.bezierCurveTo(-half * 1.34, half * 0.9, -half * 1.62, half * 1.03, -half * 1.72, half * 0.82);
+    } else {
+      ctx.bezierCurveTo(-half * 1.25, half * 0.7, -half * 1.55, half * 1.3, -half * 1.85, half * 0.9);
+      ctx.bezierCurveTo(-half * 2.1, half * 0.45, -half * 1.55, half * 0.15, -half * 1.4, half * 0.6);
+    }
     ctx.stroke();
     ctx.strokeStyle = tailColor;
     ctx.lineWidth = 5;
@@ -1058,17 +1082,6 @@ function drawSkinAccessories(skin) {
     }
   }
 
-  if (skin.pattern === 'chameleon') {
-    ctx.strokeStyle = '#387e35';
-    ctx.lineWidth = 2.3;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(half * 0.25, -half * 0.55);
-    ctx.quadraticCurveTo(half * 0.38, -half * 1.45, half * 0.32, -half * 1.7);
-    ctx.moveTo(half * 0.75, -half * 0.5);
-    ctx.quadraticCurveTo(half * 0.95, -half * 1.3, half * 0.95, -half * 1.55);
-    ctx.stroke();
-  }
 }
 
 function drawSkinPath(shape, size) {
@@ -1250,36 +1263,63 @@ function drawSkinPattern(skin) {
 
 function drawSkinFace(skin) {
   if (skin.pattern === 'chameleon') {
-    for (const [x, y] of [[5, -16], [13, -15]]) {
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#387e35';
+    ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    ctx.moveTo(-6, -12);
+    ctx.quadraticCurveTo(-8, -23, -8, -27);
+    ctx.moveTo(6, -12);
+    ctx.quadraticCurveTo(10, -22, 10, -26);
+    ctx.stroke();
+
+    for (const [x, y] of [[-8, -28], [10, -27]]) {
       ctx.fillStyle = '#f6ffff';
       ctx.beginPath();
-      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.ellipse(x, y, 5.4, 5.1, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = '#387e35';
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.fillStyle = '#25351f';
       ctx.beginPath();
-      ctx.arc(x + 1, y, 2.2, 0, Math.PI * 2);
+      ctx.ellipse(x + 1.1, y + 0.3, 1.7, 2.8, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#fff';
-      ctx.fillRect(x, y - 1.5, 1.2, 1.2);
+      ctx.fillRect(x + 0.4, y - 1.5, 1.2, 1.2);
     }
+
+    ctx.fillStyle = '#baff45';
+    ctx.beginPath();
+    ctx.ellipse(0, 3, 12, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#387e35';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#25351f';
+    ctx.beginPath();
+    ctx.arc(-4, 2, 1, 0, Math.PI * 2);
+    ctx.arc(4, 2, 1, 0, Math.PI * 2);
+    ctx.fill();
     ctx.strokeStyle = '#31542b';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(-6, 5);
-    ctx.quadraticCurveTo(0, 9, 7, 5);
+    ctx.moveTo(-5, 8);
+    ctx.quadraticCurveTo(0, 12, 5, 8);
     ctx.stroke();
     ctx.strokeStyle = '#ff7893';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.4;
     ctx.beginPath();
-    ctx.moveTo(7, 5);
-    ctx.lineTo(15, 7);
+    ctx.moveTo(4, 9);
+    ctx.quadraticCurveTo(12, 11, 14, 14);
     ctx.stroke();
     ctx.fillStyle = '#ffb0bd';
     ctx.beginPath();
-    ctx.arc(15, 7, 2, 0, Math.PI * 2);
+    ctx.moveTo(13, 13);
+    ctx.lineTo(17, 14);
+    ctx.lineTo(14, 17);
+    ctx.closePath();
     ctx.fill();
     return;
   }

@@ -923,10 +923,35 @@
   .skin-swatch.circle { border-radius: 50%; }
   .skin-swatch.hexagon { clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); }
   .skin-swatch.chameleon {
+    overflow: visible;
     background:
-      radial-gradient(circle at 30% 31%, #efffa7 0 2px, transparent 2.5px),
-      radial-gradient(circle at 70% 66%, #efffa7 0 2px, transparent 2.5px),
+      radial-gradient(ellipse at 34% 56%, #baff45 0 3px, transparent 3.5px),
+      radial-gradient(ellipse at 66% 56%, #baff45 0 3px, transparent 3.5px),
       linear-gradient(135deg, #c7ff60, #69d84e 58%, #319c54);
+  }
+  .skin-swatch.chameleon::before {
+    position: absolute;
+    bottom: -5px;
+    left: -8px;
+    width: 10px;
+    height: 10px;
+    border: 2px solid #54ba43;
+    border-left-color: transparent;
+    border-radius: 50%;
+    content: "";
+    transform: rotate(-35deg);
+  }
+  .skin-swatch.chameleon::after {
+    position: absolute;
+    top: -8px;
+    left: 4px;
+    width: 17px;
+    height: 10px;
+    border-radius: 8px;
+    background:
+      radial-gradient(ellipse at 28% 52%, #26321e 0 1px, #f6ffff 1.5px 3.5px, transparent 4px),
+      radial-gradient(ellipse at 78% 52%, #26321e 0 1px, #f6ffff 1.5px 3.5px, transparent 4px);
+    content: "";
   }
   .skin-swatch.lion {
     background: radial-gradient(circle, #f4bd4f 0 47%, #d66b2b 50% 100%);
