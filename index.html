@@ -86,6 +86,15 @@
         <div class="skin-editor-status skin-progress" id="skinProgress" aria-live="polite"></div>
         <details class="skin-customizer">
           <summary><span>✦</span> CREATE YOUR OWN SKIN</summary>
+          <div class="custom-preview-stage">
+            <span class="custom-preview-label">LIVE PREVIEW</span>
+            <div class="custom-preview-cube cube" id="customSkinPreview" role="img" aria-label="Preview of your custom runner skin">
+              <span class="custom-preview-side"></span>
+              <span class="custom-preview-top"></span>
+              <span class="custom-preview-face"><i></i><i></i><b></b></span>
+            </div>
+            <span class="custom-preview-name" id="customSkinPreviewName">MY RUNNER</span>
+          </div>
           <form class="skin-editor" id="customSkinForm">
             <label class="skin-field skin-name-field">SKIN NAME
               <input id="customSkinName" type="text" maxlength="16" placeholder="MY RUNNER" required>

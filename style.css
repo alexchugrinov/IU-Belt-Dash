@@ -931,6 +931,7 @@
   .skin-swatch.lion {
     background: radial-gradient(circle, #f4bd4f 0 47%, #d66b2b 50% 100%);
     border: 3px dotted #713319;
+    border-radius: 7px;
   }
   .skin-swatch.leopard {
     background:
@@ -940,7 +941,7 @@
       radial-gradient(circle at 78% 72%, #493020 0 2px, transparent 2.5px),
       #e8b44e;
     border-color: #493020;
-    border-radius: 50%;
+    border-radius: 7px;
   }
   .skin-card-copy { min-width: 0; overflow-wrap: anywhere; letter-spacing: 0.2px; }
   .skin-card-copy small { display: block; margin-top: 3px; color: #7f8a9e; font-size: 7px; }
@@ -966,6 +967,118 @@
   .skin-customizer summary::-webkit-details-marker { display: none; }
   .skin-customizer summary span { color: #65ddd4; margin-right: 5px; }
   .skin-customizer[open] summary { margin-bottom: 12px; }
+  .custom-preview-stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 158px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(190,207,238,0.11);
+    border-radius: 12px;
+    background:
+      linear-gradient(rgba(138,166,205,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(138,166,205,0.045) 1px, transparent 1px),
+      radial-gradient(ellipse at 50% 62%, rgba(98,229,219,0.1), transparent 40%),
+      #0a101b;
+    background-size: 20px 20px, 20px 20px, auto, auto;
+  }
+  .custom-preview-label {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    color: #74839b;
+    font: 7px 'Courier New', monospace;
+    letter-spacing: 1.4px;
+  }
+  .custom-preview-cube {
+    --preview-main: #38e8ff;
+    --preview-accent: #ff4d4d;
+    position: relative;
+    width: 54px;
+    height: 54px;
+    margin-top: -6px;
+    transform: rotate(-8deg);
+    animation: skin-preview-float 2.4s ease-in-out infinite;
+    filter: drop-shadow(0 11px 12px rgba(0,0,0,0.38));
+  }
+  .custom-preview-face {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--preview-accent);
+    border-radius: 8px;
+    background: linear-gradient(145deg, var(--preview-accent), var(--preview-main));
+    background: linear-gradient(145deg, var(--preview-accent), var(--preview-main) 38%, var(--preview-main) 74%, color-mix(in srgb, var(--preview-main), #111 18%));
+    box-shadow: inset 3px 3px 0 rgba(255,255,255,0.32), inset -4px -5px 0 rgba(0,0,0,0.16), 0 0 18px color-mix(in srgb, var(--preview-accent) 32%, transparent);
+  }
+  .custom-preview-face i {
+    position: absolute;
+    top: 19px;
+    width: 6px;
+    height: 8px;
+    border-radius: 50%;
+    background: #172335;
+    box-shadow: inset 1px 1px rgba(255,255,255,0.3);
+  }
+  .custom-preview-face i:first-child { left: 14px; }
+  .custom-preview-face i:nth-child(2) { right: 14px; }
+  .custom-preview-face b {
+    position: absolute;
+    bottom: 12px;
+    width: 14px;
+    height: 6px;
+    border-bottom: 2px solid #172335;
+    border-radius: 0 0 50% 50%;
+  }
+  .custom-preview-side {
+    position: absolute;
+    z-index: 1;
+    top: 4px;
+    right: -12px;
+    width: 14px;
+    height: 48px;
+    border: 1px solid color-mix(in srgb, var(--preview-accent) 72%, #111);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--preview-main) 60%, #111), color-mix(in srgb, var(--preview-main) 34%, #111));
+    transform: skewY(-32deg);
+    transform-origin: left center;
+  }
+  .custom-preview-top {
+    position: absolute;
+    z-index: 1;
+    top: -11px;
+    left: 6px;
+    width: 46px;
+    height: 14px;
+    border: 1px solid rgba(255,255,255,0.42);
+    background: linear-gradient(110deg, color-mix(in srgb, var(--preview-accent) 64%, white), color-mix(in srgb, var(--preview-main) 76%, white));
+    transform: skewX(-45deg);
+  }
+  .custom-preview-cube.diamond { transform: rotate(38deg) scale(0.82); }
+  .custom-preview-cube.circle .custom-preview-face { border-radius: 50%; }
+  .custom-preview-cube.circle .custom-preview-side,
+  .custom-preview-cube.circle .custom-preview-top { display: none; }
+  .custom-preview-cube.hexagon .custom-preview-face,
+  .custom-preview-cube.hexagon .custom-preview-side,
+  .custom-preview-cube.hexagon .custom-preview-top { clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); }
+  .custom-preview-name {
+    position: absolute;
+    bottom: 12px;
+    max-width: 80%;
+    overflow: hidden;
+    color: #d7e1ef;
+    font: 700 8px 'Courier New', monospace;
+    letter-spacing: 1.5px;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  @keyframes skin-preview-float {
+    0%, 100% { translate: 0 1px; }
+    50% { translate: 0 -7px; }
+  }
   .skin-editor {
     display: grid;
     grid-template-columns: minmax(110px,1fr) 52px 52px minmax(90px,0.7fr) auto;
@@ -1098,7 +1211,7 @@
     .btnRow { bottom: max(10px,env(safe-area-inset-bottom)); left: max(10px,env(safe-area-inset-left)); right: max(10px,env(safe-area-inset-right)); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .preview-player, .preview-portal, .preview-spark { animation: none; }
+    .preview-player, .preview-portal, .preview-spark, .custom-preview-cube { animation: none; }
   }
 
   /* Achievement banner */

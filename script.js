@@ -35,9 +35,9 @@ const BELT_SKINS = [
   { id:'belt-8', name:'NIGHTFALL', main:'#17131f', accent:'#ff4f86', shape:'circle', pattern:'nebula', unlockBelt:8 },
 ];
 const SPECIAL_SKINS = [
-  { id:'special-chameleon', name:'CHAMELEON', main:'#69d84e', accent:'#c7ff60', shape:'circle', pattern:'chameleon', unlockBelt:3 },
-  { id:'special-lion', name:'LIONHEART', main:'#f4bd4f', accent:'#e87932', shape:'circle', pattern:'lion', unlockBelt:5 },
-  { id:'special-leopard', name:'LEOPARD', main:'#e8b44e', accent:'#493020', shape:'circle', pattern:'leopard', unlockBelt:7 },
+  { id:'special-chameleon', name:'CHAMELEON', main:'#69d84e', accent:'#c7ff60', shape:'cube', pattern:'chameleon', unlockBelt:3 },
+  { id:'special-lion', name:'LIONHEART', main:'#f4bd4f', accent:'#e87932', shape:'cube', pattern:'lion', unlockBelt:5 },
+  { id:'special-leopard', name:'LEOPARD', main:'#e8b44e', accent:'#493020', shape:'cube', pattern:'leopard', unlockBelt:7 },
 ];
 const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
 const SKIN_STORAGE_KEY = 'iuBeltDashSkins';
@@ -965,20 +965,36 @@ function drawPlayer(B) {
 function drawSkinAccessories(skin) {
   const half = player.size / 2;
   if (skin.pattern === 'lion') {
-    const mane = ctx.createRadialGradient(-5, -7, 2, 0, 0, half * 1.45);
+    const mane = ctx.createLinearGradient(-half * 1.4, -half * 1.4, half * 1.2, half * 1.4);
     mane.addColorStop(0, '#ffdc72');
     mane.addColorStop(0.65, '#d77b32');
     mane.addColorStop(1, '#713319');
     ctx.fillStyle = mane;
     ctx.beginPath();
-    for (let i = 0; i < 32; i++) {
-      const angle = Math.PI * 2 * i / 32;
-      const radius = i % 2 === 0 ? half * 1.42 : half * 1.17;
-      const x = Math.cos(angle) * radius;
-      const y = Math.sin(angle) * radius;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
+    ctx.moveTo(-half * 1.25, -half * 0.9);
+    ctx.lineTo(-half * 1.35, -half * 1.35);
+    ctx.lineTo(-half * 0.75, -half * 1.2);
+    ctx.lineTo(-half * 0.35, -half * 1.45);
+    ctx.lineTo(0, -half * 1.2);
+    ctx.lineTo(half * 0.45, -half * 1.45);
+    ctx.lineTo(half * 0.8, -half * 1.15);
+    ctx.lineTo(half * 1.3, -half * 1.3);
+    ctx.lineTo(half * 1.2, -half * 0.7);
+    ctx.lineTo(half * 1.45, -half * 0.35);
+    ctx.lineTo(half * 1.2, 0);
+    ctx.lineTo(half * 1.45, half * 0.45);
+    ctx.lineTo(half * 1.15, half * 0.8);
+    ctx.lineTo(half * 1.3, half * 1.3);
+    ctx.lineTo(half * 0.65, half * 1.18);
+    ctx.lineTo(half * 0.25, half * 1.45);
+    ctx.lineTo(-half * 0.15, half * 1.2);
+    ctx.lineTo(-half * 0.6, half * 1.45);
+    ctx.lineTo(-half * 0.9, half * 1.15);
+    ctx.lineTo(-half * 1.35, half * 1.25);
+    ctx.lineTo(-half * 1.18, half * 0.65);
+    ctx.lineTo(-half * 1.45, half * 0.25);
+    ctx.lineTo(-half * 1.2, -half * 0.2);
+    ctx.lineTo(-half * 1.45, -half * 0.55);
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = '#713319';
@@ -986,11 +1002,11 @@ function drawSkinAccessories(skin) {
     ctx.stroke();
     ctx.strokeStyle = 'rgba(255,226,139,0.72)';
     ctx.lineWidth = 1;
-    for (let i = 0; i < 16; i++) {
-      const angle = Math.PI * 2 * i / 16;
+    for (let i = 0; i < 8; i++) {
+      const angle = Math.PI * 2 * i / 8;
       ctx.beginPath();
-      ctx.moveTo(Math.cos(angle) * half * 0.9, Math.sin(angle) * half * 0.9);
-      ctx.lineTo(Math.cos(angle) * half * 1.3, Math.sin(angle) * half * 1.3);
+      ctx.moveTo(Math.cos(angle) * half * 0.95, Math.sin(angle) * half * 0.95);
+      ctx.lineTo(Math.cos(angle) * half * 1.35, Math.sin(angle) * half * 1.35);
       ctx.stroke();
     }
   } else if (skin.pattern === 'chameleon' || skin.pattern === 'leopard') {
@@ -1021,14 +1037,22 @@ function drawSkinAccessories(skin) {
     ctx.fillStyle = skin.pattern === 'lion' ? '#d98a39' : skin.main;
     for (const side of [-1, 1]) {
       ctx.beginPath();
-      ctx.ellipse(side * half * 0.58, -half * 0.72, half * 0.32, half * 0.38, side * -0.3, 0, Math.PI * 2);
+      ctx.moveTo(side * half * 0.15, -half * 0.72);
+      ctx.lineTo(side * half * 0.32, -half * 1.28);
+      ctx.lineTo(side * half * 0.9, -half * 1.12);
+      ctx.lineTo(side * half * 1.02, -half * 0.46);
+      ctx.closePath();
       ctx.fill();
       ctx.strokeStyle = skin.accent;
       ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.fillStyle = skin.pattern === 'lion' ? '#f5ae5b' : '#f6c39a';
       ctx.beginPath();
-      ctx.ellipse(side * half * 0.58, -half * 0.7, half * 0.16, half * 0.22, side * -0.3, 0, Math.PI * 2);
+      ctx.moveTo(side * half * 0.36, -half * 0.78);
+      ctx.lineTo(side * half * 0.43, -half * 1.08);
+      ctx.lineTo(side * half * 0.77, -half * 1.01);
+      ctx.lineTo(side * half * 0.83, -half * 0.64);
+      ctx.closePath();
       ctx.fill();
       ctx.fillStyle = skin.pattern === 'lion' ? '#d98a39' : skin.main;
     }
@@ -1838,6 +1862,22 @@ function refreshSkinGallery() {
       (availableCount === 1 ? '' : 'S') + (unlockedCount ? ' UNLOCKED' : ' AVAILABLE');
   }
 }
+
+function updateCustomSkinPreview() {
+  const preview = document.getElementById('customSkinPreview');
+  const nameInput = document.getElementById('customSkinName');
+  const nameLabel = document.getElementById('customSkinPreviewName');
+  if (!preview || !nameInput || !nameLabel) return;
+  const shape = document.getElementById('customSkinShape').value;
+  preview.className = 'custom-preview-cube ' + (SKIN_SHAPES.includes(shape) ? shape : 'cube');
+  preview.style.setProperty('--preview-main', document.getElementById('customSkinMain').value);
+  preview.style.setProperty('--preview-accent', document.getElementById('customSkinAccent').value);
+  nameLabel.textContent = nameInput.value.trim().slice(0, 16) || 'MY RUNNER';
+}
+
+document.getElementById('customSkinForm').addEventListener('input', updateCustomSkinPreview);
+document.getElementById('customSkinForm').addEventListener('change', updateCustomSkinPreview);
+updateCustomSkinPreview();
 
 document.getElementById('customSkinForm').addEventListener('submit', (event) => {
   event.preventDefault();
