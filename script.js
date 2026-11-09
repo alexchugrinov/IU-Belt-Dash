@@ -35,9 +35,9 @@ const BELT_SKINS = [
   { id:'belt-8', name:'NIGHTFALL', main:'#17131f', accent:'#ff4f86', shape:'circle', pattern:'nebula', unlockBelt:8 },
 ];
 const SPECIAL_SKINS = [
-  { id:'special-chameleon', name:'CHAMELEON', main:'#69d84e', accent:'#c7ff60', shape:'cube', pattern:'chameleon', unlockBelt:3 },
-  { id:'special-lion', name:'LIONHEART', main:'#f4bd4f', accent:'#e87932', shape:'cube', pattern:'lion', unlockBelt:5 },
-  { id:'special-leopard', name:'LEOPARD', main:'#e8b44e', accent:'#493020', shape:'cube', pattern:'leopard', unlockBelt:7 },
+  { id:'special-chameleon', name:'GREEN CUBE', main:'#20ce68', accent:'#baff45', shape:'cube', pattern:'plain', unlockBelt:3 },
+  { id:'special-lion', name:'YELLOW CUBE', main:'#ffd21f', accent:'#fff58a', shape:'cube', pattern:'plain', unlockBelt:5 },
+  { id:'special-leopard', name:'ORANGE CUBE', main:'#ff7626', accent:'#ffd166', shape:'cube', pattern:'plain', unlockBelt:7 },
 ];
 const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
 const SKIN_STORAGE_KEY = 'iuBeltDashSkins';
@@ -957,8 +957,10 @@ function drawPlayer(B) {
   ctx.lineWidth = 1;
   drawSkinPath(skin.shape, player.size - 7);
   ctx.stroke();
-  drawSkinPattern(skin);
-  drawSkinFace(skin);
+  if (skin.pattern !== 'plain') {
+    drawSkinPattern(skin);
+    drawSkinFace(skin);
+  }
   ctx.restore();
 }
 
@@ -1213,7 +1215,7 @@ function drawSkinBody(skin) {
     ctx.lineTo(-6, -4);
     ctx.closePath();
     ctx.fill();
-  } else {
+  } else if (skin.pattern !== 'plain') {
     ctx.strokeStyle = skin.pattern === 'glow' ? 'rgba(255,255,255,0.68)' : 'rgba(255,255,255,0.48)';
     ctx.lineWidth = skin.pattern === 'glow' ? 2 : 1.2;
     ctx.beginPath();
@@ -1879,7 +1881,7 @@ function refreshSkinGallery() {
       gallery,
       skin,
       skin.id,
-      unlocked ? 'ANIMAL · BELT ' + skin.unlockBelt : 'LOCKED · REACH ' + BELTS[skin.unlockBelt].name,
+      unlocked ? 'COLOR CUBE · BELT ' + skin.unlockBelt : 'LOCKED · REACH ' + BELTS[skin.unlockBelt].name,
       unlocked
     );
   }

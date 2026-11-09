@@ -922,52 +922,6 @@
   .skin-swatch.diamond { transform: rotate(45deg) scale(0.76); border-radius: 4px; }
   .skin-swatch.circle { border-radius: 50%; }
   .skin-swatch.hexagon { clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); }
-  .skin-swatch.chameleon {
-    overflow: visible;
-    background:
-      radial-gradient(ellipse at 34% 56%, #baff45 0 3px, transparent 3.5px),
-      radial-gradient(ellipse at 66% 56%, #baff45 0 3px, transparent 3.5px),
-      linear-gradient(135deg, #c7ff60, #69d84e 58%, #319c54);
-  }
-  .skin-swatch.chameleon::before {
-    position: absolute;
-    bottom: -5px;
-    left: -8px;
-    width: 10px;
-    height: 10px;
-    border: 2px solid #54ba43;
-    border-left-color: transparent;
-    border-radius: 50%;
-    content: "";
-    transform: rotate(-35deg);
-  }
-  .skin-swatch.chameleon::after {
-    position: absolute;
-    top: -8px;
-    left: 4px;
-    width: 17px;
-    height: 10px;
-    border-radius: 8px;
-    background:
-      radial-gradient(ellipse at 28% 52%, #26321e 0 1px, #f6ffff 1.5px 3.5px, transparent 4px),
-      radial-gradient(ellipse at 78% 52%, #26321e 0 1px, #f6ffff 1.5px 3.5px, transparent 4px);
-    content: "";
-  }
-  .skin-swatch.lion {
-    background: radial-gradient(circle, #f4bd4f 0 47%, #d66b2b 50% 100%);
-    border: 3px dotted #713319;
-    border-radius: 7px;
-  }
-  .skin-swatch.leopard {
-    background:
-      radial-gradient(circle at 25% 30%, #493020 0 2px, transparent 2.5px),
-      radial-gradient(circle at 68% 28%, #493020 0 2px, transparent 2.5px),
-      radial-gradient(circle at 46% 65%, #493020 0 2px, transparent 2.5px),
-      radial-gradient(circle at 78% 72%, #493020 0 2px, transparent 2.5px),
-      #e8b44e;
-    border-color: #493020;
-    border-radius: 7px;
-  }
   .skin-card-copy { min-width: 0; overflow-wrap: anywhere; letter-spacing: 0.2px; }
   .skin-card-copy small { display: block; margin-top: 3px; color: #7f8a9e; font-size: 7px; }
   .skin-progress {
