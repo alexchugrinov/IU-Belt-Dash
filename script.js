@@ -34,6 +34,11 @@ const LEVEL_SKINS = [
   { id:'belt-7', name:'EARTH SHAKER', main:'#9b6949', accent:'#f1c27d', shape:'hexagon', pattern:'dots' },
   { id:'belt-8', name:'VOID KING', main:'#17131f', accent:'#ff3158', shape:'circle', pattern:'split' },
 ];
+const SPECIAL_SKINS = [
+  { id:'special-chameleon', name:'CHAMELEON', main:'#69d84e', accent:'#c7ff60', shape:'circle', pattern:'chameleon', unlockBelt:3 },
+  { id:'special-lion', name:'LIONHEART', main:'#f4bd4f', accent:'#e87932', shape:'circle', pattern:'lion', unlockBelt:5 },
+  { id:'special-leopard', name:'LEOPARD', main:'#e8b44e', accent:'#493020', shape:'circle', pattern:'leopard', unlockBelt:7 },
+];
 const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
 const SKIN_STORAGE_KEY = 'iuBeltDashSkins';
 
@@ -94,6 +99,7 @@ function getPlayerSkin() {
   if (selectedSkinId === 'level') return LEVEL_SKINS[belt] || LEVEL_SKINS[1];
   return customSkins.find((skin) => skin.id === selectedSkinId) ||
     LEVEL_SKINS.find((skin) => skin && skin.id === selectedSkinId) ||
+    SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId && skin.unlockBelt <= stats.maxBeltReached) ||
     LEVEL_SKINS[Math.min(stats.maxBeltReached, LEVEL_SKINS.length - 1)] ||
     LEVEL_SKINS[1];
 }
@@ -144,8 +150,10 @@ const stats = {
   achievements: new Set(),
 };
 const savedBuiltInSkin = LEVEL_SKINS.find((skin) => skin && skin.id === selectedSkinId);
-if ((!savedBuiltInSkin && selectedSkinId !== 'level' && !customSkins.some((skin) => skin.id === selectedSkinId)) ||
-    (savedBuiltInSkin && Number(savedBuiltInSkin.id.slice(5)) > stats.maxBeltReached)) {
+const savedSpecialSkin = SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId);
+if ((!savedBuiltInSkin && !savedSpecialSkin && selectedSkinId !== 'level' && !customSkins.some((skin) => skin.id === selectedSkinId)) ||
+  (savedBuiltInSkin && Number(savedBuiltInSkin.id.slice(5)) > stats.maxBeltReached) ||
+  (savedSpecialSkin && savedSpecialSkin.unlockBelt > stats.maxBeltReached)) {
   selectedSkinId = 'level';
 }
 
@@ -936,6 +944,7 @@ function drawPlayer(B) {
   ctx.save();
   ctx.translate(player.x + player.size/2, player.y + player.size/2);
   ctx.rotate(player.rotation);
+  drawSkinAccessories(skin);
   drawSkinBody(skin);
   ctx.shadowColor = skin.accent;
   ctx.shadowBlur = 7;
@@ -949,21 +958,67 @@ function drawPlayer(B) {
   drawSkinPath(skin.shape, player.size - 7);
   ctx.stroke();
   drawSkinPattern(skin);
-  ctx.fillStyle = 'rgba(0,0,0,0.68)';
-  ctx.beginPath();
-  ctx.ellipse(7, -7, 5, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.beginPath();
-  ctx.arc(8, -8, 3, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#151515';
-  ctx.beginPath();
-  ctx.arc(9, -8, 1.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.8)';
-  ctx.fillRect(-player.size / 2 + 5, -player.size / 2 + 5, 4, 2);
+  drawSkinFace(skin);
   ctx.restore();
+}
+
+function drawSkinAccessories(skin) {
+  if (skin.pattern === 'lion') {
+    const gradient = ctx.createRadialGradient(-5, -7, 2, 0, 0, 23);
+    gradient.addColorStop(0, '#ffdc72');
+    gradient.addColorStop(0.7, '#c96a25');
+    gradient.addColorStop(1, '#713319');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    for (let i = 0; i < 24; i++) {
+      const angle = Math.PI * 2 * i / 24;
+      const radius = i % 2 === 0 ? player.size * 0.68 : player.size * 0.55;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#542719';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  } else if (skin.pattern === 'chameleon' || skin.pattern === 'leopard') {
+    const tailColor = skin.pattern === 'chameleon' ? '#54ba43' : '#c58a38';
+    ctx.strokeStyle = '#26321e';
+    ctx.lineWidth = 8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-10, 9);
+    ctx.bezierCurveTo(-18, 12, -23, 18, -27, 13);
+    ctx.bezierCurveTo(-31, 8, -24, 4, -22, 8);
+    ctx.stroke();
+    ctx.strokeStyle = tailColor;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(-10, 9);
+    ctx.bezierCurveTo(-18, 12, -23, 18, -27, 13);
+    ctx.bezierCurveTo(-31, 8, -24, 4, -22, 8);
+    ctx.stroke();
+    if (skin.pattern === 'leopard') {
+      ctx.fillStyle = '#493020';
+      ctx.beginPath();
+      ctx.arc(-20, 12, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  if (skin.pattern === 'lion' || skin.pattern === 'leopard') {
+    ctx.fillStyle = skin.pattern === 'lion' ? '#d98a39' : skin.main;
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(side * 10, -11, 5, 6, side * -0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = skin.accent;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
 }
 
 function drawSkinPath(shape, size) {
@@ -1030,6 +1085,41 @@ function drawSkinBody(skin) {
         ctx.fill();
       }
     }
+  } else if (skin.pattern === 'chameleon') {
+    ctx.strokeStyle = 'rgba(35, 115, 49, 0.7)';
+    ctx.lineWidth = 1;
+    for (let row = -1; row <= 1; row++) {
+      for (let col = -1; col <= 1; col++) {
+        const x = col * 8 + (row % 2 ? 4 : 0);
+        const y = row * 8;
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  } else if (skin.pattern === 'leopard') {
+    ctx.fillStyle = skin.accent;
+    for (const [x, y, radius] of [[-8,-8,3], [1,-10,2.5], [9,-5,3], [-10,1,2.5], [0,0,3.5], [9,5,2.5], [-6,9,3], [3,10,2]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f6d381';
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 0.32, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = skin.accent;
+    }
+  } else if (skin.pattern === 'lion') {
+    ctx.strokeStyle = 'rgba(126, 54, 25, 0.6)';
+    ctx.lineWidth = 1.5;
+    for (const side of [-1, 1]) {
+      for (let y = -8; y <= 8; y += 8) {
+        ctx.beginPath();
+        ctx.moveTo(side * 9, y);
+        ctx.lineTo(side * 14, y + (y < 0 ? -2 : 2));
+        ctx.stroke();
+      }
+    }
   } else {
     ctx.save();
     ctx.rotate(-Math.PI / 4);
@@ -1061,6 +1151,83 @@ function drawSkinPattern(skin) {
     ctx.fill();
   }
   ctx.restore();
+}
+
+function drawSkinFace(skin) {
+  if (skin.pattern === 'chameleon') {
+    ctx.strokeStyle = '#387e35';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(4, -7);
+    ctx.lineTo(5, -15);
+    ctx.moveTo(11, -7);
+    ctx.lineTo(13, -14);
+    ctx.stroke();
+    for (const [x, y] of [[5, -16], [13, -15]]) {
+      ctx.fillStyle = '#f6ffff';
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#25351f';
+      ctx.beginPath();
+      ctx.arc(x + 1, y, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x, y - 1.5, 1.2, 1.2);
+    }
+    ctx.strokeStyle = '#31542b';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-6, 5);
+    ctx.quadraticCurveTo(0, 9, 7, 5);
+    ctx.stroke();
+    ctx.strokeStyle = '#ff7893';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(7, 5);
+    ctx.lineTo(15, 7);
+    ctx.stroke();
+    ctx.fillStyle = '#ffb0bd';
+    ctx.beginPath();
+    ctx.arc(15, 7, 2, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+
+  ctx.fillStyle = '#30251d';
+  for (const x of [-6, 6]) {
+    ctx.beginPath();
+    ctx.ellipse(x, -3, 2.3, 3.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(x + 0.5, -4, 0.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#30251d';
+  }
+  ctx.fillStyle = skin.pattern === 'lion' ? '#fff0bd' : '#f6d9a1';
+  for (const x of [-3, 3]) {
+    ctx.beginPath();
+    ctx.ellipse(x, 5, 4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#493020';
+  ctx.beginPath();
+  ctx.moveTo(-2, 3);
+  ctx.lineTo(2, 3);
+  ctx.lineTo(0, 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#493020';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 6);
+  ctx.lineTo(0, 9);
+  ctx.moveTo(0, 9);
+  ctx.quadraticCurveTo(-3, 11, -5, 9);
+  ctx.moveTo(0, 9);
+  ctx.quadraticCurveTo(3, 11, 5, 9);
+  ctx.stroke();
 }
 
 function drawAirplane(B, skin) {
@@ -1511,7 +1678,7 @@ function addSkinCard(container, skin, id, description, unlocked) {
   card.style.setProperty('--skin-accent', skin.accent);
 
   const preview = document.createElement('span');
-  preview.className = 'skin-swatch ' + skin.shape;
+  preview.className = 'skin-swatch ' + skin.shape + ' ' + skin.pattern;
   const copy = document.createElement('span');
   copy.className = 'skin-card-copy';
   copy.textContent = skin.name;
@@ -1548,14 +1715,25 @@ function refreshSkinGallery() {
       unlocked
     );
   }
+  for (const skin of SPECIAL_SKINS) {
+    const unlocked = skin.unlockBelt <= stats.maxBeltReached;
+    addSkinCard(
+      gallery,
+      skin,
+      skin.id,
+      unlocked ? 'SPECIAL · BELT ' + skin.unlockBelt : 'LOCKED · REACH ' + BELTS[skin.unlockBelt].name,
+      unlocked
+    );
+  }
   for (const skin of customSkins) {
     addSkinCard(gallery, skin, skin.id, 'YOUR CUSTOM SKIN', true);
   }
 
   const progress = document.getElementById('skinProgress');
   if (progress) {
+    const totalUnlocked = stats.maxBeltReached + SPECIAL_SKINS.filter((skin) => skin.unlockBelt <= stats.maxBeltReached).length;
     progress.textContent = stats.maxBeltReached
-      ? 'BELT ' + stats.maxBeltReached + ' OF 8 REACHED · ' + stats.maxBeltReached + ' BELT SKIN' + (stats.maxBeltReached === 1 ? '' : 'S') + ' UNLOCKED'
+      ? 'BELT ' + stats.maxBeltReached + ' OF 8 REACHED · ' + totalUnlocked + ' GAME SKIN' + (totalUnlocked === 1 ? '' : 'S') + ' UNLOCKED'
       : 'REACH YOUR FIRST BELT TO UNLOCK A SKIN';
   }
 }
