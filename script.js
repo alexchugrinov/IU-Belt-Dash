@@ -26,9 +26,9 @@ const BELTS = [
 const BELT_SKINS = [
   null,
   { id:'belt-1', name:'PORCELAIN', main:'#eef4ff', accent:'#77c8ff', shape:'cube', pattern:'glow', unlockBelt:1 },
-  { id:'belt-2', name:'SUNFORGED', main:'#ffc94d', accent:'#fff0a6', shape:'diamond', pattern:'flare', unlockBelt:2 },
-  { id:'belt-3', name:'EMBERFOX', main:'#f47b45', accent:'#ffd18a', shape:'hexagon', pattern:'ember', unlockBelt:3 },
-  { id:'belt-4', name:'MOSSBYTE', main:'#29c982', accent:'#b9ff79', shape:'circle', pattern:'leaf', unlockBelt:4 },
+  { id:'belt-2', name:'SUNFORGED', main:'#ffd21f', accent:'#fff58a', shape:'diamond', pattern:'flare', unlockBelt:2 },
+  { id:'belt-3', name:'EMBERFOX', main:'#ff7626', accent:'#ffd166', shape:'hexagon', pattern:'ember', unlockBelt:3 },
+  { id:'belt-4', name:'MOSSBYTE', main:'#20ce68', accent:'#baff45', shape:'circle', pattern:'leaf', unlockBelt:4 },
   { id:'belt-5', name:'DRAGONFIRE', main:'#ed493f', accent:'#ffd25e', shape:'cube', pattern:'flare', unlockBelt:5 },
   { id:'belt-6', name:'GLACIER', main:'#647de8', accent:'#b7f5ff', shape:'diamond', pattern:'crystal', unlockBelt:6 },
   { id:'belt-7', name:'TERRA NOVA', main:'#9b6949', accent:'#f1c27d', shape:'hexagon', pattern:'stone', unlockBelt:7 },
