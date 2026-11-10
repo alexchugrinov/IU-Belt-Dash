@@ -101,8 +101,8 @@ function saveSkinProgress() {
 function getPlayerSkin() {
   if (selectedSkinId === 'level') return BELT_SKINS[belt] || BELT_SKINS[1];
   return customSkins.find((skin) => skin.id === selectedSkinId) ||
-    BELT_SKINS.find((skin) => skin && skin.id === selectedSkinId && skin.unlockBelt <= stats.maxBeltReached) ||
-    SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId && skin.unlockBelt <= stats.maxBeltReached) ||
+    BELT_SKINS.find((skin) => skin && skin.id === selectedSkinId) ||
+    SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId) ||
     BELT_SKINS[Math.max(1, Math.min(stats.maxBeltReached, BELT_SKINS.length - 1))] ||
     BELT_SKINS[1];
 }
@@ -154,9 +154,7 @@ const stats = {
 };
 const savedBeltSkin = BELT_SKINS.find((skin) => skin && skin.id === selectedSkinId);
 const savedSpecialSkin = SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId);
-if ((!savedBeltSkin && !savedSpecialSkin && selectedSkinId !== 'level' && !customSkins.some((skin) => skin.id === selectedSkinId)) ||
-  (savedBeltSkin && savedBeltSkin.unlockBelt > stats.maxBeltReached) ||
-  (savedSpecialSkin && savedSpecialSkin.unlockBelt > stats.maxBeltReached)) {
+if (!savedBeltSkin && !savedSpecialSkin && selectedSkinId !== 'level' && !customSkins.some((skin) => skin.id === selectedSkinId)) {
   selectedSkinId = 'level';
 }
 
@@ -1261,23 +1259,30 @@ function drawSkinPattern(skin) {
   ctx.save();
   drawSkinPath(skin.shape, player.size - 5);
   ctx.clip();
-  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-  ctx.lineWidth = 1;
-  ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(5,7,12,0.86)';
+  ctx.lineWidth = 1.6;
+  ctx.lineCap = 'square';
+  ctx.lineJoin = 'miter';
   ctx.beginPath();
-  ctx.moveTo(-half + 6, -half + 4);
-  ctx.quadraticCurveTo(-half * 0.15, -half + 1, half * 0.35, -half + 5);
+  ctx.moveTo(-half + 6, -half + 7);
+  ctx.lineTo(0, -half + 12);
+  ctx.lineTo(half - 6, -half + 7);
+  ctx.moveTo(0, -half + 12);
+  ctx.lineTo(0, -2);
   ctx.stroke();
-  ctx.fillStyle = 'rgba(0,0,0,0.2)';
-  ctx.fillRect(-half + 5, half - 6, player.size - 10, 2);
-  if (skin.pattern === 'glow') {
-    ctx.fillStyle = '#fff';
-    ctx.shadowColor = skin.accent;
-    ctx.shadowBlur = 7;
-    ctx.beginPath();
-    ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
-    ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-5, 2);
+  ctx.lineTo(0, -3);
+  ctx.lineTo(5, 2);
+  ctx.lineTo(0, 7);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(5,7,12,0.9)';
+  for (const x of [-half + 7, half - 7]) {
+    ctx.fillRect(x - 1.5, -half + 5, 3, 3);
+    ctx.fillRect(x - 1.5, half - 8, 3, 3);
   }
+  ctx.fillRect(-half + 5, half - 4, player.size - 10, 2);
   ctx.restore();
 }
 
@@ -1804,42 +1809,36 @@ function refreshSkinGallery() {
   addSkinCard(gallery, BELT_SKINS[autoBelt], 'level', 'AUTO · NEW EACH BELT', true);
   for (let i = 1; i < BELT_SKINS.length; i++) {
     const skin = BELT_SKINS[i];
-    const unlocked = skin.unlockBelt <= stats.maxBeltReached;
     addSkinCard(
       gallery,
       skin,
       skin.id,
-      unlocked ? BELTS[skin.unlockBelt].name + ' BELT REWARD' : 'LOCKED · REACH ' + BELTS[skin.unlockBelt].name,
-      unlocked
+      BELTS[skin.unlockBelt].name + ' BELT STYLE',
+      true
     );
   }
   for (const skin of SPECIAL_SKINS) {
-    const unlocked = skin.unlockBelt <= stats.maxBeltReached;
     addSkinCard(
       gallery,
       skin,
       skin.id,
-      unlocked ? 'COLOR CUBE · BELT ' + skin.unlockBelt : 'LOCKED · REACH ' + BELTS[skin.unlockBelt].name,
-      unlocked
+      'BONUS COLOR CUBE',
+      true
     );
   }
   for (const skin of customSkins) addSkinCard(gallery, skin, skin.id, 'YOUR ORIGINAL SKIN', true);
 
-  const unlockedCount = stats.maxBeltReached +
-    SPECIAL_SKINS.filter((skin) => skin.unlockBelt <= stats.maxBeltReached).length;
+  const unlockedCount = BELT_SKINS.length - 1 + SPECIAL_SKINS.length;
   const progress = document.getElementById('skinProgress');
   if (progress) {
-    progress.textContent = stats.maxBeltReached
-      ? 'BELT ' + stats.maxBeltReached + ' / 8  ·  ' + unlockedCount + ' GAME SKIN' + (unlockedCount === 1 ? '' : 'S') + ' UNLOCKED'
-      : 'REACH YOUR FIRST BELT TO UNLOCK A SKIN';
+    progress.textContent = 'ALL ' + unlockedCount + ' GAME SKINS UNLOCKED  ·  BELT ' +
+      stats.maxBeltReached + ' / 8';
   }
   const beltProgress = document.getElementById('menuBeltProgress');
   if (beltProgress) beltProgress.textContent = 'BELT ' + Math.max(1, stats.maxBeltReached) + ' / 8';
   const skinCount = document.getElementById('menuSkinCount');
   if (skinCount) {
-    const availableCount = Math.max(1, unlockedCount);
-    skinCount.textContent = String(availableCount).padStart(2, '0') + ' SKIN' +
-      (availableCount === 1 ? '' : 'S') + (unlockedCount ? ' UNLOCKED' : ' AVAILABLE');
+    skinCount.textContent = String(unlockedCount).padStart(2, '0') + ' SKINS UNLOCKED';
   }
 }
 
