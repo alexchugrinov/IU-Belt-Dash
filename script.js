@@ -25,19 +25,19 @@ const BELTS = [
 
 const BELT_SKINS = [
   null,
-  { id:'belt-1', name:'PORCELAIN', main:'#eef4ff', accent:'#77c8ff', shape:'cube', pattern:'plain', unlockBelt:1 },
-  { id:'belt-2', name:'SUNFORGED', main:'#ffd21f', accent:'#fff58a', shape:'cube', pattern:'plain', unlockBelt:2 },
-  { id:'belt-3', name:'EMBERFOX', main:'#ff7626', accent:'#ffd166', shape:'cube', pattern:'plain', unlockBelt:3 },
-  { id:'belt-4', name:'MOSSBYTE', main:'#20ce68', accent:'#baff45', shape:'cube', pattern:'plain', unlockBelt:4 },
-  { id:'belt-5', name:'DRAGONFIRE', main:'#ed493f', accent:'#ffd25e', shape:'cube', pattern:'plain', unlockBelt:5 },
-  { id:'belt-6', name:'GLACIER', main:'#647de8', accent:'#b7f5ff', shape:'cube', pattern:'plain', unlockBelt:6 },
-  { id:'belt-7', name:'TERRA NOVA', main:'#9b6949', accent:'#f1c27d', shape:'cube', pattern:'plain', unlockBelt:7 },
-  { id:'belt-8', name:'NIGHTFALL', main:'#17131f', accent:'#ff4f86', shape:'cube', pattern:'plain', unlockBelt:8 },
+  { id:'belt-1', name:'PORCELAIN', main:'#eef4ff', accent:'#77c8ff', shape:'cube', pattern:'prism', unlockBelt:1 },
+  { id:'belt-2', name:'SUNFORGED', main:'#ffd21f', accent:'#fff58a', shape:'cube', pattern:'circuit', unlockBelt:2 },
+  { id:'belt-3', name:'EMBERFOX', main:'#ff7626', accent:'#ffd166', shape:'cube', pattern:'ember', unlockBelt:3 },
+  { id:'belt-4', name:'MOSSBYTE', main:'#20ce68', accent:'#baff45', shape:'cube', pattern:'grid', unlockBelt:4 },
+  { id:'belt-5', name:'DRAGONFIRE', main:'#ed493f', accent:'#ffd25e', shape:'cube', pattern:'flare', unlockBelt:5 },
+  { id:'belt-6', name:'GLACIER', main:'#647de8', accent:'#b7f5ff', shape:'cube', pattern:'crystal', unlockBelt:6 },
+  { id:'belt-7', name:'TERRA NOVA', main:'#9b6949', accent:'#f1c27d', shape:'cube', pattern:'stone', unlockBelt:7 },
+  { id:'belt-8', name:'NIGHTFALL', main:'#17131f', accent:'#ff4f86', shape:'cube', pattern:'nebula', unlockBelt:8 },
 ];
 const SPECIAL_SKINS = [
-  { id:'bonus-green', name:'GREEN CUBE', main:'#20ce68', accent:'#baff45', shape:'cube', pattern:'plain', unlockBelt:3 },
-  { id:'bonus-yellow', name:'YELLOW CUBE', main:'#ffd21f', accent:'#fff58a', shape:'cube', pattern:'plain', unlockBelt:5 },
-  { id:'bonus-orange', name:'ORANGE CUBE', main:'#ff7626', accent:'#ffd166', shape:'cube', pattern:'plain', unlockBelt:7 },
+  { id:'bonus-green', name:'GREEN CUBE', main:'#20ce68', accent:'#baff45', shape:'cube', pattern:'grid', unlockBelt:3 },
+  { id:'bonus-yellow', name:'YELLOW CUBE', main:'#ffd21f', accent:'#fff58a', shape:'cube', pattern:'circuit', unlockBelt:5 },
+  { id:'bonus-orange', name:'ORANGE CUBE', main:'#ff7626', accent:'#ffd166', shape:'cube', pattern:'ember', unlockBelt:7 },
 ];
 const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
 const SKIN_STORAGE_KEY = 'iuBeltDashSkins';
@@ -926,7 +926,7 @@ function drawPlayer() {
   ctx.stroke();
   if (skin.pattern !== 'plain') {
     drawSkinPattern(skin);
-    drawSkinFace(skin);
+    if (skin.pattern === 'custom') drawSkinFace(skin);
   }
   ctx.restore();
 }
@@ -1171,6 +1171,57 @@ function drawSkinBody(skin) {
     ctx.lineTo(-2, -4);
     ctx.closePath();
     ctx.stroke();
+  } else if (skin.pattern === 'prism') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.68)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-half + 3, -half + 4);
+    ctx.lineTo(0, -half + 10);
+    ctx.lineTo(half - 4, -half + 3);
+    ctx.lineTo(half - 8, 1);
+    ctx.lineTo(2, half - 4);
+    ctx.lineTo(-half + 5, 2);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -half + 10);
+    ctx.lineTo(2, half - 4);
+    ctx.stroke();
+  } else if (skin.pattern === 'circuit') {
+    ctx.strokeStyle = 'rgba(91,57,0,0.72)';
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'square';
+    for (const [x, y, direction] of [[-10,-9,1], [10,-8,-1], [-9,10,-1], [10,9,1]]) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + direction * 4, y);
+      ctx.lineTo(x + direction * 4, y + (y < 0 ? 5 : -5));
+      ctx.stroke();
+      ctx.fillStyle = '#fff58a';
+      ctx.beginPath();
+      ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.62)';
+    ctx.beginPath();
+    ctx.moveTo(-4, 0);
+    ctx.lineTo(4, 0);
+    ctx.stroke();
+  } else if (skin.pattern === 'grid') {
+    ctx.strokeStyle = 'rgba(8,75,38,0.56)';
+    ctx.lineWidth = 1;
+    for (let offset = -half + 7; offset <= half - 5; offset += 7) {
+      ctx.beginPath();
+      ctx.moveTo(offset, -half + 3);
+      ctx.lineTo(offset, half - 3);
+      ctx.moveTo(-half + 3, offset);
+      ctx.lineTo(half - 3, offset);
+      ctx.stroke();
+    }
+    ctx.fillStyle = skin.accent;
+    for (const [x, y] of [[-8,-8], [8,-8], [-8,8], [8,8]]) {
+      ctx.fillRect(x - 1, y - 1, 2, 2);
+    }
   } else if (skin.pattern === 'crystal') {
     ctx.fillStyle = 'rgba(222,252,255,0.62)';
     ctx.beginPath();

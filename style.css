@@ -2411,6 +2411,59 @@
   }
   .skin-swatch:not(.cube) > .skin-swatch-top,
   .skin-swatch:not(.cube) > .skin-swatch-side { display: none; }
+  .skin-swatch.prism .skin-swatch-front {
+    background-image:
+      linear-gradient(145deg, transparent 43%, rgba(255,255,255,0.65) 44% 47%, transparent 48%),
+      linear-gradient(35deg, transparent 54%, rgba(65,153,255,0.46) 55% 59%, transparent 60%),
+      linear-gradient(145deg, rgba(255,255,255,0.7), var(--skin-main) 52%, #91dfff);
+  }
+  .skin-swatch.circuit .skin-swatch-front {
+    background-image:
+      radial-gradient(circle at 25% 27%, #fff8ac 0 1px, transparent 2px),
+      radial-gradient(circle at 72% 68%, #fff8ac 0 1px, transparent 2px),
+      linear-gradient(90deg, transparent 43%, rgba(105,75,0,0.8) 44% 49%, transparent 50%),
+      linear-gradient(0deg, transparent 34%, rgba(105,75,0,0.75) 35% 40%, transparent 41%),
+      linear-gradient(145deg, #fff4a8, var(--skin-main) 55%, #e79b08);
+  }
+  .skin-swatch.ember .skin-swatch-front {
+    background-image:
+      linear-gradient(135deg, transparent 37%, rgba(255,247,195,0.88) 39% 43%, transparent 45%),
+      linear-gradient(45deg, transparent 54%, rgba(193,48,13,0.55) 56% 61%, transparent 63%),
+      linear-gradient(145deg, #fff1a8, var(--skin-main) 47%, #c83d12);
+  }
+  .skin-swatch.grid .skin-swatch-front {
+    background-image:
+      radial-gradient(circle, rgba(216,255,111,0.9) 0 1px, transparent 1.5px),
+      repeating-linear-gradient(0deg, transparent 0 6px, rgba(5,88,44,0.65) 6px 7px),
+      repeating-linear-gradient(90deg, transparent 0 6px, rgba(5,88,44,0.65) 6px 7px),
+      linear-gradient(145deg, #bcff7a, var(--skin-main) 48%, #08743e);
+    background-size: 13px 13px, auto, auto, auto;
+  }
+  .skin-swatch.flare .skin-swatch-front {
+    background-image:
+      conic-gradient(from 12deg, transparent 0 8%, rgba(255,247,185,0.9) 9% 12%, transparent 13% 25%, rgba(255,247,185,0.72) 26% 29%, transparent 30% 43%, rgba(255,247,185,0.85) 44% 47%, transparent 48%),
+      linear-gradient(145deg, #ffe58d, var(--skin-main) 48%, #a70f36);
+  }
+  .skin-swatch.crystal .skin-swatch-front {
+    background-image:
+      linear-gradient(55deg, transparent 42%, rgba(223,255,255,0.8) 43% 46%, transparent 47%),
+      linear-gradient(125deg, transparent 58%, rgba(190,245,255,0.72) 59% 63%, transparent 64%),
+      linear-gradient(145deg, #e4ffff, var(--skin-main) 48%, #343f9b);
+  }
+  .skin-swatch.stone .skin-swatch-front {
+    background-image:
+      linear-gradient(25deg, transparent 46%, rgba(67,40,25,0.72) 47% 52%, transparent 53%),
+      linear-gradient(155deg, transparent 62%, rgba(255,221,169,0.68) 63% 67%, transparent 68%),
+      linear-gradient(145deg, #f3cb8b, var(--skin-main) 48%, #553622);
+  }
+  .skin-swatch.nebula .skin-swatch-front {
+    background-image:
+      radial-gradient(circle at 24% 28%, #fff 0 1px, transparent 1.8px),
+      radial-gradient(circle at 70% 65%, #ff9fcf 0 1.2px, transparent 2px),
+      radial-gradient(circle at 72% 25%, #c7f7ff 0 0.8px, transparent 1.6px),
+      radial-gradient(ellipse at 42% 60%, rgba(150,83,255,0.8), transparent 49%),
+      linear-gradient(145deg, #553393, var(--skin-main) 54%, #090812);
+  }
   .skin-card-copy { position: relative; z-index: 1; }
   .skin-card-copy small { line-height: 1.35; }
   @media (max-width: 520px) {
