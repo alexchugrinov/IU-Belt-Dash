@@ -1237,3 +1237,316 @@
     color: #cc0000; font-weight: 700;
     font-family: 'Courier New', monospace;
   }
+
+  /* ============ POLISHED GAME LANDING ============ */
+  :root {
+    --ui-pink: #ff5b78;
+    --ui-cyan: #62e5db;
+    --ui-line: rgba(179,198,231,0.13);
+  }
+  html { scroll-behavior: smooth; }
+  .site-header {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: min(1440px, 100%);
+    margin: 0 auto;
+    padding: 18px clamp(20px, 4vw, 58px);
+    border-bottom: 1px solid rgba(179,198,231,0.09);
+  }
+  .site-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    color: #f7f8fb;
+    text-decoration: none;
+  }
+  .site-brand-mark {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(255,107,132,0.48);
+    border-radius: 12px;
+    background: linear-gradient(145deg, rgba(255,91,120,0.22), rgba(98,229,219,0.08));
+    box-shadow: inset 0 1px rgba(255,255,255,0.16), 0 5px 22px rgba(255,69,105,0.13);
+    color: #fff;
+    font: 800 13px/1 Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    letter-spacing: -0.5px;
+  }
+  .site-brand-copy { display: grid; gap: 3px; }
+  .site-brand-copy strong {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.25px;
+  }
+  .site-brand-copy small {
+    color: #78859b;
+    font: 700 7px/1 'Courier New', monospace;
+    letter-spacing: 1.5px;
+  }
+  .site-nav {
+    display: flex;
+    align-items: center;
+    gap: clamp(14px, 2.4vw, 32px);
+  }
+  .site-nav a {
+    color: #9da9bd;
+    font: 700 9px/1 'Courier New', monospace;
+    letter-spacing: 1px;
+    text-decoration: none;
+    transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+  }
+  .site-nav a:hover { color: #fff; }
+  .site-nav .site-nav-play {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border: 1px solid rgba(255,102,128,0.38);
+    border-radius: 10px;
+    background: rgba(255,75,108,0.1);
+    color: #ff9aa9;
+  }
+  .site-nav-play span { color: #fff; font-size: 14px; }
+  .site-nav .site-nav-play:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255,134,153,0.72);
+    background: rgba(255,75,108,0.18);
+  }
+  .lp-hero {
+    width: min(1440px, 100%);
+    gap: clamp(22px, 3.2vw, 46px);
+    padding-top: clamp(28px, 4.2vw, 58px);
+    padding-bottom: clamp(28px, 4.2vw, 58px);
+  }
+  .lp-left {
+    border-color: rgba(176,197,231,0.17);
+    background:
+      radial-gradient(ellipse at 92% 5%, rgba(255,79,117,0.15), transparent 35%),
+      linear-gradient(150deg, rgba(25,34,53,0.98), rgba(12,17,29,0.99) 72%);
+    box-shadow: 0 30px 90px rgba(0,0,0,0.38), inset 0 1px rgba(255,255,255,0.09);
+  }
+  .lp-left::before {
+    top: auto;
+    right: -210px;
+    bottom: -240px;
+    width: 360px;
+    height: 360px;
+    background: rgba(64,190,195,0.1);
+    filter: blur(28px);
+  }
+  .brand {
+    border-color: rgba(255,115,139,0.22);
+    background: rgba(255,91,120,0.07);
+    color: #ff9cab;
+    font-size: 8px;
+    letter-spacing: 1.7px;
+  }
+  .lp-left h1 {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 16px;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: clamp(44px, 5vw, 68px);
+    font-weight: 900;
+    letter-spacing: -0.075em;
+    line-height: 0.9;
+    filter: drop-shadow(0 12px 26px rgba(255,83,112,0.14));
+  }
+  .lp-left h1 span {
+    background: linear-gradient(100deg, #fff 2%, #ffd1d8 54%, #ff6683 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .tagline {
+    color: #c4cede;
+    font: 700 8px/1.7 'Courier New', monospace;
+    letter-spacing: 1.7px;
+  }
+  .hero-copy { color: #aab5c8; }
+  .hero-pills span {
+    border-color: rgba(185,202,233,0.12);
+    background: rgba(4,8,15,0.38);
+    color: #d0d8e6;
+  }
+  .game-preview {
+    border-color: rgba(151,180,220,0.2);
+    background: linear-gradient(180deg, #111b2d, #0b111c);
+    box-shadow: inset 0 1px rgba(255,255,255,0.08), 0 16px 38px rgba(0,0,0,0.26);
+  }
+  .preview-player {
+    border-color: #ff6c87;
+    box-shadow: 0 0 22px rgba(255,82,109,0.55), inset 0 -3px rgba(34,43,61,0.2);
+  }
+  .play-btn {
+    min-height: 56px;
+    border: 1px solid rgba(255,166,181,0.38);
+    background: linear-gradient(105deg, #ff5574, #ec365f 60%, #c91d4d);
+    box-shadow: 0 14px 36px rgba(229,43,85,0.28), inset 0 1px rgba(255,255,255,0.3);
+  }
+  .lp-right {
+    border-color: rgba(176,197,231,0.15);
+    background:
+      radial-gradient(ellipse at 94% 0%, rgba(98,229,219,0.055), transparent 30%),
+      linear-gradient(150deg, rgba(18,25,39,0.98), rgba(11,15,25,0.99));
+    box-shadow: 0 30px 90px rgba(0,0,0,0.34), inset 0 1px rgba(255,255,255,0.06);
+  }
+  .lp-right > .section-label, .trial-section > .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #ff8a9b;
+    letter-spacing: 2.4px;
+  }
+  .lp-right > .section-label::after, .trial-section > .section-label::after {
+    height: 1px;
+    flex: 1;
+    background: linear-gradient(90deg, rgba(255,110,137,0.28), transparent);
+    content: "";
+  }
+  .tip-item {
+    border: 1px solid rgba(181,199,230,0.09);
+    border-radius: 11px;
+    background: rgba(255,255,255,0.022);
+    color: #c2cada;
+  }
+  .tip-num {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 8px;
+    background: rgba(255,91,120,0.12);
+    color: #ff8799;
+  }
+  .skin-section {
+    border-color: rgba(98,229,219,0.16);
+    background:
+      radial-gradient(ellipse at 4% 0%, rgba(98,229,219,0.07), transparent 42%),
+      linear-gradient(145deg, rgba(98,229,219,0.035), rgba(255,255,255,0.016) 55%);
+    box-shadow: inset 0 1px rgba(255,255,255,0.04);
+  }
+  .skin-section .section-label { color: #73ddd8; letter-spacing: 2.4px; }
+  .skin-help { color: #a6b1c2; }
+  .garage-badge {
+    border-color: rgba(98,229,219,0.2);
+    background: rgba(98,229,219,0.055);
+    color: #85e2d9;
+  }
+  .skin-card {
+    min-height: 68px;
+    border-color: rgba(177,196,228,0.12);
+    border-radius: 12px;
+    background: linear-gradient(145deg, rgba(9,14,24,0.9), rgba(7,11,19,0.82));
+    box-shadow: inset 0 1px rgba(255,255,255,0.025);
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  }
+  .skin-card:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: rgba(117,220,218,0.3);
+    background: linear-gradient(145deg, rgba(18,26,40,0.96), rgba(10,16,27,0.94));
+  }
+  .skin-card.selected {
+    border-color: rgba(255,207,118,0.78);
+    background: linear-gradient(145deg, rgba(51,43,38,0.82), rgba(19,23,34,0.96));
+    box-shadow: 0 0 0 1px rgba(255,207,118,0.13), 0 8px 24px rgba(0,0,0,0.18), inset 0 1px rgba(255,255,255,0.08);
+  }
+  .skin-swatch {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+    border-radius: 9px;
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,0.18), 0 0 13px color-mix(in srgb, var(--skin-main) 38%, transparent);
+  }
+  .skin-card-copy {
+    color: #e4e9f2;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 9px;
+    font-weight: 750;
+    letter-spacing: 0.45px;
+  }
+  .skin-card-copy small {
+    color: #8290a6;
+    font: 700 7px/1.4 'Courier New', monospace;
+    letter-spacing: 0.35px;
+  }
+  .skin-progress {
+    color: #82d9d1;
+    font: 700 8px 'Courier New', monospace;
+    letter-spacing: 0.8px;
+  }
+  .skin-customizer {
+    border-top-color: rgba(179,198,231,0.1);
+  }
+  .skin-customizer summary {
+    color: #dce5f2;
+    letter-spacing: 1.1px;
+  }
+  .skin-customizer summary span { color: #72ddd6; }
+  .custom-preview-stage {
+    border-color: rgba(176,198,231,0.13);
+    background:
+      linear-gradient(rgba(138,166,205,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(138,166,205,0.04) 1px, transparent 1px),
+      radial-gradient(ellipse at 50% 62%, rgba(98,229,219,0.12), transparent 42%),
+      #0a101b;
+    background-size: 20px 20px, 20px 20px, auto, auto;
+  }
+  .skin-create-btn {
+    border-color: rgba(255,128,149,0.48);
+    background: linear-gradient(110deg, #e74b69, #bd3157);
+    box-shadow: 0 8px 20px rgba(209,45,87,0.16), inset 0 1px rgba(255,255,255,0.16);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    letter-spacing: 0.6px;
+  }
+  .skin-create-btn:hover { background: linear-gradient(110deg, #f45a75, #d33a62); }
+  .trial-section { padding-top: 3px; }
+  .trial-card {
+    border-color: rgba(177,196,228,0.12);
+    background: linear-gradient(145deg, rgba(9,14,24,0.82), rgba(8,12,20,0.72));
+    box-shadow: inset 0 1px rgba(255,255,255,0.025);
+  }
+  .trial-card.unlocked { border-color: color-mix(in srgb, var(--trial-bg, #62e5db) 45%, transparent); }
+  .trial-card.unlocked:hover { box-shadow: 0 12px 28px rgba(0,0,0,0.2), inset 0 1px rgba(255,255,255,0.08); }
+  .trial-name { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-weight: 800; }
+  footer {
+    border-top: 1px solid rgba(179,198,231,0.08);
+    background: rgba(7,10,17,0.45);
+    color: #8290a6;
+    font: 700 8px/1.5 'Courier New', monospace;
+    letter-spacing: 2.2px;
+    text-align: center;
+  }
+  .site-nav a:focus-visible, .site-brand:focus-visible {
+    outline: 2px solid var(--ui-cyan);
+    outline-offset: 4px;
+    border-radius: 5px;
+  }
+  @media (max-width: 800px) {
+    .site-header { padding: 14px 20px; }
+    .lp-hero { padding-top: 20px; }
+    .lp-left h1 { font-size: clamp(48px, 10vw, 68px); }
+    .lp-right > .section-label, .trial-section > .section-label { justify-content: flex-start; }
+  }
+  @media (max-width: 520px) {
+    .site-header { gap: 10px; padding: 12px 14px; }
+    .site-brand { gap: 8px; }
+    .site-brand-mark { width: 34px; height: 34px; border-radius: 10px; }
+    .site-brand-copy strong { font-size: 9px; letter-spacing: 0.8px; }
+    .site-brand-copy small { font-size: 6px; letter-spacing: 1px; }
+    .site-nav { gap: 0; }
+    .site-nav a:not(.site-nav-play) { display: none; }
+    .site-nav .site-nav-play { padding: 10px 11px; font-size: 8px; }
+    .lp-left h1 { font-size: clamp(46px, 13vw, 64px); }
+    .skin-card { min-height: 64px; }
+    .skin-card-copy { font-size: 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .site-nav a, .skin-card { transition: none; }
+  }
