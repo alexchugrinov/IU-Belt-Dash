@@ -273,6 +273,7 @@ bindBtn('restartBtn', () => {
 bindBtn('abandonBtn', () => { resumeGame(); abandonTrial(); });
 bindBtn('quitBtn', () => { resumeGame(); returnToMenu(); });
 bindBtn('playBtnTop', enterGame);
+bindBtn('playBtnNav', enterGame);
 bindBtn('playBtnBottom', enterGame);
 
 function enterGame() {
