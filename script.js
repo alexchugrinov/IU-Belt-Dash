@@ -1714,6 +1714,13 @@ function addSkinCard(container, skin, id, description, unlocked) {
 
   const preview = document.createElement('span');
   preview.className = 'skin-swatch ' + skin.shape + ' ' + skin.pattern;
+  const top = document.createElement('span');
+  top.className = 'skin-swatch-top';
+  const side = document.createElement('span');
+  side.className = 'skin-swatch-side';
+  const face = document.createElement('span');
+  face.className = 'skin-swatch-front';
+  preview.append(top, side, face);
   const copy = document.createElement('span');
   copy.className = 'skin-card-copy';
   copy.textContent = skin.name;
