@@ -2221,3 +2221,77 @@
   @media (prefers-reduced-motion: reduce) {
     .skin-card:hover:not(:disabled) { transform: none; }
   }
+  /* ============ BRIGHT BELT-DASH TITLE AND BACKDROP ============ */
+  .bgStripes {
+    z-index: 0;
+    background:
+      radial-gradient(ellipse at 12% 18%, rgba(255,67,125,0.22), transparent 38%),
+      radial-gradient(ellipse at 88% 26%, rgba(86,102,255,0.23), transparent 40%),
+      radial-gradient(ellipse at 70% 82%, rgba(0,224,205,0.16), transparent 38%),
+      radial-gradient(ellipse at 25% 88%, rgba(255,165,55,0.14), transparent 36%),
+      linear-gradient(145deg, #0b1020, #111329 52%, #09121c);
+  }
+  .bgStripes::before {
+    opacity: 0.15;
+    filter: blur(7px);
+  }
+  .bgStripes::after {
+    background:
+      radial-gradient(ellipse at 8% 52%, rgba(255,57,132,0.22), transparent 32%),
+      radial-gradient(ellipse at 92% 17%, rgba(106,91,255,0.25), transparent 34%),
+      radial-gradient(ellipse at 72% 72%, rgba(0,228,199,0.2), transparent 32%),
+      radial-gradient(ellipse at 28% 94%, rgba(255,169,61,0.17), transparent 28%),
+      radial-gradient(ellipse at 48% 38%, rgba(233,75,255,0.12), transparent 35%);
+  }
+  #landingPage {
+    z-index: 1;
+    background: linear-gradient(180deg, rgba(7,10,17,0.04), rgba(7,10,17,0.18));
+  }
+  .lp-left {
+    border-color: rgba(179,199,255,0.24);
+    background:
+      radial-gradient(ellipse at 90% 2%, rgba(255,65,136,0.3), transparent 36%),
+      radial-gradient(ellipse at 3% 78%, rgba(30,225,222,0.19), transparent 38%),
+      radial-gradient(ellipse at 74% 100%, rgba(145,84,255,0.14), transparent 42%),
+      linear-gradient(145deg, rgba(22,28,49,0.94), rgba(10,14,26,0.96));
+    box-shadow:
+      0 34px 90px rgba(0,0,0,0.4),
+      0 0 42px rgba(111,95,255,0.11),
+      inset 0 1px rgba(255,255,255,0.13);
+  }
+  .lp-left h1 {
+    background: linear-gradient(105deg, #ffffff 4%, #bafaff 48%, #c4c7ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1px rgba(255,255,255,0.14);
+    filter:
+      drop-shadow(0 3px 0 rgba(71,73,137,0.55))
+      drop-shadow(0 10px 24px rgba(65,210,255,0.2));
+  }
+  .lp-left h1 span {
+    background: linear-gradient(100deg, #ff8099 0%, #ff4f8e 43%, #ffae58 82%, #ffe478 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1px rgba(255,205,197,0.18);
+    filter: drop-shadow(0 8px 20px rgba(255,67,130,0.32));
+  }
+  .lp-left .brand {
+    border-color: rgba(96,238,232,0.38);
+    background: linear-gradient(100deg, rgba(0,220,211,0.14), rgba(121,95,255,0.12));
+    color: #a4fff2;
+    box-shadow: inset 0 1px rgba(255,255,255,0.08), 0 0 20px rgba(26,225,216,0.08);
+  }
+  .belt-strip > div {
+    box-shadow: 0 0 18px color-mix(in srgb, currentColor 74%, transparent);
+  }
+  @media (max-width: 800px) {
+    .bgStripes::after {
+      background:
+        radial-gradient(ellipse at 0% 12%, rgba(255,57,132,0.2), transparent 35%),
+        radial-gradient(ellipse at 100% 34%, rgba(106,91,255,0.2), transparent 34%),
+        radial-gradient(ellipse at 82% 86%, rgba(0,228,199,0.16), transparent 32%),
+        radial-gradient(ellipse at 12% 95%, rgba(255,169,61,0.14), transparent 28%);
+    }
+  }
