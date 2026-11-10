@@ -2660,3 +2660,51 @@
     .skin-card:hover .skin-swatch,
     .skin-card.selected .skin-swatch { transform: translateY(-2px); }
   }
+  /* ============ AURORA ARCADE BACKDROP ============ */
+  .bgStripes {
+    background:
+      radial-gradient(ellipse at 50% -18%, rgba(84,101,175,0.28), transparent 56%),
+      radial-gradient(ellipse at 2% 48%, rgba(255,57,132,0.19), transparent 38%),
+      radial-gradient(ellipse at 98% 43%, rgba(87,91,255,0.22), transparent 41%),
+      radial-gradient(ellipse at 74% 112%, rgba(0,218,196,0.16), transparent 40%),
+      linear-gradient(155deg, #090b18 0%, #111329 46%, #09131d 100%);
+  }
+  .bgStripes::before {
+    inset: 0;
+    background:
+      radial-gradient(circle, rgba(226,241,255,0.52) 0 1px, transparent 1.5px),
+      radial-gradient(circle, rgba(116,224,255,0.34) 0 1px, transparent 1.5px),
+      linear-gradient(rgba(185,202,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(185,202,255,0.035) 1px, transparent 1px),
+      linear-gradient(135deg, transparent 0 48%, rgba(121,112,255,0.07) 49%, transparent 50% 100%);
+    background-size: 113px 127px, 197px 181px, 64px 64px, 64px 64px, 100% 100%;
+    background-position: 13px 19px, 67px 41px, center, center, center;
+    opacity: 0.66;
+    filter: none;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.88), transparent 92%);
+    animation: backdrop-drift 42s ease-in-out infinite alternate;
+  }
+  .bgStripes::after {
+    background:
+      radial-gradient(ellipse at 17% 30%, rgba(255,70,139,0.15), transparent 29%),
+      radial-gradient(ellipse at 82% 24%, rgba(111,106,255,0.2), transparent 31%),
+      radial-gradient(ellipse at 68% 77%, rgba(39,229,212,0.13), transparent 30%),
+      radial-gradient(ellipse at 32% 88%, rgba(255,179,77,0.1), transparent 27%),
+      conic-gradient(from 220deg at 52% 42%, transparent 0deg, rgba(103,119,255,0.055) 52deg, transparent 106deg, rgba(65,227,218,0.045) 182deg, transparent 240deg, rgba(255,83,145,0.045) 310deg, transparent 360deg);
+    background-size: 165% 165%;
+    background-position: 0% 0%;
+    mix-blend-mode: screen;
+    opacity: 0.9;
+    animation: aurora-drift 32s ease-in-out infinite alternate;
+  }
+  @keyframes backdrop-drift {
+    from { background-position: 13px 19px, 67px 41px, center, center, center; }
+    to { background-position: 38px 44px, 45px 63px, center, center, center; }
+  }
+  @keyframes aurora-drift {
+    from { background-position: 0% 0%; }
+    to { background-position: 100% 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bgStripes::before, .bgStripes::after { animation: none; }
+  }
