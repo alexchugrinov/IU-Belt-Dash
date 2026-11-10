@@ -713,18 +713,6 @@
     clip-path: polygon(50% 0, 100% 100%, 0 100%);
     filter: drop-shadow(0 0 7px rgba(255,73,104,0.38));
   }
-  .preview-portal {
-    position: absolute;
-    right: 14%;
-    bottom: 21px;
-    width: 29px;
-    height: 46px;
-    border: 2px solid #67e9df;
-    border-radius: 50%;
-    background: linear-gradient(90deg, rgba(103,233,223,0.2), rgba(103,233,223,0.02));
-    box-shadow: 0 0 16px rgba(103,233,223,0.32), inset 0 0 10px rgba(103,233,223,0.24);
-    animation: portal-glow 2.2s ease-in-out infinite;
-  }
   .preview-spark {
     position: absolute;
     z-index: 1;
@@ -741,10 +729,6 @@
     0%, 12%, 76%, 100% { transform: translate(0,0) rotate(0); }
     34%, 57% { transform: translate(74px,-37px) rotate(45deg); }
     72% { transform: translate(123px,-2px) rotate(90deg); }
-  }
-  @keyframes portal-glow {
-    0%, 100% { opacity: 0.72; transform: scaleY(0.96); }
-    50% { opacity: 1; transform: scaleY(1.04); }
   }
   @keyframes spark-float {
     0%, 100% { opacity: 0.35; transform: translateY(4px); }
@@ -1190,7 +1174,7 @@
     .btnRow { bottom: max(10px,env(safe-area-inset-bottom)); left: max(10px,env(safe-area-inset-left)); right: max(10px,env(safe-area-inset-right)); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .preview-player, .preview-portal, .preview-spark, .custom-preview-cube { animation: none; }
+    .preview-player, .preview-spark, .custom-preview-cube { animation: none; }
   }
 
   /* Achievement banner */
@@ -1652,11 +1636,6 @@
   }
   .preview-player i:first-child { left: 6px; }
   .preview-player i:last-child { right: 6px; }
-  .preview-portal {
-    width: 34px;
-    border-radius: 48% 48% 38% 38%;
-    box-shadow: 0 0 21px rgba(103,233,223,0.4), inset 0 0 12px rgba(103,233,223,0.28);
-  }
   .play-btn { letter-spacing: 2.4px; }
   .skin-card {
     position: relative;
