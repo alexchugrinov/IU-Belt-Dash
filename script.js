@@ -456,12 +456,12 @@ function placePattern(obstacles, x, p, d) {
       return 70;
     case 'airplane':
       obstacles.push({ type:'portal', mode:'airplane', x, y:GROUND_Y-150, w:46, h:150 });
-      obstacles.push({ type:'block', x:x+240, y:0, w:48, h:180 });
-      obstacles.push({ type:'block', x:x+240, y:300, w:48, h:GROUND_Y-300 });
-      obstacles.push({ type:'block', x:x+480, y:0, w:48, h:245 });
-      obstacles.push({ type:'block', x:x+480, y:365, w:48, h:GROUND_Y-365 });
-      obstacles.push({ type:'block', x:x+700, y:0, w:48, h:140 });
-      obstacles.push({ type:'block', x:x+700, y:280, w:48, h:GROUND_Y-280 });
+      obstacles.push({ type:'block', x:x+240, y:0, w:48, h:135 });
+      obstacles.push({ type:'block', x:x+240, y:315, w:48, h:GROUND_Y-315 });
+      obstacles.push({ type:'block', x:x+480, y:0, w:48, h:165 });
+      obstacles.push({ type:'block', x:x+480, y:345, w:48, h:GROUND_Y-345 });
+      obstacles.push({ type:'block', x:x+700, y:0, w:48, h:125 });
+      obstacles.push({ type:'block', x:x+700, y:305, w:48, h:GROUND_Y-305 });
       obstacles.push({ type:'portal', mode:'cube', x:x+870, y:GROUND_Y-150, w:46, h:150 });
       return 916;
   }
@@ -711,8 +711,8 @@ function update() {
   player.onGround = false;
 
   if (flightMode) {
-    player.vy += jumpHeld ? -0.72 : 1.15;
-    player.vy = Math.max(-8.5, Math.min(8.5, player.vy));
+    player.vy += jumpHeld ? -0.58 : 0.68;
+    player.vy = Math.max(-5.5, Math.min(5.5, player.vy));
   } else {
     player.vy += 0.88;
     if (player.vy > 18) player.vy = 18;
