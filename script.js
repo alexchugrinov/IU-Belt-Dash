@@ -1140,21 +1140,21 @@ function drawSkinBody(skin) {
     }
   } else if (skin.pattern === 'nebula') {
     for (const [x, y, radius] of [[-8,-8,2], [6,-7,1.5], [0,0,3], [-7,7,1.4], [8,6,2]]) {
-      ctx.fillStyle = skin.accent;
-      ctx.shadowColor = skin.accent;
+      ctx.fillStyle = '#08090d';
+      ctx.shadowColor = '#08090d';
       ctx.shadowBlur = 5;
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx.strokeStyle = 'rgba(8,9,13,0.8)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(0, 0, 10, -2.6, -0.2);
     ctx.stroke();
   } else if (skin.pattern === 'flare' || skin.pattern === 'ember') {
-    ctx.strokeStyle = skin.pattern === 'ember' ? 'rgba(127,39,28,0.75)' : 'rgba(255,246,191,0.78)';
+    ctx.strokeStyle = 'rgba(8,10,15,0.82)';
     ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.moveTo(0, -13);
@@ -1172,7 +1172,7 @@ function drawSkinBody(skin) {
     ctx.closePath();
     ctx.stroke();
   } else if (skin.pattern === 'prism') {
-    ctx.strokeStyle = 'rgba(255,255,255,0.68)';
+    ctx.strokeStyle = 'rgba(7,10,18,0.82)';
     ctx.lineWidth = 1.4;
     ctx.beginPath();
     ctx.moveTo(-half + 3, -half + 4);
@@ -1188,7 +1188,7 @@ function drawSkinBody(skin) {
     ctx.lineTo(2, half - 4);
     ctx.stroke();
   } else if (skin.pattern === 'circuit') {
-    ctx.strokeStyle = 'rgba(91,57,0,0.72)';
+    ctx.strokeStyle = 'rgba(8,11,18,0.84)';
     ctx.lineWidth = 1.5;
     ctx.lineCap = 'square';
     for (const [x, y, direction] of [[-10,-9,1], [10,-8,-1], [-9,10,-1], [10,9,1]]) {
@@ -1197,18 +1197,18 @@ function drawSkinBody(skin) {
       ctx.lineTo(x + direction * 4, y);
       ctx.lineTo(x + direction * 4, y + (y < 0 ? 5 : -5));
       ctx.stroke();
-      ctx.fillStyle = '#fff58a';
+      ctx.fillStyle = '#080b12';
       ctx.beginPath();
       ctx.arc(x, y, 1.5, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.strokeStyle = 'rgba(255,255,255,0.62)';
+    ctx.strokeStyle = 'rgba(8,11,18,0.82)';
     ctx.beginPath();
     ctx.moveTo(-4, 0);
     ctx.lineTo(4, 0);
     ctx.stroke();
   } else if (skin.pattern === 'grid') {
-    ctx.strokeStyle = 'rgba(8,75,38,0.56)';
+    ctx.strokeStyle = 'rgba(5,10,12,0.78)';
     ctx.lineWidth = 1;
     for (let offset = -half + 7; offset <= half - 5; offset += 7) {
       ctx.beginPath();
@@ -1218,12 +1218,12 @@ function drawSkinBody(skin) {
       ctx.lineTo(half - 3, offset);
       ctx.stroke();
     }
-    ctx.fillStyle = skin.accent;
+    ctx.fillStyle = '#050a0c';
     for (const [x, y] of [[-8,-8], [8,-8], [-8,8], [8,8]]) {
       ctx.fillRect(x - 1, y - 1, 2, 2);
     }
   } else if (skin.pattern === 'crystal') {
-    ctx.fillStyle = 'rgba(222,252,255,0.62)';
+    ctx.fillStyle = 'rgba(6,9,17,0.82)';
     ctx.beginPath();
     ctx.moveTo(0, -12);
     ctx.lineTo(5, -2);
