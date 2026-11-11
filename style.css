@@ -3686,9 +3686,9 @@
     border-radius: 0;
     background: none;
     box-shadow: none;
-    color: #e8ffff;
-    content: "IU";
-    font: 900 14px/1 Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #e9ffff;
+    content: "\2620\FE0E";
+    font: 20px/1 "Segoe UI Symbol", "Noto Sans Symbols 2", sans-serif;
     text-shadow: 0 0 5px #55f6ff, 0 0 12px #55f6ff;
     transform: translate(-50%, -50%);
   }
