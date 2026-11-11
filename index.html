@@ -39,9 +39,13 @@
       </div>
 
       <button class="play-btn" id="playBtnTop">
-        <span>PLAY NOW</span><span class="play-arrow">▶</span>
+        <span id="playBtnLabel">PLAY NOW</span><span class="play-arrow">▶</span>
+      </button>
+      <button class="play-btn continue-btn" id="continueBtn" type="button" hidden>
+        <span id="continueLabel">CONTINUE</span><span class="play-arrow">▶</span>
       </button>
       <div class="quick-info">PHONE &amp; DESKTOP &nbsp;·&nbsp; NO INSTALL &nbsp;·&nbsp; FREE</div>
+      <button class="reset-progress" id="resetProgressBtn" type="button" hidden>RESET SAVED PROGRESS</button>
     </div>
 
     <div class="lp-right">
@@ -92,6 +96,9 @@
       <button type="button" data-tool="pit">PIT</button>
       <button type="button" data-tool="saw">SAW</button>
       <button type="button" data-tool="pad">JUMP PAD</button>
+      <button type="button" data-tool="orb">JUMP ORB</button>
+      <button type="button" data-tool="portalFly">FLY PORTAL</button>
+      <button type="button" data-tool="portalCube">EXIT PORTAL</button>
       <button type="button" data-tool="erase">ERASER</button>
       <button type="button" id="undoObstacleBtn">UNDO</button>
     </div>
@@ -154,6 +161,9 @@
   <div class="ach-trial" id="achTrial">CRIMSON TRIAL UNLOCKED</div>
 </div>
 
+<button id="muteBtn" class="mute-btn" type="button" aria-label="Mute music" title="Mute / unmute music (M)">🔊</button>
+
+<script src="music.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

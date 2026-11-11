@@ -67,7 +67,66 @@ const stats = {
   flawlessBeltAchieved: false,
   unlockedSecrets: new Set(),
   achievements: new Set(),
+  savedBelt: 0,          // last campaign belt started — CONTINUE resumes here
 };
+
+// ============== Progress save (this browser only) ==============
+const PROGRESS_KEY = 'iuBeltDashProgress';
+
+function saveProgress() {
+  try {
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify({
+      version: 1,
+      savedBelt: stats.savedBelt,
+      maxBeltReached: stats.maxBeltReached,
+      totalDeaths: stats.totalDeaths,
+      flawlessBeltAchieved: stats.flawlessBeltAchieved,
+      unlockedSecrets: [...stats.unlockedSecrets],
+      achievements: [...stats.achievements],
+    }));
+  } catch (e) { /* storage blocked or full — game still works, just won't remember */ }
+}
+
+function loadProgress() {
+  try {
+    const data = JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null');
+    if (!data || data.version !== 1) return;
+    const beltIdx = (v) => (Number.isInteger(v) && v >= 0 && v < BELTS.length) ? v : 0;
+    stats.savedBelt = beltIdx(data.savedBelt);
+    stats.maxBeltReached = beltIdx(data.maxBeltReached);
+    stats.totalDeaths = Number.isInteger(data.totalDeaths) && data.totalDeaths >= 0 ? data.totalDeaths : 0;
+    stats.flawlessBeltAchieved = data.flawlessBeltAchieved === true;
+    if (Array.isArray(data.unlockedSecrets)) {
+      data.unlockedSecrets.forEach((i) => { if (Number.isInteger(i) && SECRETS[i]) stats.unlockedSecrets.add(i); });
+    }
+    if (Array.isArray(data.achievements)) {
+      data.achievements.forEach((k) => { if (ACHIEVEMENTS[k]) stats.achievements.add(k); });
+    }
+  } catch (e) { /* corrupt or unreadable save — start fresh */ }
+}
+
+function resetProgress() {
+  if (!window.confirm('Reset your saved belt, achievements and unlocked trials?')) return;
+  try { localStorage.removeItem(PROGRESS_KEY); } catch (e) {}
+  stats.savedBelt = 0;
+  stats.maxBeltReached = 0;
+  stats.totalDeaths = 0;
+  stats.flawlessBeltAchieved = false;
+  stats.unlockedSecrets.clear();
+  stats.achievements.clear();
+  refreshProgressUI();
+  refreshTrialsUI();
+}
+
+function refreshProgressUI() {
+  const btn = document.getElementById('continueBtn');
+  const reset = document.getElementById('resetProgressBtn');
+  const hasProgress = stats.savedBelt > 1 || stats.achievements.size > 0;
+  btn.hidden = stats.savedBelt <= 1;
+  document.getElementById('continueLabel').textContent = 'CONTINUE · ' + BELTS[stats.savedBelt].name + ' BELT';
+  document.getElementById('playBtnLabel').textContent = stats.savedBelt > 1 ? 'NEW RUN' : 'PLAY NOW';
+  reset.hidden = !hasProgress;
+}
 
 // ============== State ==============
 let belt = 0;            // current campaign belt index (0 = training)
@@ -188,8 +247,10 @@ bindBtn('restartBtn', () => {
 });
 bindBtn('abandonBtn', () => { resumeGame(); abandonTrial(); });
 bindBtn('quitBtn', () => { resumeGame(); returnToMenu(); });
-bindBtn('playBtnTop', enterGame);
-bindBtn('playBtnBottom', enterGame);
+bindBtn('playBtnTop', () => enterGame(1));
+bindBtn('playBtnBottom', () => enterGame(1));
+bindBtn('continueBtn', () => enterGame(Math.max(1, stats.savedBelt)));
+bindBtn('resetProgressBtn', resetProgress);
 
 document.getElementById('createLevelBtn').addEventListener('click', openLevelEditor);
 document.getElementById('closeEditorBtn').addEventListener('click', closeLevelEditor);
@@ -225,14 +286,14 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && document.getElementById('levelEditorModal').classList.contains('open')) closeLevelEditor();
 });
 
-function enterGame() {
+function enterGame(startBelt) {
   document.body.classList.add('playing');
   attempts = 1;
   inSecret = false;
   sessionStartTime = Date.now();
   pausedDuration = 0;
   iuTalents = 0;
-  startLevel(1);
+  startLevel(startBelt || 1);
   if (IS_MOBILE) tryFullscreen();
   requestWakeLock();
   checkOrientation();
@@ -248,6 +309,7 @@ function returnToMenu() {
   exitFullscreen();
   document.getElementById('pauseOverlay').classList.remove('visible');
   refreshTrialsUI();
+  refreshProgressUI();
   window.scrollTo(0, 0);
 }
 
@@ -412,14 +474,14 @@ function placePattern(obstacles, x, p, d) {
       obstacles.push({ type:'saw', x:x+10, y:GROUND_Y-95, w:50, h:50 });
       return 70;
     case 'airplane':
-      obstacles.push({ type:'portal', mode:'airplane', x, y:GROUND_Y-150, w:46, h:150 });
+      obstacles.push({ type:'portal', mode:'airplane', x, y:0, w:46, h:GROUND_Y });
       obstacles.push({ type:'block', x:x+240, y:0, w:48, h:180 });
       obstacles.push({ type:'block', x:x+240, y:300, w:48, h:GROUND_Y-300 });
       obstacles.push({ type:'block', x:x+480, y:0, w:48, h:245 });
       obstacles.push({ type:'block', x:x+480, y:365, w:48, h:GROUND_Y-365 });
       obstacles.push({ type:'block', x:x+700, y:0, w:48, h:140 });
       obstacles.push({ type:'block', x:x+700, y:280, w:48, h:GROUND_Y-280 });
-      obstacles.push({ type:'portal', mode:'cube', x:x+870, y:GROUND_Y-150, w:46, h:150 });
+      obstacles.push({ type:'portal', mode:'cube', x:x+870, y:0, w:46, h:GROUND_Y });
       return 916;
   }
   return 50;
@@ -494,10 +556,12 @@ function startLevel(b) {
   attempts = 1;
   levelStartTime = Date.now(); levelPausedDuration = 0;
   stats.currentBeltDeaths = 0;
+  stats.savedBelt = b;
   if (b > stats.maxBeltReached) {
     stats.maxBeltReached = b;
     checkAchievements();
   }
+  saveProgress();
   updateHUD();
 }
 
@@ -528,6 +592,8 @@ function startCustomLevel(level) {
   activeCustomLevel = level;
   belt = 3;
   speed = 6;
+  flightMode = false;
+  pointerHeld = false;
   player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
   player.onGround = true; player.rotation = 0;
   cameraX = 0; particles = [];
@@ -537,6 +603,9 @@ function startCustomLevel(level) {
     if (item.type === 'block') return { type: 'block', x: item.x, y: GROUND_Y - 60, w: 60, h: 60 };
     if (item.type === 'pit') return { type: 'pit', x: item.x, y: GROUND_Y, w: 100, h: 120 };
     if (item.type === 'saw') return { type: 'saw', x: item.x, y: GROUND_Y - 95, w: 50, h: 50 };
+    if (item.type === 'orb') return { type: 'orb', x: item.x, y: GROUND_Y - 138, w: 36, h: 36, used: false };
+    if (item.type === 'portalFly') return { type: 'portal', mode: 'airplane', x: item.x, y: 0, w: 46, h: GROUND_Y };
+    if (item.type === 'portalCube') return { type: 'portal', mode: 'cube', x: item.x, y: 0, w: 46, h: GROUND_Y };
     return { type: 'pad', x: item.x, y: GROUND_Y - 12, w: 60, h: 12 };
   });
   const checkpoints = [];
@@ -554,7 +623,13 @@ function respawn() {
   attempts++;
   player.x = lastCheckpointX;
   player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
+  // Restore the mode of the last portal before the checkpoint (a checkpoint can sit inside a flight section)
   flightMode = false;
+  let lastPortalX = -Infinity;
+  if (levelData) for (const o of levelData.obstacles) {
+    if (o.type === 'portal' && o.x < player.x && o.x > lastPortalX) { lastPortalX = o.x; flightMode = o.mode === 'airplane'; }
+  }
+  if (flightMode) player.y = GROUND_Y / 2;
   pointerHeld = false;
   player.onGround = true; player.rotation = 0;
   cameraX = Math.max(0, player.x - 280);
@@ -614,6 +689,7 @@ function advanceLevel() {
     if (stats.currentBeltDeaths === 0) stats.flawlessBeltAchieved = true;
     iuTalents += 1 / attempts;
     checkAchievements();
+    saveProgress();
   }
 
   if (belt < BELTS.length - 1) {
@@ -653,6 +729,7 @@ function unlockAchievement(key) {
   if (!a) return;
   stats.achievements.add(key);
   stats.unlockedSecrets.add(a.secretIdx);
+  saveProgress();
   showAchievementBanner(key);
   refreshTrialsUI();
   vibrate(VIBE.achievement);
@@ -1446,6 +1523,9 @@ const EDITOR_OBSTACLES = {
   pit:   { w: 100, y: GROUND_Y, h: 24, color: '#ff6a1a' },
   saw:   { w: 50, y: GROUND_Y - 95, h: 50, color: '#b28cff' },
   pad:   { w: 60, y: GROUND_Y - 12, h: 12, color: '#44dd66' },
+  orb:        { w: 36, y: GROUND_Y - 138, h: 36, color: '#ff8c00' },
+  portalFly:  { w: 46, y: 0, h: GROUND_Y, color: '#38e8ff' },
+  portalCube: { w: 46, y: 0, h: GROUND_Y, color: '#ffe34d' },
 };
 const CUSTOM_LEVELS_KEY = 'iuBeltDashPlayerLevels';
 
@@ -1792,9 +1872,11 @@ function refreshTrialsUI() {
   });
   prog.textContent = unlocked + ' OF 3 TRIALS UNLOCKED';
 }
+loadProgress();
 loadSharedLevelFromHash();
 refreshCommunityLevels();
 refreshTrialsUI();
+refreshProgressUI();
 
 // ============== Loop ==============
 function formatTime(ms) {
@@ -1803,7 +1885,10 @@ function formatTime(ms) {
   return m + ':' + String(s % 60).padStart(2, '0');
 }
 function loop() {
-  if (document.body.classList.contains('playing')) {
+  const inGame = document.body.classList.contains('playing');
+  Music.setMode(inGame ? 'game' : 'menu');
+  Music.setDucked(inGame && gameState === 'paused');
+  if (inGame) {
     update();
     draw();
     if (levelData) {
