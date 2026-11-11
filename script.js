@@ -142,6 +142,8 @@ let sharedCustomLevel = null;
 let sharedLevelError = '';
 let editorObstacles = [];
 let editorTool = 'spike';
+let verifyRun = null;          // signature of the level being verified right now
+let verifiedSignature = null;  // signature of the last level the player beat in a verify run
 
 let levelData = null, speed = 5, cameraX = 0;
 let particles = [];
@@ -256,6 +258,7 @@ document.getElementById('createLevelBtn').addEventListener('click', openLevelEdi
 document.getElementById('closeEditorBtn').addEventListener('click', closeLevelEditor);
 document.getElementById('saveDraftBtn').addEventListener('click', saveLevelDraft);
 document.getElementById('publishLevelBtn').addEventListener('click', publishLevel);
+document.getElementById('verifyLevelBtn').addEventListener('click', verifyLevel);
 document.getElementById('undoObstacleBtn').addEventListener('click', () => {
   editorObstacles.pop();
   drawEditor();
@@ -311,6 +314,12 @@ function returnToMenu() {
   refreshTrialsUI();
   refreshProgressUI();
   window.scrollTo(0, 0);
+  if (verifyRun) {
+    // Quit in the middle of a verify run — go back to the editor
+    verifyRun = null;
+    openLevelEditor();
+    document.getElementById('editorStatus').textContent = 'Verification cancelled. Beat your level in one run to publish it.';
+  }
 }
 
 function tryFullscreen() {
@@ -375,6 +384,7 @@ const PATTERNS = [
   ['saw',          7, 12],   // NEW: rotating circular saw (circle hitbox)
   ['staircase',    7, 8],
   ['orbGap',       5, 10],   // NEW: long spike field — tap the orange orb mid-air to jump again
+  ['dashGap',      6, 9],    // NEW: very long spike field — hold on the green orb to dash across
   ['airplane',     5, 6],
 ];
 
@@ -399,7 +409,7 @@ function pickPattern(currentBelt, isSecret) {
   return 'spike1';
 }
 
-function placePattern(obstacles, x, p, d) {
+function placePattern(obstacles, x, p, d, spd = 8) {
   switch (p) {
     case 'spike1':
       obstacles.push({ type:'spike', x, y:GROUND_Y-30, w:30, h:30 }); return 30;
@@ -457,7 +467,8 @@ function placePattern(obstacles, x, p, d) {
       // ground spike forces a jump, then airborne spike threatens the apex —
       // player must jump the first one, then NOT jump again for the second
       obstacles.push({ type:'spike',  x,         y:GROUND_Y-30,  w:30, h:30 });
-      obstacles.push({ type:'fspike', x:x+105,   y:GROUND_Y-100, w:30, h:30 });
+      // gap scales with speed so the arc always fits between the two spikes
+      obstacles.push({ type:'fspike', x:x+Math.round(spd*12.5), y:GROUND_Y-100, w:30, h:30 });
       return 135;
     case 'jumpPad':
       // green pad → tall block requiring a boosted jump
@@ -469,6 +480,11 @@ function placePattern(obstacles, x, p, d) {
       for (let i=0;i<11;i++) obstacles.push({ type:'spike', x:x+i*30, y:GROUND_Y-30, w:30, h:30 });
       obstacles.push({ type:'orb', x:x+165-18, y:GROUND_Y-120-18, w:36, h:36, used:false });
       return 330;
+    case 'dashGap':
+      // 15 spikes (450px) — too long even with an orb jump; dash straight across
+      obstacles.push({ type:'dashOrb', x:x+10, y:GROUND_Y-128, w:36, h:36 });
+      for (let i=0;i<15;i++) obstacles.push({ type:'spike', x:x+60+i*30, y:GROUND_Y-30, w:30, h:30 });
+      return 510;
     case 'saw':
       // rotating saw at jump-arc height
       obstacles.push({ type:'saw', x:x+10, y:GROUND_Y-95, w:50, h:50 });
@@ -488,10 +504,14 @@ function placePattern(obstacles, x, p, d) {
 }
 
 // ============== Level generation ==============
+// Patterns are placed one at a time. After each one the checker advances every possible
+// player route past it; if no route survives, that pattern is swapped for another.
 function buildLevel(opts) {
-  // opts: { length, cpStep, tier, isSecret, minGap, d }
-  const { length, cpStep, tier, isSecret, minGap, d } = opts;
+  // opts: { length, cpStep, tier, isSecret, minGap, d, spd }
+  const { length, cpStep, tier, isSecret, minGap, d, spd } = opts;
   const obstacles = [], checkpoints = [];
+  const ld = { obstacles, checkpoints, length, infinite: false };
+  indexLevel(ld);
   const SAFE_AFTER = 360, SAFE_BEFORE = 60;
   const cpZones = [];
   for (let cx = 800; cx < length - 300; cx += cpStep) {
@@ -502,19 +522,38 @@ function buildLevel(opts) {
     return null;
   }
 
+  let routes = frontierStart(ld, 120);
   let x = 600;
   while (x < length - 400) {
-    const czPre = hitsCpZone(x, x + 320);  // upper bound on any pattern width
-    if (czPre) { x = czPre.zEnd + 50; continue; }
-    const pat = pickPattern(tier, isSecret);
-    const before = obstacles.length;
-    const placedW = placePattern(obstacles, x, pat, d);
-    const czPost = hitsCpZone(x, x + placedW);
-    if (czPost) { obstacles.length = before; x = czPost.zEnd + 50; continue; }
-    x += placedW + minGap + Math.random() * 80;
+    const czPre = hitsCpZone(x, x + 320);  // upper bound on most pattern widths
+    if (czPre) {
+      // After a checkpoint the player may be respawning there, so restart the check from it
+      routes = frontierStart(ld, czPre.x);
+      x = czPre.zEnd + 50;
+      continue;
+    }
+    let placed = false;
+    for (let attempt = 0; attempt < 6 && !placed; attempt++) {
+      const pat = pickPattern(tier, isSecret);
+      const before = obstacles.length;
+      const placedW = placePattern(obstacles, x, pat, d, spd);
+      for (let i = before; i < obstacles.length; i++) obstacles[i].pid = before; // pattern id
+      if (hitsCpZone(x, x + placedW)) { obstacles.length = before; continue; }
+      indexLevel(ld);
+      const after = advanceFrontier(routes, ld, spd, x + placedW + 20);
+      if (after.length) {
+        routes = after;
+        x += placedW + minGap + Math.random() * 80;
+        placed = true;
+      } else {
+        obstacles.length = before;   // impossible from here — try a different pattern
+        indexLevel(ld);
+      }
+    }
+    if (!placed) x += 120;
   }
   for (const cz of cpZones) checkpoints.push({ x: cz.x, reached: false });
-  return { obstacles, checkpoints, length, infinite: false };
+  return indexLevel(ld);
 }
 
 function generateLevel(b) {
@@ -525,33 +564,225 @@ function generateLevel(b) {
   // Tighter obstacle spacing at higher belts
   const minGap = Math.max(130, 250 - b * 18);
   return buildLevel({
-    length, cpStep, tier: b, isSecret: false, minGap, d: b / 8,
+    length, cpStep, tier: b, isSecret: false, minGap, d: b / 8, spd: beltSpeed(b),
   });
 }
+
+function beltSpeed(b) { return 5 + b * 0.5; }
 
 function generateSecretLevel(idx) {
   const s = SECRETS[idx];
   return buildLevel({
     length: s.length, cpStep: s.cpStep, tier: 8, isSecret: true,
-    minGap: 110, d: 1.1,
+    minGap: 110, d: 1.1, spd: s.speed,
   });
 }
 
+// ============== Physics (shared by the game AND the level checker) ==============
+// One step = one frame. The game and the solver call the same function, so if the
+// solver can beat a level, a player pressing the same inputs can too.
+const DASH_FRAMES = 90;      // dash orb: max 1.5 s of straight flight (60 fps)
+const BUCKET = 120;          // spatial index cell width
+const NEAR = [];
+
+function indexLevel(ld) {
+  ld.obstacles.forEach((o, i) => { o.oid = i; });
+  const buckets = [];
+  for (const o of ld.obstacles) {
+    const a = Math.floor(o.x / BUCKET), b = Math.floor((o.x + o.w) / BUCKET);
+    for (let k = a; k <= b; k++) (buckets[k] || (buckets[k] = [])).push(o);
+  }
+  ld.buckets = buckets;
+  return ld;
+}
+
+function nearby(ld, x0, x1) {
+  NEAR.length = 0;
+  const a = Math.floor(x0 / BUCKET), b = Math.floor(x1 / BUCKET);
+  for (let k = a; k <= b; k++) {
+    const bk = ld.buckets[k];
+    if (bk) for (const o of bk) if (!NEAR.includes(o)) NEAR.push(o);
+  }
+  return NEAR;
+}
+
+function touchesCircle(s, o, shrink) {
+  const cx = o.x + o.w/2, cy = o.y + o.h/2, r = Math.min(o.w, o.h)/2 - shrink;
+  const closestX = Math.max(s.x, Math.min(cx, s.x + PLAYER_SIZE));
+  const closestY = Math.max(s.y, Math.min(cy, s.y + PLAYER_SIZE));
+  const dx = cx - closestX, dy = cy - closestY;
+  return dx*dx + dy*dy <= r*r;
+}
+
+// Player state for a fresh start / respawn at x (mode = last portal passed).
+function makePlayerState(ld, x) {
+  let flight = false, lastPortalX = -Infinity;
+  for (const o of ld.obstacles) {
+    if (o.type === 'portal' && o.x < x && o.x > lastPortalX) { lastPortalX = o.x; flight = o.mode === 'airplane'; }
+  }
+  return { x, y: flight ? GROUND_Y / 2 : GROUND_Y - PLAYER_SIZE, vy: 0, onGround: true, flight, used: [], dash: -1 };
+}
+
+// Advance s by one frame. held = jump button down, tapped = pressed this frame.
+function stepPhysics(s, held, tapped, ld, spd) {
+  const r = { dead: false, jumped: false, pad: false, orb: null, dash: null, wasOnGround: false };
+  const size = PLAYER_SIZE;
+  if (!s.flight && s.dash < 0 && held && s.onGround) {
+    s.vy = -14.5; s.onGround = false; r.jumped = true;
+  }
+  r.wasOnGround = s.onGround;
+  s.onGround = false;
+
+  // Dash: straight flight while held, until released or 1.5 s pass
+  if (s.dash >= 0 && !(held && s.dash < DASH_FRAMES)) s.dash = -1;
+  if (s.dash >= 0) { s.dash++; s.vy = 0; }
+  else if (s.flight) {
+    s.vy += held ? -0.72 : 1.15;
+    s.vy = Math.max(-8.5, Math.min(8.5, s.vy));
+  } else {
+    s.vy += 0.88;
+    if (s.vy > 18) s.vy = 18;
+  }
+  const prevX = s.x;
+  s.y += s.vy;
+  s.x += spd;
+  const near = nearby(ld, prevX - 4, s.x + size + 4);
+
+  for (const o of near) {
+    if (o.type !== 'portal' || prevX + size > o.x || s.x + size <= o.x) continue;
+    s.flight = o.mode === 'airplane';
+    s.dash = -1;
+    s.onGround = false;
+  }
+  if (s.flight) s.y = Math.max(12, Math.min(GROUND_Y - size - 12, s.y));
+
+  // Ground / pit
+  if (!s.flight && s.y + size >= GROUND_Y) {
+    let overPit = false;
+    for (const o of near) {
+      if (o.type === 'pit' && s.x + size > o.x + 6 && s.x < o.x + o.w - 6) { overPit = true; break; }
+    }
+    if (!overPit) { s.y = GROUND_Y - size; s.vy = 0; s.onGround = true; }
+    else if (s.y > GROUND_Y + 80) { r.dead = true; return r; }
+  }
+
+  // Blocks: land on top, die on sides/bottom (always die in the plane)
+  for (const o of near) {
+    if (o.type !== 'block') continue;
+    if (!(s.x < o.x + o.w && s.x + size > o.x && s.y < o.y + o.h && s.y + size > o.y)) continue;
+    if (s.flight) { r.dead = true; return r; }
+    const prevBottom = s.y + size - s.vy;
+    if (s.vy >= 0 && prevBottom <= o.y + 2) { s.y = o.y - size; s.vy = 0; s.onGround = true; }
+    else { r.dead = true; return r; }
+  }
+
+  for (const o of near) {
+    if (o.type === 'spike' || o.type === 'fspike') {
+      const sb = o.type === 'spike'
+        ? { x: o.x + 5, y: o.y + 8, w: o.w - 10, h: o.h - 8 }
+        : { x: o.x + 5, y: o.y,     w: o.w - 10, h: o.h - 8 };
+      if (s.x < sb.x + sb.w && s.x + size > sb.x && s.y < sb.y + sb.h && s.y + size > sb.y) { r.dead = true; return r; }
+    } else if (o.type === 'saw') {
+      if (touchesCircle(s, o, 3)) { r.dead = true; return r; }
+    }
+  }
+
+  // Jump pads
+  for (const o of near) {
+    if (o.type !== 'pad') continue;
+    if (s.x < o.x + o.w && s.x + size > o.x && s.y + size > o.y && s.y < o.y + o.h && s.vy >= -10) {
+      s.vy = -22; s.onGround = false; s.dash = -1; r.pad = true;
+    }
+  }
+
+  if (!s.flight) {
+    for (const o of near) {
+      if ((o.type !== 'orb' && o.type !== 'dashOrb') || s.used.includes(o.oid)) continue;
+      if (!touchesCircle(s, o, 0)) continue;
+      // Jump orb (orange): tap while touching → full jump
+      if (o.type === 'orb' && tapped && !r.jumped) {
+        s.used = s.used.concat(o.oid);
+        s.vy = -14.5; s.onGround = false; s.dash = -1; r.orb = o;
+        break;
+      }
+      // Dash orb (green): hold while touching → fly straight
+      if (o.type === 'dashOrb' && held && s.dash < 0) {
+        s.used = s.used.concat(o.oid);
+        s.dash = 0; s.vy = 0; s.onGround = false; r.dash = o;
+        break;
+      }
+    }
+  }
+  return r;
+}
+
+// ============== Level checker (proves a generated level can be beaten) ==============
+// Breadth-first over frames: every frame each surviving state tries "held" and "not held".
+// Near-identical states are merged so the search stays small. Every kept state was really
+// simulated, so a level the checker passes can truly be beaten.
+const MAX_STATES = 2500;
+
+function frontierStart(ld, x) {
+  return [Object.assign(makePlayerState(ld, x), { prevHeld: false })];
+}
+
+function stepFrontier(states, ld, spd) {
+  const next = new Map();
+  for (const s of states) {
+    for (const held of [false, true]) {
+      const n = { x: s.x, y: s.y, vy: s.vy, onGround: s.onGround, flight: s.flight, used: s.used, dash: s.dash, prevHeld: held };
+      if (stepPhysics(n, held, held && !s.prevHeld, ld, spd).dead) continue;
+      const key = (n.flight ? Math.round(n.y / 4) : Math.round(n.y / 2)) + '|' + Math.round(n.vy) + '|' +
+        (n.onGround ? 1 : 0) + (n.flight ? 1 : 0) + (held ? 1 : 0) + '|' +
+        (n.dash < 0 ? -1 : n.dash >> 2) + '|' + n.used.join(',');
+      if (!next.has(key)) next.set(key, n);
+    }
+    if (next.size >= MAX_STATES) break;
+  }
+  return [...next.values()];
+}
+
+// Advance all states until they pass goalX. Returns [] if every route dies.
+function advanceFrontier(states, ld, spd, goalX) {
+  while (states.length && states[0].x < goalX) states = stepFrontier(states, ld, spd);
+  return states;
+}
+
+// Can the level be beaten from every checkpoint? Returns the x where it fails, or null.
+function findImpossibleSpot(ld, spd) {
+  const starts = [120, ...ld.checkpoints.map((c) => c.x)];
+  for (let i = 0; i < starts.length; i++) {
+    const goal = i + 1 < starts.length ? starts[i + 1] : ld.length;
+    let states = frontierStart(ld, starts[i]);
+    while (states.length && states[0].x < goal) {
+      const next = stepFrontier(states, ld, spd);
+      if (!next.length) return states[0].x;
+      states = next;
+    }
+  }
+  return null;
+}
+
 // ============== Game flow ==============
+function resetPlayer(x) {
+  Object.assign(player, makePlayerState(levelData, x));
+  flightMode = player.flight;
+  player.rotation = 0;
+  pointerHeld = false;
+  cameraX = Math.max(0, x - 280);
+  particles = [];
+}
+
 function startLevel(b) {
   inSecret = false;
   customLevelActive = false;
   activeCustomLevel = null;
   belt = b;
-  flightMode = false;
-  pointerHeld = false;
   // Faster speed scaling with each belt
-  speed = 5 + b * 0.5;
-  player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
-  player.onGround = true; player.rotation = 0;
-  cameraX = 0; particles = [];
-  lastCheckpointX = 120;
+  speed = beltSpeed(b);
   levelData = generateLevel(b);
+  lastCheckpointX = 120;
+  resetPlayer(120);
   gameState = 'playing';
   attempts = 1;
   levelStartTime = Date.now(); levelPausedDuration = 0;
@@ -571,19 +802,29 @@ function startSecretLevel(idx, mode) {
   activeCustomLevel = null;
   secretIdx = idx;
   secretMode = mode;
-  flightMode = false;
-  pointerHeld = false;
   speed = SECRETS[idx].speed;
-  player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
-  player.onGround = true; player.rotation = 0;
-  cameraX = 0; particles = [];
-  lastCheckpointX = 120;
   levelData = generateSecretLevel(idx);
+  lastCheckpointX = 120;
+  resetPlayer(120);
   gameState = 'playing';
   attempts = 1;
   levelStartTime = Date.now(); levelPausedDuration = 0;
   vibrate(VIBE.secret);
   updateHUD();
+}
+
+function buildCustomObstacles(level) {
+  return level.obstacles.map((item) => {
+    if (item.type === 'spike') return { type: 'spike', x: item.x, y: GROUND_Y - 30, w: 30, h: 30 };
+    if (item.type === 'block') return { type: 'block', x: item.x, y: GROUND_Y - 60, w: 60, h: 60 };
+    if (item.type === 'pit') return { type: 'pit', x: item.x, y: GROUND_Y, w: 100, h: 120 };
+    if (item.type === 'saw') return { type: 'saw', x: item.x, y: GROUND_Y - 95, w: 50, h: 50 };
+    if (item.type === 'orb') return { type: 'orb', x: item.x, y: GROUND_Y - 138, w: 36, h: 36 };
+    if (item.type === 'dashOrb') return { type: 'dashOrb', x: item.x, y: GROUND_Y - 118, w: 36, h: 36 };
+    if (item.type === 'portalFly') return { type: 'portal', mode: 'airplane', x: item.x, y: 0, w: 46, h: GROUND_Y };
+    if (item.type === 'portalCube') return { type: 'portal', mode: 'cube', x: item.x, y: 0, w: 46, h: GROUND_Y };
+    return { type: 'pad', x: item.x, y: GROUND_Y - 12, w: 60, h: 12 };
+  });
 }
 
 function startCustomLevel(level) {
@@ -592,25 +833,12 @@ function startCustomLevel(level) {
   activeCustomLevel = level;
   belt = 3;
   speed = 6;
-  flightMode = false;
-  pointerHeld = false;
-  player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
-  player.onGround = true; player.rotation = 0;
-  cameraX = 0; particles = [];
-  lastCheckpointX = 120;
-  const obstacles = level.obstacles.map((item) => {
-    if (item.type === 'spike') return { type: 'spike', x: item.x, y: GROUND_Y - 30, w: 30, h: 30 };
-    if (item.type === 'block') return { type: 'block', x: item.x, y: GROUND_Y - 60, w: 60, h: 60 };
-    if (item.type === 'pit') return { type: 'pit', x: item.x, y: GROUND_Y, w: 100, h: 120 };
-    if (item.type === 'saw') return { type: 'saw', x: item.x, y: GROUND_Y - 95, w: 50, h: 50 };
-    if (item.type === 'orb') return { type: 'orb', x: item.x, y: GROUND_Y - 138, w: 36, h: 36, used: false };
-    if (item.type === 'portalFly') return { type: 'portal', mode: 'airplane', x: item.x, y: 0, w: 46, h: GROUND_Y };
-    if (item.type === 'portalCube') return { type: 'portal', mode: 'cube', x: item.x, y: 0, w: 46, h: GROUND_Y };
-    return { type: 'pad', x: item.x, y: GROUND_Y - 12, w: 60, h: 12 };
-  });
   const checkpoints = [];
-  for (let x = 1700; x < level.length - 500; x += 1700) checkpoints.push({ x, reached: false });
-  levelData = { obstacles, checkpoints, length: level.length, infinite: false };
+  // Verification runs have no checkpoints: you must beat the level in one go
+  if (!verifyRun) for (let x = 1700; x < level.length - 500; x += 1700) checkpoints.push({ x, reached: false });
+  levelData = indexLevel({ obstacles: buildCustomObstacles(level), checkpoints, length: level.length, infinite: false });
+  lastCheckpointX = 120;
+  resetPlayer(120);
   gameState = 'playing';
   attempts = 1;
   levelStartTime = Date.now(); levelPausedDuration = 0;
@@ -619,22 +847,9 @@ function startCustomLevel(level) {
 }
 
 function respawn() {
-  if (gameState === 'transition' || gameState === 'won' || gameState === 'won-secret' || gameState === 'menu') return;
+  if (gameState === 'transition' || gameState === 'won' || gameState === 'won-secret' || gameState === 'won-custom' || gameState === 'menu') return;
   attempts++;
-  player.x = lastCheckpointX;
-  player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
-  // Restore the mode of the last portal before the checkpoint (a checkpoint can sit inside a flight section)
-  flightMode = false;
-  let lastPortalX = -Infinity;
-  if (levelData) for (const o of levelData.obstacles) {
-    if (o.type === 'portal' && o.x < player.x && o.x > lastPortalX) { lastPortalX = o.x; flightMode = o.mode === 'airplane'; }
-  }
-  if (flightMode) player.y = GROUND_Y / 2;
-  pointerHeld = false;
-  player.onGround = true; player.rotation = 0;
-  cameraX = Math.max(0, player.x - 280);
-  particles = [];
-  if (levelData) for (const o of levelData.obstacles) if (o.type === 'orb') o.used = false;
+  resetPlayer(lastCheckpointX);
   gameState = 'playing';
   updateHUD();
 }
@@ -660,6 +875,16 @@ function die() {
 }
 
 function advanceLevel() {
+  if (customLevelActive && verifyRun) {
+    // Beat the level in a verify run — it can now be published
+    verifiedSignature = verifyRun;
+    verifyRun = null;
+    vibrate(VIBE.win);
+    returnToMenu();
+    openLevelEditor();
+    document.getElementById('editorStatus').textContent = 'Verified! You beat your level — you can publish it now.';
+    return;
+  }
   if (customLevelActive) {
     gameState = 'won-custom';
     vibrate(VIBE.win);
@@ -770,149 +995,37 @@ function update() {
 
   const jumpHeld = keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W'] || pointerHeld || jumpQueued;
   const tapped = jumpQueued;   // fresh press this frame (orbs need a tap, not a hold)
-  let groundJumped = false;
-  if (!flightMode && jumpHeld && player.onGround) {
-    player.vy = -14.5;
-    player.onGround = false;
-    groundJumped = true;
-    if (IS_MOBILE) vibrate(VIBE.jump);
-  }
   jumpQueued = false;
 
-  const wasOnGround = player.onGround;
-  player.onGround = false;
+  player.flight = flightMode;
+  const wasFlying = player.flight;
+  const res = stepPhysics(player, jumpHeld, tapped, levelData, speed);
+  flightMode = player.flight;
 
-  if (flightMode) {
-    player.vy += jumpHeld ? -0.72 : 1.15;
-    player.vy = Math.max(-8.5, Math.min(8.5, player.vy));
-  } else {
-    player.vy += 0.88;
-    if (player.vy > 18) player.vy = 18;
-  }
-  const previousX = player.x;
-  player.y += player.vy;
-  player.x += speed;
-
-  for (const o of levelData.obstacles) {
-    if (o.type !== 'portal' || previousX + player.size > o.x || player.x + player.size <= o.x) continue;
-    flightMode = o.mode === 'airplane';
-    player.onGround = false;
-    if (!flightMode) player.rotation = 0;
-  }
-
-  if (flightMode) {
-    player.y = Math.max(12, Math.min(GROUND_Y - player.size - 12, player.y));
-  }
-
+  if (res.jumped && IS_MOBILE) vibrate(VIBE.jump);
   if (flightMode) player.rotation = 0;
-  else if (!wasOnGround) player.rotation += 0.18;
-  else {
+  else if (wasFlying) player.rotation = 0;
+  else if (player.dash >= 0 || res.wasOnGround) {
     const target = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
     player.rotation += (target - player.rotation) * 0.4;
-  }
+  } else player.rotation += 0.18;
 
-  // Ground / pit
-  if (!flightMode && player.y + player.size >= GROUND_Y) {
-    let overPit = false;
-    for (const o of levelData.obstacles) {
-      if (o.type === 'pit' && player.x + player.size > o.x + 6 && player.x < o.x + o.w - 6) { overPit = true; break; }
-    }
-    if (!overPit) {
-      player.y = GROUND_Y - player.size;
-      player.vy = 0;
-      player.onGround = true;
-    } else if (player.y > GROUND_Y + 80) { die(); return; }
-  }
-
-  // Block landings / kills
-  for (const o of levelData.obstacles) {
-    if (o.type !== 'block') continue;
-    if (o.x + o.w < player.x) continue;
-    if (o.x > player.x + player.size) continue;
-    const overlapX = player.x < o.x + o.w && player.x + player.size > o.x;
-    const overlapY = player.y < o.y + o.h && player.y + player.size > o.y;
-    if (!overlapX || !overlapY) continue;
-    if (flightMode) { die(); return; }
-    const playerBottom = player.y + player.size;
-    const prevBottom = playerBottom - player.vy;
-    if (player.vy >= 0 && prevBottom <= o.y + 2) {
-      player.y = o.y - player.size;
-      player.vy = 0;
-      player.onGround = true;
-    } else { die(); return; }
-  }
-
-  // Spikes (regular & pillar)
-  for (const o of levelData.obstacles) {
-    if (o.type !== 'spike') continue;
-    if (o.x + o.w < player.x) continue;
-    if (o.x > player.x + player.size) continue;
-    const sb = { x: o.x + 5, y: o.y + 8, w: o.w - 10, h: o.h - 8 };
-    if (player.x < sb.x + sb.w && player.x + player.size > sb.x &&
-        player.y < sb.y + sb.h && player.y + player.size > sb.y) { die(); return; }
-  }
-
-  // Floating spikes (downward)
-  for (const o of levelData.obstacles) {
-    if (o.type !== 'fspike') continue;
-    if (o.x + o.w < player.x) continue;
-    if (o.x > player.x + player.size) continue;
-    const sb = { x: o.x + 5, y: o.y, w: o.w - 10, h: o.h - 8 };
-    if (player.x < sb.x + sb.w && player.x + player.size > sb.x &&
-        player.y < sb.y + sb.h && player.y + player.size > sb.y) { die(); return; }
-  }
-
-  // Saws (circle hitbox)
-  for (const o of levelData.obstacles) {
-    if (o.type !== 'saw') continue;
-    if (o.x + o.w < player.x) continue;
-    if (o.x > player.x + player.size) continue;
-    const cx = o.x + o.w/2, cy = o.y + o.h/2, r = Math.min(o.w, o.h)/2 - 3;
-    const closestX = Math.max(player.x, Math.min(cx, player.x + player.size));
-    const closestY = Math.max(player.y, Math.min(cy, player.y + player.size));
-    const dx = cx - closestX, dy = cy - closestY;
-    if (dx*dx + dy*dy < r*r) { die(); return; }
-  }
-
-  // Jump pads (boost on contact, not lethal)
-  for (const o of levelData.obstacles) {
-    if (o.type !== 'pad') continue;
-    if (o.x + o.w < player.x) continue;
-    if (o.x > player.x + player.size) continue;
-    if (player.x < o.x + o.w && player.x + player.size > o.x &&
-        player.y + player.size > o.y && player.y < o.y + o.h) {
-      if (player.vy >= -10) {
-        player.vy = -22;
-        player.onGround = false;
-        vibrate(VIBE.pad);
-      }
+  if (res.dead) { die(); return; }
+  if (res.pad) vibrate(VIBE.pad);
+  if (res.orb || res.dash) {
+    const o = res.orb || res.dash;
+    const color = res.orb ? '#ff9a1f' : '#3dff7a';
+    vibrate(VIBE.pad);
+    for (let i = 0; i < 12; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const sp = 2 + Math.random() * 4;
+      particles.push({ x: o.x + o.w/2, y: o.y + o.h/2, vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp,
+        size: 3 + Math.random()*3, life: 1, decay: 0.04, color });
     }
   }
-
-  // Jump orbs: tap while touching to jump again (one use per orb)
-  if (tapped && !groundJumped && !flightMode) {
-    for (const o of levelData.obstacles) {
-      if (o.type !== 'orb' || o.used) continue;
-      if (o.x + o.w < player.x) continue;
-      if (o.x > player.x + player.size) continue;
-      const cx = o.x + o.w/2, cy = o.y + o.h/2, r = o.w/2;
-      const closestX = Math.max(player.x, Math.min(cx, player.x + player.size));
-      const closestY = Math.max(player.y, Math.min(cy, player.y + player.size));
-      const dx = cx - closestX, dy = cy - closestY;
-      if (dx*dx + dy*dy <= r*r) {
-        o.used = true;
-        player.vy = -14.5;
-        player.onGround = false;
-        vibrate(VIBE.pad);
-        for (let i = 0; i < 12; i++) {
-          const ang = Math.random() * Math.PI * 2;
-          const sp = 2 + Math.random() * 4;
-          particles.push({ x: cx, y: cy, vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp,
-            size: 3 + Math.random()*3, life: 1, decay: 0.04, color: '#ff9a1f' });
-        }
-        break;
-      }
-    }
+  if (player.dash >= 0 && frame % 2 === 0) {
+    particles.push({ x: player.x, y: player.y + player.size/2 + (Math.random() - 0.5) * 20,
+      vx: -2 - Math.random() * 2, vy: -0.4, size: 4 + Math.random() * 3, life: 1, decay: 0.06, color: '#3dff7a' });
   }
 
   cameraX = player.x - 280;
@@ -949,6 +1062,158 @@ function updateParticles() {
   particles = particles.filter(p => p.life > 0);
 }
 
+// ============== Textures (each belt / trial has its own look) ==============
+// Floor, background wall and blocks are filled with a repeating 64px tile drawn once
+// per belt and cached. Colours come from the belt palette, the pattern from the style.
+const BELT_TEXTURES   = ['mats', 'tatami', 'bricks', 'planks', 'scales', 'stone', 'diamond', 'bamboo', 'metal'];
+const SECRET_TEXTURES = ['cracks', 'stars', 'circuit'];
+const TEX = 64;
+const textureCache = new Map();
+
+function currentTextureStyle() {
+  return inSecret ? SECRET_TEXTURES[secretIdx] : BELT_TEXTURES[belt];
+}
+
+function getTexture(kind) {
+  const B = getPalette();
+  const style = currentTextureStyle();
+  const key = style + '|' + kind + '|' + B.name;
+  let pat = textureCache.get(key);
+  if (pat) return pat;
+  const c = document.createElement('canvas');
+  c.width = c.height = TEX;
+  const g = c.getContext('2d');
+  if (kind === 'floor') { g.fillStyle = B.floor; g.fillRect(0, 0, TEX, TEX); }
+  if (kind === 'block') { g.fillStyle = B.block; g.fillRect(0, 0, TEX, TEX); }
+  paintTexture(g, style, B.fg, kind === 'floor' ? B.accent : B.glow);
+  pat = ctx.createPattern(c, 'repeat');
+  textureCache.set(key, pat);
+  return pat;
+}
+
+function paintTexture(g, style, ink, hi) {
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const line = (pts, color, width, alpha) => {
+    g.strokeStyle = color; g.lineWidth = width; g.globalAlpha = alpha;
+    g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+    g.stroke();
+  };
+  const box = (x, y, w, h, color, width, alpha) => {
+    g.strokeStyle = color; g.lineWidth = width; g.globalAlpha = alpha; g.strokeRect(x, y, w, h);
+  };
+  const dot = (x, y, r, color, alpha) => {
+    g.fillStyle = color; g.globalAlpha = alpha; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+  };
+  switch (style) {
+    case 'mats':      // training dojo mats
+      for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+        box(i * 32 + 2, j * 32 + 2, 28, 28, ink, 2, 0.25);
+        dot(i * 32 + 16, j * 32 + 16, 3, hi, 0.4);
+      }
+      break;
+    case 'tatami':    // woven straw mats
+      box(1, 1, 62, 30, ink, 2, 0.3);
+      box(1, 33, 30, 30, ink, 2, 0.3);
+      box(33, 33, 30, 30, ink, 2, 0.3);
+      for (let y = 5; y < 30; y += 4) line([[3, y], [61, y]], ink, 1, 0.1);
+      for (let x = 5; x < 64; x += 4) line([[x, 35], [x, 61]], ink, 1, 0.1);
+      break;
+    case 'bricks':
+      for (let r = 0; r < 4; r++) {
+        const off = r % 2 ? 16 : 0;
+        for (let bx = -32; bx < 64; bx += 32) {
+          box(bx + off + 1, r * 16 + 1, 30, 14, ink, 2, 0.3);
+          line([[bx + off + 3, r * 16 + 3], [bx + off + 28, r * 16 + 3]], hi, 2, 0.35);
+        }
+      }
+      break;
+    case 'planks':    // wooden floorboards
+      for (let r = 0; r < 4; r++) {
+        line([[0, r * 16], [64, r * 16]], ink, 2, 0.35);
+        const seam = (r * 23) % 64;
+        line([[seam, r * 16], [seam, r * 16 + 16]], ink, 2, 0.3);
+        dot(seam + 4, r * 16 + 4, 1.5, ink, 0.5);
+        dot(seam - 4, r * 16 + 12, 1.5, ink, 0.5);
+        for (let k = 0; k < 2; k++) {
+          const y = r * 16 + 5 + k * 6;
+          line([[0, y], [20, y + 1], [40, y - 1], [64, y]], hi, 1, 0.25);
+        }
+      }
+      break;
+    case 'scales':    // jade scales
+      for (let r = 0; r < 5; r++) {
+        const off = r % 2 ? 16 : 0;
+        for (let cx = -32; cx <= 96; cx += 32) {
+          g.strokeStyle = ink; g.lineWidth = 2; g.globalAlpha = 0.3;
+          g.beginPath(); g.arc(cx + off, r * 16, 16, 0, Math.PI); g.stroke();
+          g.strokeStyle = hi; g.lineWidth = 1; g.globalAlpha = 0.3;
+          g.beginPath(); g.arc(cx + off, r * 16, 11, 0.3, Math.PI - 0.3); g.stroke();
+        }
+      }
+      break;
+    case 'stone':     // cobblestones
+      [[1, 1, 26, 18], [29, 1, 34, 22], [1, 21, 18, 22], [21, 25, 24, 18], [47, 25, 16, 20], [1, 45, 28, 18], [31, 45, 32, 18]]
+        .forEach(([x, y, w, h]) => {
+          g.globalAlpha = 0.3; g.strokeStyle = ink; g.lineWidth = 2;
+          g.beginPath();
+          if (g.roundRect) g.roundRect(x, y, w, h, 5); else g.rect(x, y, w, h);
+          g.stroke();
+          line([[x + 4, y + 3], [x + w - 6, y + 3]], hi, 2, 0.3);
+        });
+      break;
+    case 'diamond':   // diagonal lattice
+      for (let k = -64; k <= 64; k += 16) {
+        line([[k, 0], [k + 64, 64]], ink, 1.5, 0.25);
+        line([[k, 64], [k + 64, 0]], ink, 1.5, 0.25);
+      }
+      for (let x = 0; x <= 64; x += 16) for (let y = 0; y <= 64; y += 16) if ((x + y) % 32 === 0) dot(x, y, 2, hi, 0.5);
+      break;
+    case 'bamboo':
+      for (let i = 0; i < 4; i++) {
+        const x = i * 16;
+        line([[x + 1, 0], [x + 1, 64]], ink, 2, 0.35);
+        line([[x + 6, 0], [x + 6, 64]], hi, 2, 0.2);
+        const ny = (i * 21 + 9) % 64;
+        line([[x + 1, ny], [x + 15, ny]], ink, 3, 0.35);
+        line([[x + 2, ny + 3], [x + 14, ny + 3]], hi, 1, 0.35);
+      }
+      break;
+    case 'metal':     // riveted steel plates
+      for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+        const x = i * 32, y = j * 32;
+        box(x + 1, y + 1, 30, 30, ink, 2, 0.35);
+        [[5, 5], [27, 5], [5, 27], [27, 27]].forEach(([dx, dy]) => dot(x + dx, y + dy, 2, hi, 0.6));
+        line([[x + 8, y + 24], [x + 24, y + 8]], hi, 1, 0.2);
+      }
+      break;
+    case 'cracks':    // glowing lava cracks
+      [[[0, 10], [14, 18], [22, 12], [40, 26], [64, 10]],
+       [[10, 64], [18, 44], [34, 40], [38, 26]],
+       [[48, 64], [52, 48], [64, 44]],
+       [[0, 44], [8, 40], [18, 44]]]
+        .forEach((pts) => { line(pts, hi, 4, 0.18); line(pts, hi, 1.5, 0.55); });
+      break;
+    case 'stars':     // void starfield
+      for (let i = 0; i < 14; i++) {
+        const x = rnd() * 64, y = rnd() * 64, r = 0.6 + rnd() * 1.4;
+        dot(x, y, r, hi, 0.4 + rnd() * 0.5);
+      }
+      line([[44, 14], [52, 14]], hi, 1, 0.5); line([[48, 10], [48, 18]], hi, 1, 0.5);
+      break;
+    case 'circuit':   // neon circuit traces
+      [[[0, 12], [20, 12], [28, 20], [28, 40], [64, 40]],
+       [[40, 0], [40, 24], [64, 24]],
+       [[0, 52], [16, 52], [16, 64]],
+       [[48, 64], [48, 54], [56, 46]]]
+        .forEach((pts) => { line(pts, hi, 2, 0.45); const p = pts[pts.length - 1]; dot(p[0], p[1], 2.5, hi, 0.7); });
+      dot(28, 30, 3, hi, 0.6);
+      break;
+  }
+  g.globalAlpha = 1;
+}
+
 // ============== Drawing ==============
 function draw() {
   if (!levelData) {
@@ -964,14 +1229,12 @@ function draw() {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, GROUND_Y);
 
+  // Background wall texture (slow parallax)
   ctx.save();
-  const off = -((cameraX * 0.25) % 90);
-  ctx.translate(off, 0);
-  ctx.fillStyle = B.stripe;
-  ctx.globalAlpha = 0.35;
-  for (let i = -1; i < W / 90 + 2; i++) ctx.fillRect(i * 90, 0, 5, GROUND_Y);
-  ctx.globalAlpha = 0.18;
-  for (let i = -1; i < W / 90 + 2; i++) ctx.fillRect(i * 90 + 45, 60, 2, GROUND_Y - 60);
+  ctx.translate(-((cameraX * 0.25) % TEX), 0);
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle = getTexture('wall');
+  ctx.fillRect(0, 0, W + TEX, GROUND_Y);
   ctx.globalAlpha = 1;
   ctx.restore();
 
@@ -1111,35 +1374,51 @@ function drawObstacle(o, B) {
     drawSaw(o, B);
   } else if (o.type === 'pad') {
     drawPad(o, B);
-  } else if (o.type === 'orb') {
+  } else if (o.type === 'orb' || o.type === 'dashOrb') {
     drawOrb(o);
   } else if (o.type === 'portal') {
     drawPortal(o, B);
   }
 }
 
+const ORB_COLORS = {
+  orb:     { ring: '#ffb347', body: '#ff8c00', core: '#ffc266' },   // jump orb (orange)
+  dashOrb: { ring: '#7dffa8', body: '#1fcc55', core: '#9dffbf' },   // dash orb (green)
+};
+
 function drawOrb(o) {
+  const c = ORB_COLORS[o.type];
+  const used = player.used && player.used.includes(o.oid);
   const cx = o.x + o.w/2, cy = o.y + o.h/2, r = o.w/2;
   const pulse = 0.5 + Math.sin(frame * 0.15 + o.x * 0.01) * 0.5;
+  const alpha = used ? 0.3 : 1;
   ctx.save();
-  ctx.globalAlpha = o.used ? 0.3 : 1;
   // outer pulsing ring
-  ctx.strokeStyle = '#ffb347';
+  ctx.strokeStyle = c.ring;
   ctx.lineWidth = 2;
-  ctx.globalAlpha *= 0.5 + pulse * 0.4;
+  ctx.globalAlpha = alpha * (0.5 + pulse * 0.4);
   ctx.beginPath(); ctx.arc(cx, cy, r + 5 + pulse * 4, 0, Math.PI * 2); ctx.stroke();
-  ctx.globalAlpha = o.used ? 0.3 : 1;
+  ctx.globalAlpha = alpha;
   // orb body
-  ctx.shadowColor = '#ff8c00';
-  ctx.shadowBlur = o.used ? 0 : 16;
-  ctx.fillStyle = '#ff8c00';
+  ctx.shadowColor = c.body;
+  ctx.shadowBlur = used ? 0 : 16;
+  ctx.fillStyle = c.body;
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.fillStyle = '#ffc266';
+  ctx.fillStyle = c.core;
   ctx.beginPath(); ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 2;
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  if (o.type === 'dashOrb') {
+    // forward arrow: "hold to dash"
+    ctx.fillStyle = '#0a3a18';
+    ctx.beginPath();
+    ctx.moveTo(cx + 9, cy);
+    ctx.lineTo(cx - 5, cy - 8);
+    ctx.lineTo(cx - 5, cy + 8);
+    ctx.closePath(); ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -1232,7 +1511,7 @@ function drawTriDown(o, B) {
 }
 
 function drawBlock(o, B) {
-  ctx.fillStyle = B.block;
+  ctx.fillStyle = getTexture('block');
   ctx.fillRect(o.x, o.y, o.w, o.h);
   ctx.fillStyle = B.glow;
   ctx.globalAlpha = 0.5;
@@ -1243,16 +1522,6 @@ function drawBlock(o, B) {
   ctx.strokeStyle = B.fg;
   ctx.lineWidth = 2;
   ctx.strokeRect(o.x + 1, o.y + 1, o.w - 2, o.h - 2);
-  ctx.strokeStyle = B.accent;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(o.x + 8, o.y + 8, o.w - 16, o.h - 16);
-  // Center mark — repeats horizontally for wide blocks
-  ctx.fillStyle = B.accent;
-  const marks = Math.max(1, Math.floor(o.w / 60));
-  for (let i = 0; i < marks; i++) {
-    const cx = o.x + (i + 0.5) * (o.w / marks);
-    ctx.fillRect(cx - 3, o.y + o.h/2 - 3, 6, 6);
-  }
 }
 
 function drawSaw(o, B) {
@@ -1336,19 +1605,16 @@ function drawCheckpoint(cp, B) {
 }
 
 function drawGround(B) {
-  ctx.fillStyle = B.floor;
-  ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+  // Floor texture scrolls with the world
+  ctx.save();
+  ctx.translate(-(cameraX % TEX), 0);
+  ctx.fillStyle = getTexture('floor');
+  ctx.fillRect(0, GROUND_Y, W + TEX, H - GROUND_Y);
+  ctx.restore();
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(0, GROUND_Y + 4, W, 6);
   ctx.fillStyle = B.accent;
   ctx.fillRect(0, GROUND_Y, W, 4);
-  ctx.save();
-  const off = -(cameraX % 48);
-  ctx.translate(off, 0);
-  ctx.fillStyle = B.fg;
-  ctx.globalAlpha = 0.12;
-  for (let i = -1; i < W / 48 + 2; i++) ctx.fillRect(i * 48, GROUND_Y + 12, 24, H - GROUND_Y - 12);
-  ctx.globalAlpha = 0.06;
-  for (let i = -1; i < W / 48 + 2; i++) ctx.fillRect(i * 48 + 24, GROUND_Y + 12, 24, H - GROUND_Y - 12);
-  ctx.restore();
 
   ctx.save();
   ctx.translate(-cameraX, 0);
@@ -1492,7 +1758,7 @@ function updateHUD() {
   const subEl  = document.getElementById('subtitle');
   if (customLevelActive && activeCustomLevel) {
     nameEl.textContent = activeCustomLevel.name;
-    subEl.textContent = 'BY ' + activeCustomLevel.author;
+    subEl.textContent = verifyRun ? 'VERIFYING · BEAT IT IN ONE RUN' : 'BY ' + activeCustomLevel.author;
   } else if (inSecret) {
     nameEl.textContent = SECRETS[secretIdx].name;
     subEl.textContent = 'SECRET TRIAL';
@@ -1526,6 +1792,7 @@ const EDITOR_OBSTACLES = {
   orb:        { w: 36, y: GROUND_Y - 138, h: 36, color: '#ff8c00' },
   portalFly:  { w: 46, y: 0, h: GROUND_Y, color: '#38e8ff' },
   portalCube: { w: 46, y: 0, h: GROUND_Y, color: '#ffe34d' },
+  dashOrb:    { w: 36, y: GROUND_Y - 118, h: 36, color: '#1fcc55' },
 };
 const CUSTOM_LEVELS_KEY = 'iuBeltDashPlayerLevels';
 
@@ -1608,6 +1875,34 @@ function drawEditor() {
     editorCtx.fillRect(x, y, Math.max(w, 4), h);
   });
   document.getElementById('editorStatus').textContent = editorObstacles.length + ' / 50 obstacles';
+  updateVerifyUI();
+}
+
+// ---- Verification: you must beat your own level before publishing it ----
+function levelSignature(length, obstacles) {
+  return JSON.stringify([length, obstacles.map(({ type, x }) => [type, x])]);
+}
+
+function editorSignature() {
+  return levelSignature(Number(document.getElementById('levelLengthInput').value), editorObstacles);
+}
+
+function updateVerifyUI() {
+  const verified = editorObstacles.length > 0 && verifiedSignature === editorSignature();
+  const badge = document.getElementById('verifyBadge');
+  badge.textContent = verified ? '✓ VERIFIED — ready to publish' : '✗ NOT VERIFIED — beat your level once to publish it';
+  badge.classList.toggle('ok', verified);
+  document.getElementById('publishLevelBtn').disabled = !verified;
+}
+
+function verifyLevel() {
+  try {
+    const level = readEditorLevel();
+    verifyRun = levelSignature(level.length, level.obstacles);
+    startSharedLevel(level);
+  } catch (error) {
+    document.getElementById('editorStatus').textContent = error.message;
+  }
 }
 
 function readEditorLevel() {
@@ -1691,7 +1986,10 @@ async function publishLevel() {
   const linkField = document.getElementById('publishedLevelLink');
   try {
     const level = readEditorLevel();
-    const link = window.location.href.split('#')[0] + '#level=' + encodeLevel(level);
+    if (levelSignature(level.length, level.obstacles) !== verifiedSignature) {
+      throw new Error('Beat your level first: press TEST & VERIFY and finish it in one run.');
+    }
+    const link =window.location.href.split('#')[0] + '#level=' + encodeLevel(level);
     if (link.length > 6000) throw new Error('This level link is too long to share. Remove some obstacles and try again.');
     linkField.value = link;
     linkField.hidden = false;

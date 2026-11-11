@@ -685,6 +685,12 @@
     font: 11px 'Courier New', monospace;
   }
   .published-level-link[hidden] { display: none; }
+  .verify-badge {
+    margin-top: 8px; font-family: 'Courier New', monospace; font-size: 12px;
+    letter-spacing: 1px; color: #ff6a5a;
+  }
+  .verify-badge.ok { color: #3dff7a; }
+  .editor-actions .pauseBtn:disabled { opacity: 0.4; cursor: not-allowed; }
   .editor-actions .pauseBtn { min-width: 190px; }
   @media (max-width: 800px) {
     .lp-hero { min-height: 0; }
