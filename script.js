@@ -1259,30 +1259,169 @@ function drawSkinPattern(skin) {
   ctx.save();
   drawSkinPath(skin.shape, player.size - 5);
   ctx.clip();
-  ctx.strokeStyle = 'rgba(5,7,12,0.86)';
-  ctx.lineWidth = 1.6;
+  const ink = 'rgba(5,7,12,0.9)';
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 1.8;
   ctx.lineCap = 'square';
   ctx.lineJoin = 'miter';
-  ctx.beginPath();
-  ctx.moveTo(-half + 6, -half + 7);
-  ctx.lineTo(0, -half + 12);
-  ctx.lineTo(half - 6, -half + 7);
-  ctx.moveTo(0, -half + 12);
-  ctx.lineTo(0, -2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(-5, 2);
-  ctx.lineTo(0, -3);
-  ctx.lineTo(5, 2);
-  ctx.lineTo(0, 7);
-  ctx.closePath();
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(5,7,12,0.9)';
-  for (const x of [-half + 7, half - 7]) {
-    ctx.fillRect(x - 1.5, -half + 5, 3, 3);
-    ctx.fillRect(x - 1.5, half - 8, 3, 3);
+
+  if (skin.pattern === 'prism') {
+    ctx.beginPath();
+    ctx.moveTo(0, -13);
+    ctx.lineTo(9, -5);
+    ctx.lineTo(6, 6);
+    ctx.lineTo(0, 12);
+    ctx.lineTo(-7, 5);
+    ctx.lineTo(-9, -5);
+    ctx.closePath();
+    ctx.moveTo(0, -13);
+    ctx.lineTo(0, 12);
+    ctx.moveTo(-9, -5);
+    ctx.lineTo(0, 1);
+    ctx.lineTo(9, -5);
+    ctx.stroke();
+  } else if (skin.pattern === 'circuit') {
+    ctx.beginPath();
+    ctx.moveTo(-12, -9);
+    ctx.lineTo(-6, -9);
+    ctx.lineTo(-6, -3);
+    ctx.lineTo(-3, -3);
+    ctx.moveTo(12, -9);
+    ctx.lineTo(7, -9);
+    ctx.lineTo(7, 3);
+    ctx.lineTo(3, 3);
+    ctx.moveTo(-12, 9);
+    ctx.lineTo(-7, 9);
+    ctx.lineTo(-7, 4);
+    ctx.lineTo(-3, 4);
+    ctx.moveTo(12, 9);
+    ctx.lineTo(6, 9);
+    ctx.lineTo(6, -3);
+    ctx.lineTo(3, -3);
+    ctx.stroke();
+    ctx.strokeRect(-3, -3, 6, 6);
+    ctx.fillStyle = ink;
+    for (const [x, y] of [[-12,-9], [12,-9], [-12,9], [12,9]]) {
+      ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+    }
+  } else if (skin.pattern === 'ember') {
+    ctx.beginPath();
+    ctx.moveTo(-10, 11);
+    ctx.lineTo(-8, 2);
+    ctx.lineTo(-4, 6);
+    ctx.lineTo(-3, -3);
+    ctx.lineTo(0, -12);
+    ctx.lineTo(3, -3);
+    ctx.lineTo(7, -7);
+    ctx.lineTo(6, 2);
+    ctx.lineTo(10, -1);
+    ctx.lineTo(9, 11);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-4, 10);
+    ctx.lineTo(0, 3);
+    ctx.lineTo(4, 10);
+    ctx.stroke();
+  } else if (skin.pattern === 'grid') {
+    ctx.strokeRect(-10, -10, 20, 20);
+    ctx.strokeRect(-5, -5, 10, 10);
+    ctx.beginPath();
+    ctx.moveTo(-10, 0);
+    ctx.lineTo(-5, 0);
+    ctx.moveTo(5, 0);
+    ctx.lineTo(10, 0);
+    ctx.moveTo(0, -10);
+    ctx.lineTo(0, -5);
+    ctx.moveTo(0, 5);
+    ctx.lineTo(0, 10);
+    ctx.stroke();
+    ctx.fillStyle = ink;
+    for (const [x, y] of [[-10,-10], [10,-10], [-10,10], [10,10]]) {
+      ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+    }
+  } else if (skin.pattern === 'flare') {
+    ctx.beginPath();
+    for (let point = 0; point < 16; point++) {
+      const angle = -Math.PI / 2 + point * Math.PI / 8;
+      const radius = point % 2 === 0 ? 12 : 4.5;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      if (point === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 2, 0, Math.PI * 2);
+    ctx.fillStyle = ink;
+    ctx.fill();
+  } else if (skin.pattern === 'crystal') {
+    ctx.beginPath();
+    ctx.moveTo(0, -13);
+    ctx.lineTo(5, -3);
+    ctx.lineTo(2, 0);
+    ctx.lineTo(7, 11);
+    ctx.lineTo(-1, 5);
+    ctx.lineTo(-5, -3);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(5,7,12,0.82)';
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-10, -7);
+    ctx.lineTo(-5, -4);
+    ctx.lineTo(-8, 5);
+    ctx.closePath();
+    ctx.moveTo(10, -8);
+    ctx.lineTo(6, -4);
+    ctx.lineTo(10, 4);
+    ctx.closePath();
+    ctx.stroke();
+  } else if (skin.pattern === 'stone') {
+    ctx.beginPath();
+    ctx.moveTo(-12, -8);
+    ctx.lineTo(-4, -10);
+    ctx.lineTo(-2, -4);
+    ctx.lineTo(-8, 0);
+    ctx.lineTo(-12, -2);
+    ctx.closePath();
+    ctx.moveTo(2, -10);
+    ctx.lineTo(10, -8);
+    ctx.lineTo(12, -1);
+    ctx.lineTo(6, 2);
+    ctx.lineTo(1, -3);
+    ctx.closePath();
+    ctx.moveTo(-8, 4);
+    ctx.lineTo(-2, 1);
+    ctx.lineTo(3, 5);
+    ctx.lineTo(2, 11);
+    ctx.lineTo(-7, 10);
+    ctx.closePath();
+    ctx.moveTo(7, 5);
+    ctx.lineTo(12, 3);
+    ctx.lineTo(11, 10);
+    ctx.lineTo(5, 11);
+    ctx.closePath();
+    ctx.stroke();
+  } else if (skin.pattern === 'nebula') {
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 12, 5, -Math.PI / 4, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 12, 5, Math.PI / 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = ink;
+    for (const [x, y] of [[0,-11], [10,0], [0,11], [-10,0]]) {
+      ctx.beginPath();
+      ctx.moveTo(x, y - 2);
+      ctx.lineTo(x + 2, y);
+      ctx.lineTo(x, y + 2);
+      ctx.lineTo(x - 2, y);
+      ctx.closePath();
+      ctx.fill();
+    }
   }
-  ctx.fillRect(-half + 5, half - 4, player.size - 10, 2);
+
   ctx.restore();
 }
 
