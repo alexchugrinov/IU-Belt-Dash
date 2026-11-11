@@ -59,6 +59,47 @@ const SECRET_ROGER_SKIN = {
   omanMotif: 'dhow',
   unlockBelt: 1,
 };
+const OMAN_SKIN_ART = {
+  khanjar: [
+    'M18 18H46 M32 18V29 M24 29H40 M32 28C50 37 42 53 24 53C34 44 31 37 32 28Z',
+    'M22 18L26 13H38L42 18',
+  ],
+  dunes: [
+    'M12 38C21 27 29 29 36 38S51 41 54 30',
+    'M12 47C23 38 31 39 38 46S49 49 54 43',
+    'M47 18A3 3 0 1 0 47 24A3 3 0 1 0 47 18',
+  ],
+  mountain: [
+    'M12 49L24 28L31 37L41 17L54 49Z',
+    'M19 36L24 28L31 37 M36 27L41 17L48 35',
+  ],
+  incense: [
+    'M20 39L23 51H41L44 39Z',
+    'M25 35C14 26 33 25 26 12 M38 35C49 25 32 22 40 11',
+    'M18 39H46',
+  ],
+  dhow: [
+    'M13 40H53L44 51H22Z',
+    'M31 38V15L17 37Z M35 36V12L49 36Z',
+    'M14 55C23 51 28 58 36 54S48 52 54 55',
+  ],
+  fort: [
+    'M15 30H49V51H15Z',
+    'M17 30V20H25V27H29V23H36V27H40V17H48V30',
+    'M28 51V40A5 5 0 0 1 38 40V51',
+  ],
+  palm: [
+    'M30 52L32 29L34 52',
+    'M32 30C18 30 13 23 12 17C21 17 28 20 32 28',
+    'M32 30C22 23 21 15 24 11C31 15 33 21 33 28',
+    'M33 29C32 19 37 12 42 11C45 19 41 25 35 30',
+    'M34 30C43 23 49 23 53 25C50 33 43 34 35 32',
+  ],
+  flag: [
+    'M21 18V46 M22 20H44 M22 31H45 M22 42H45',
+    'M26 51C22 46 28 43 31 47C34 51 28 54 26 51Z',
+  ],
+};
 const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
 const CUSTOM_SKIN_PATTERNS = ['prism', 'circuit', 'ember', 'grid', 'flare', 'crystal', 'stone', 'nebula'];
 const DEFAULT_INTERFACE_THEME = { accent: '#ff526f', secondary: '#62e5db', background: '#111329' };
@@ -1449,14 +1490,25 @@ function drawOmanSkinMotif(motif, color) {
     return;
   }
 
-  ctx.fillStyle = 'rgba(11,19,24,0.86)';
-  ctx.fillRect(-10, -10, 20, 20);
+  ctx.fillStyle = 'rgba(11,19,24,0.94)';
+  ctx.fillRect(-13, -13, 26, 26);
+  ctx.strokeStyle = '#d9b866';
+  ctx.lineWidth = 1.4;
+  ctx.strokeRect(-13, -13, 26, 26);
   ctx.strokeStyle = '#f5f0e5';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(-10, -10, 20, 20);
+  ctx.lineWidth = 0.7;
+  ctx.strokeRect(-10.5, -10.5, 21, 21);
+  ctx.fillStyle = '#d9b866';
+  for (const [x, y] of [[-11, -11], [11, -11], [-11, 11], [11, 11]]) {
+    ctx.beginPath();
+    ctx.arc(x, y, 0.9, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.save();
+  ctx.scale(1.3, 1.3);
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
-  ctx.lineWidth = 2.2;
+  ctx.lineWidth = 1.8;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
@@ -1548,6 +1600,8 @@ function drawOmanSkinMotif(motif, color) {
     ctx.moveTo(-1, 8);
     ctx.lineTo(1, 8);
     ctx.lineTo(1, -1);
+    ctx.moveTo(-2, 5);
+    ctx.lineTo(3, 5);
     ctx.moveTo(0, 0);
     ctx.quadraticCurveTo(-7, -1, -8, -6);
     ctx.moveTo(0, 0);
@@ -1559,12 +1613,13 @@ function drawOmanSkinMotif(motif, color) {
     ctx.stroke();
   }
   ctx.restore();
+  ctx.restore();
 }
 
 function drawOmanFlagBase(half) {
   const size = half * 2;
   ctx.save();
-  ctx.globalAlpha = 0.9;
+  ctx.globalAlpha = 0.32;
   ctx.fillStyle = '#f5f0e5';
   ctx.fillRect(-half, -half, size, size / 3);
   ctx.fillStyle = '#c82032';
@@ -2238,6 +2293,27 @@ function addSkinCard(container, skin, id, description, unlocked) {
   side.className = 'skin-swatch-side';
   const face = document.createElement('span');
   face.className = 'skin-swatch-front';
+  if (skin.omanMotif && OMAN_SKIN_ART[skin.omanMotif]) {
+    const artwork = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    artwork.classList.add('oman-motif-art');
+    artwork.setAttribute('viewBox', '0 0 64 64');
+    artwork.setAttribute('aria-hidden', 'true');
+    const panel = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    panel.setAttribute('x', '5');
+    panel.setAttribute('y', '5');
+    panel.setAttribute('width', '54');
+    panel.setAttribute('height', '54');
+    panel.setAttribute('rx', '9');
+    panel.setAttribute('class', 'oman-motif-panel');
+    artwork.appendChild(panel);
+    for (const [index, pathData] of OMAN_SKIN_ART[skin.omanMotif].entries()) {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', pathData);
+      path.setAttribute('class', index === 0 ? 'oman-motif-primary' : 'oman-motif-detail');
+      artwork.appendChild(path);
+    }
+    face.appendChild(artwork);
+  }
   preview.append(top, side, face);
   const copy = document.createElement('span');
   copy.className = 'skin-card-copy';
