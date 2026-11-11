@@ -1457,36 +1457,36 @@ function drawOmanSkinMotif(motif, color) {
   }
 
   ctx.fillStyle = 'rgba(11,19,24,0.94)';
-  ctx.fillRect(-13, -13, 26, 26);
+  ctx.fillRect(-15, -15, 30, 30);
   ctx.strokeStyle = '#d9b866';
   ctx.lineWidth = 1.4;
-  ctx.strokeRect(-13, -13, 26, 26);
+  ctx.strokeRect(-15, -15, 30, 30);
   ctx.strokeStyle = '#f5f0e5';
-  ctx.lineWidth = 0.7;
-  ctx.strokeRect(-10.5, -10.5, 21, 21);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-12, -12, 24, 24);
   ctx.fillStyle = '#d9b866';
-  for (const [x, y] of [[-11, -11], [11, -11], [-11, 11], [11, 11]]) {
+  for (const [x, y] of [[-13, -13], [13, -13], [-13, 13], [13, 13]]) {
     ctx.beginPath();
-    ctx.arc(x, y, 0.9, 0, Math.PI * 2);
+    ctx.arc(x, y, 1.15, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.strokeStyle = 'rgba(217,184,102,0.82)';
-  ctx.lineWidth = 0.8;
+  ctx.lineWidth = 1;
   for (const side of [-1, 1]) {
     ctx.beginPath();
-    ctx.moveTo(side * 8, -10.5);
-    ctx.lineTo(side * 6.5, -8.5);
-    ctx.lineTo(side * 8, -6.5);
-    ctx.moveTo(side * 8, 10.5);
-    ctx.lineTo(side * 6.5, 8.5);
-    ctx.lineTo(side * 8, 6.5);
+    ctx.moveTo(side * 9, -11.5);
+    ctx.lineTo(side * 7.5, -9.5);
+    ctx.lineTo(side * 9, -7.5);
+    ctx.moveTo(side * 9, 11.5);
+    ctx.lineTo(side * 7.5, 9.5);
+    ctx.lineTo(side * 9, 7.5);
     ctx.stroke();
   }
   ctx.save();
-  ctx.scale(1.3, 1.3);
+  ctx.scale(1.55, 1.55);
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
-  ctx.lineWidth = 1.8;
+  ctx.lineWidth = 2;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
@@ -1506,6 +1506,20 @@ function drawOmanSkinMotif(motif, color) {
     ctx.beginPath();
     ctx.arc(5, -5, 2.5, 0, Math.PI * 2);
     ctx.fill();
+    ctx.beginPath();
+    ctx.arc(5, -5, 4, Math.PI * 1.12, Math.PI * 1.86);
+    ctx.stroke();
+    ctx.strokeStyle = '#fff2ce';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.arc(5, -5, 4, Math.PI * 1.12, Math.PI * 1.86);
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-8, -1);
+    ctx.quadraticCurveTo(-3, -6, 1, -1);
+    ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(-8, 2);
     ctx.quadraticCurveTo(-3, -4, 1, 2);
@@ -1541,6 +1555,16 @@ function drawOmanSkinMotif(motif, color) {
     ctx.lineTo(6, 4);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = '#fff2ce';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-5, 5);
+    ctx.lineTo(5, 5);
+    ctx.moveTo(-4, 7);
+    ctx.lineTo(4, 7);
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(-3, 3);
     ctx.bezierCurveTo(-8, -2, 1, -3, -2, -8);
@@ -1565,6 +1589,20 @@ function drawOmanSkinMotif(motif, color) {
     ctx.lineTo(7, 2);
     ctx.closePath();
     ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = '#fff2ce';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-1, -5);
+    ctx.lineTo(-4, 1);
+    ctx.moveTo(1, -6);
+    ctx.lineTo(4, 1);
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-10, 9);
+    ctx.quadraticCurveTo(0, 6.5, 10, 9);
     ctx.stroke();
   } else if (motif === 'fort') {
     ctx.fillRect(-8, -2, 16, 10);
