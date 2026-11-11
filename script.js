@@ -4,7 +4,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 const GROUND_Y = 430, PLAYER_SIZE = 34;
-const GAME_SPEED_MULTIPLIER = 2.24939;
+const GAME_SPEED_MULTIPLIER = 2.924207;
 
 const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 const IS_MOBILE = IS_TOUCH && Math.min(window.innerWidth, window.innerHeight) < 900;
@@ -810,7 +810,7 @@ function update() {
   player.y += player.vy;
   player.x += speed;
 
-  if (!wasOnGround) player.rotation += 0.18;
+  if (!wasOnGround) player.rotation += 0.234;
   else {
     const target = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
     player.rotation += (target - player.rotation) * 0.4;
