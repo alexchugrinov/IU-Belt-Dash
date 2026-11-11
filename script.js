@@ -48,6 +48,15 @@ const SECRET_IU_SKIN = {
   pattern: 'iu',
   unlockBelt: 1,
 };
+const SECRET_ROGER_SKIN = {
+  id: 'secret-roger',
+  name: 'VESOLIY ROGER',
+  main: '#241a2d',
+  accent: '#ffd36e',
+  shape: 'cube',
+  pattern: 'roger',
+  unlockBelt: 1,
+};
 const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
 const CUSTOM_SKIN_PATTERNS = ['prism', 'circuit', 'ember', 'grid', 'flare', 'crystal', 'stone', 'nebula'];
 const DEFAULT_INTERFACE_THEME = { accent: '#ff526f', secondary: '#62e5db', background: '#111329' };
@@ -86,6 +95,7 @@ function loadSkinSave() {
         : typeof saved.selectedSkinId === 'string' ? saved.selectedSkinId : 'level',
       customSkins,
       secretIUUnlocked: saved.secretIUUnlocked === true,
+      secretRogerUnlocked: saved.secretRogerUnlocked === true,
       theme: {
         accent: /^#[0-9a-f]{6}$/i.test(savedTheme.accent) ? savedTheme.accent : DEFAULT_INTERFACE_THEME.accent,
         secondary: /^#[0-9a-f]{6}$/i.test(savedTheme.secondary) ? savedTheme.secondary : DEFAULT_INTERFACE_THEME.secondary,
@@ -99,6 +109,7 @@ function loadSkinSave() {
       selectedSkinId: 'level',
       customSkins: [],
       secretIUUnlocked: false,
+      secretRogerUnlocked: false,
       theme: { ...DEFAULT_INTERFACE_THEME },
     };
   }
@@ -108,6 +119,7 @@ const skinSave = loadSkinSave();
 let selectedSkinId = skinSave.selectedSkinId;
 const customSkins = skinSave.customSkins;
 let secretIUUnlocked = skinSave.secretIUUnlocked;
+let secretRogerUnlocked = skinSave.secretRogerUnlocked;
 let interfaceTheme = skinSave.theme;
 
 function saveSkinProgress() {
@@ -117,6 +129,7 @@ function saveSkinProgress() {
       selectedSkinId,
       customSkins,
       secretIUUnlocked,
+      secretRogerUnlocked,
       theme: interfaceTheme,
     }));
     return true;
@@ -132,6 +145,7 @@ function getPlayerSkin() {
     BELT_SKINS.find((skin) => skin && skin.id === selectedSkinId) ||
     SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId) ||
     (secretIUUnlocked && selectedSkinId === SECRET_IU_SKIN.id ? SECRET_IU_SKIN : null) ||
+    (secretRogerUnlocked && selectedSkinId === SECRET_ROGER_SKIN.id ? SECRET_ROGER_SKIN : null) ||
     BELT_SKINS[Math.max(1, Math.min(stats.maxBeltReached, BELT_SKINS.length - 1))] ||
     BELT_SKINS[1];
 }
@@ -183,7 +197,9 @@ const stats = {
 };
 const savedBeltSkin = BELT_SKINS.find((skin) => skin && skin.id === selectedSkinId);
 const savedSpecialSkin = SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId);
-if (!savedBeltSkin && !savedSpecialSkin && !(secretIUUnlocked && selectedSkinId === SECRET_IU_SKIN.id) &&
+if (!savedBeltSkin && !savedSpecialSkin &&
+    !(secretIUUnlocked && selectedSkinId === SECRET_IU_SKIN.id) &&
+    !(secretRogerUnlocked && selectedSkinId === SECRET_ROGER_SKIN.id) &&
     selectedSkinId !== 'level' && !customSkins.some((skin) => skin.id === selectedSkinId)) {
   selectedSkinId = 'level';
 }
@@ -993,6 +1009,39 @@ function drawSkinAccessories(skin) {
     ctx.arc(0, -half * 1.08, 2.2, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+  } else if (skin.pattern === 'roger') {
+    ctx.save();
+    ctx.shadowColor = '#ffd36e';
+    ctx.shadowBlur = 7;
+    ctx.fillStyle = '#17121b';
+    ctx.strokeStyle = '#ffd36e';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-half * 0.94, -half * 0.82);
+    ctx.lineTo(-half * 0.67, -half * 1.06);
+    ctx.lineTo(-half * 0.24, -half * 1.62);
+    ctx.lineTo(0, -half * 1.25);
+    ctx.lineTo(half * 0.24, -half * 1.62);
+    ctx.lineTo(half * 0.67, -half * 1.06);
+    ctx.lineTo(half * 0.94, -half * 0.82);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#d83e57';
+    ctx.beginPath();
+    ctx.moveTo(-half * 0.83, -half * 0.82);
+    ctx.lineTo(half * 0.83, -half * 0.82);
+    ctx.lineTo(half * 0.7, -half * 0.66);
+    ctx.lineTo(-half * 0.7, -half * 0.66);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#ffe9ac';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.ellipse(0, -half * 1.04, 2.1, 2.3, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   } else if (skin.pattern === 'lion') {
     const mane = ctx.createLinearGradient(-half * 1.4, -half * 1.4, half * 1.2, half * 1.4);
     mane.addColorStop(0, '#ffdc72');
@@ -1157,7 +1206,48 @@ function drawSkinBody(skin) {
   ctx.shadowOffsetY = 0;
   drawSkinPath(skin.shape, player.size - 2);
   ctx.clip();
-  if (skin.pattern === 'iu') {
+  if (skin.pattern === 'roger') {
+    ctx.save();
+    ctx.strokeStyle = '#f7eedc';
+    ctx.fillStyle = '#f7eedc';
+    ctx.lineWidth = 2.1;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-8, 7);
+    ctx.lineTo(8, 14);
+    ctx.moveTo(8, 7);
+    ctx.lineTo(-8, 14);
+    ctx.stroke();
+    for (const [x, y] of [[-8, 7], [8, 7], [-8, 14], [8, 14]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.ellipse(0, -3, 6.2, 6.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(-4.3, 1, 8.6, 3.2);
+    ctx.fillStyle = '#211829';
+    ctx.beginPath();
+    ctx.ellipse(-2.3, -3, 1.7, 2.1, 0, 0, Math.PI * 2);
+    ctx.ellipse(2.3, -3, 1.7, 2.1, 0, 0, Math.PI * 2);
+    ctx.moveTo(0.8, -0.5);
+    ctx.lineTo(-0.8, -0.5);
+    ctx.lineTo(0, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#211829';
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(-2.6, 1.7);
+    ctx.lineTo(-2.6, 3.6);
+    ctx.moveTo(0, 1.7);
+    ctx.lineTo(0, 3.6);
+    ctx.moveTo(2.6, 1.7);
+    ctx.lineTo(2.6, 3.6);
+    ctx.stroke();
+    ctx.restore();
+  } else if (skin.pattern === 'iu') {
     ctx.fillStyle = 'rgba(7,8,28,0.8)';
     ctx.fillRect(-half * 0.58, -half * 0.42, half * 1.16, half * 0.84);
     ctx.strokeStyle = skin.accent;
@@ -2087,9 +2177,13 @@ function refreshSkinGallery() {
   if (secretIUUnlocked) {
     addSkinCard(gallery, SECRET_IU_SKIN, SECRET_IU_SKIN.id, 'SECRET CHARACTER', true);
   }
+  if (secretRogerUnlocked) {
+    addSkinCard(gallery, SECRET_ROGER_SKIN, SECRET_ROGER_SKIN.id, 'SECRET PIRATE CUBE', true);
+  }
   for (const skin of customSkins) addSkinCard(gallery, skin, skin.id, 'YOUR ORIGINAL SKIN', true);
 
-  const unlockedCount = BELT_SKINS.length - 1 + SPECIAL_SKINS.length + (secretIUUnlocked ? 1 : 0);
+  const unlockedCount = BELT_SKINS.length - 1 + SPECIAL_SKINS.length +
+    (secretIUUnlocked ? 1 : 0) + (secretRogerUnlocked ? 1 : 0);
   const progress = document.getElementById('skinProgress');
   if (progress) {
     progress.textContent = 'ALL ' + unlockedCount + ' GAME SKINS UNLOCKED  ·  BELT ' +
@@ -2228,6 +2322,32 @@ siteBrand.addEventListener('click', (event) => {
     : 'SECRET CHARACTER IU UNLOCKED FOR THIS SESSION · SAVE FAILED';
   progress.dataset.state = saved ? 'success' : 'error';
   const secretCard = document.querySelector('#skinGallery [data-skin-id="secret-iu"]');
+  secretCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  secretCard.focus({ preventScroll: true });
+});
+
+const secretRogerButton = document.getElementById('secretRogerButton');
+if (secretRogerUnlocked) {
+  secretRogerButton.classList.add('secret-found');
+  secretRogerButton.textContent = '☠';
+  secretRogerButton.setAttribute('aria-label', 'Secret skin unlocked: Vesoliy Roger');
+}
+secretRogerButton.addEventListener('click', () => {
+  if (secretRogerUnlocked) return;
+  secretRogerUnlocked = true;
+  selectedSkinId = SECRET_ROGER_SKIN.id;
+  secretRogerButton.classList.add('secret-found');
+  secretRogerButton.textContent = '☠';
+  secretRogerButton.setAttribute('aria-label', 'Secret skin unlocked: Vesoliy Roger');
+  const saved = saveSkinProgress();
+  refreshSkinGallery();
+
+  const progress = document.getElementById('skinProgress');
+  progress.textContent = saved
+    ? 'SECRET SKIN VESOLIY ROGER DISCOVERED · EQUIPPED'
+    : 'SECRET SKIN VESOLIY ROGER UNLOCKED FOR THIS SESSION · SAVE FAILED';
+  progress.dataset.state = saved ? 'success' : 'error';
+  const secretCard = document.querySelector('#skinGallery [data-skin-id="secret-roger"]');
   secretCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
   secretCard.focus({ preventScroll: true });
 });
