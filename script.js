@@ -25,36 +25,38 @@ const BELTS = [
 
 const BELT_SKINS = [
   null,
-  { id:'belt-1', name:'PORCELAIN', main:'#eef4ff', accent:'#77c8ff', shape:'cube', pattern:'prism', unlockBelt:1 },
-  { id:'belt-2', name:'SUNFORGED', main:'#ffd21f', accent:'#fff58a', shape:'cube', pattern:'circuit', unlockBelt:2 },
-  { id:'belt-3', name:'EMBERFOX', main:'#ff7626', accent:'#ffd166', shape:'cube', pattern:'ember', unlockBelt:3 },
-  { id:'belt-4', name:'MOSSBYTE', main:'#20ce68', accent:'#baff45', shape:'cube', pattern:'grid', unlockBelt:4 },
-  { id:'belt-5', name:'DRAGONFIRE', main:'#ed493f', accent:'#ffd25e', shape:'cube', pattern:'flare', unlockBelt:5 },
-  { id:'belt-6', name:'GLACIER', main:'#647de8', accent:'#b7f5ff', shape:'cube', pattern:'crystal', unlockBelt:6 },
-  { id:'belt-7', name:'TERRA NOVA', main:'#9b6949', accent:'#f1c27d', shape:'cube', pattern:'stone', unlockBelt:7 },
-  { id:'belt-8', name:'NIGHTFALL', main:'#17131f', accent:'#ff4f86', shape:'cube', pattern:'nebula', unlockBelt:8 },
+  { id:'belt-1', name:'MUSCAT PEARL', main:'#eee8d8', accent:'#bd9a55', shape:'cube', pattern:'prism', omanMotif:'khanjar', unlockBelt:1 },
+  { id:'belt-2', name:'WAHIBA DUNE', main:'#d4a449', accent:'#ffe1a0', shape:'cube', pattern:'circuit', omanMotif:'dunes', unlockBelt:2 },
+  { id:'belt-3', name:'LUBAN EMBER', main:'#bc552c', accent:'#f4c46b', shape:'cube', pattern:'ember', omanMotif:'incense', unlockBelt:3 },
+  { id:'belt-4', name:'JABAL AKHDAR', main:'#27845c', accent:'#a8dfb5', shape:'cube', pattern:'grid', omanMotif:'mountain', unlockBelt:4 },
+  { id:'belt-5', name:'KHANJAR RUBY', main:'#c51f32', accent:'#fff0df', shape:'cube', pattern:'flare', omanMotif:'khanjar', unlockBelt:5 },
+  { id:'belt-6', name:'ARABIAN SEA', main:'#267f9a', accent:'#b9e8e4', shape:'cube', pattern:'crystal', omanMotif:'dhow', unlockBelt:6 },
+  { id:'belt-7', name:'NIZWA FORT', main:'#9b6949', accent:'#f1c27d', shape:'cube', pattern:'stone', omanMotif:'fort', unlockBelt:7 },
+  { id:'belt-8', name:'MUSCAT NIGHT', main:'#211b2a', accent:'#e4b85e', shape:'cube', pattern:'nebula', omanMotif:'incense', unlockBelt:8 },
 ];
 const SPECIAL_SKINS = [
-  { id:'bonus-green', name:'GREEN CUBE', main:'#20ce68', accent:'#baff45', shape:'cube', pattern:'grid', unlockBelt:3 },
-  { id:'bonus-yellow', name:'YELLOW CUBE', main:'#ffd21f', accent:'#fff58a', shape:'cube', pattern:'circuit', unlockBelt:5 },
-  { id:'bonus-orange', name:'ORANGE CUBE', main:'#ff7626', accent:'#ffd166', shape:'cube', pattern:'ember', unlockBelt:7 },
+  { id:'bonus-green', name:'OMAN PALM', main:'#287d50', accent:'#d7e8ad', shape:'cube', pattern:'grid', omanMotif:'palm', unlockBelt:3 },
+  { id:'bonus-yellow', name:'GOLDEN KHANJAR', main:'#d1a42f', accent:'#fff0a8', shape:'cube', pattern:'circuit', omanMotif:'khanjar', unlockBelt:5 },
+  { id:'bonus-orange', name:'LUBAN GLOW', main:'#c66b35', accent:'#ffe0a0', shape:'cube', pattern:'ember', omanMotif:'incense', unlockBelt:7 },
 ];
 const SECRET_IU_SKIN = {
   id: 'secret-iu',
-  name: 'IU',
-  main: '#523cff',
-  accent: '#55f6ff',
+  name: 'IU OMAN',
+  main: '#9e1725',
+  accent: '#f5e8ce',
   shape: 'cube',
   pattern: 'iu',
+  omanMotif: 'flag',
   unlockBelt: 1,
 };
 const SECRET_ROGER_SKIN = {
   id: 'secret-roger',
-  name: 'VESOLIY ROGER',
-  main: '#241a2d',
-  accent: '#ffd36e',
+  name: 'OMANI ROGER',
+  main: '#182b35',
+  accent: '#e8c76b',
   shape: 'cube',
   pattern: 'roger',
+  omanMotif: 'dhow',
   unlockBelt: 1,
 };
 const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
@@ -973,23 +975,7 @@ function drawPlayer() {
 
 function drawSkinAccessories(skin) {
   const half = player.size / 2;
-  if (skin.pattern === 'iu') {
-    ctx.save();
-    ctx.globalAlpha = 0.8;
-    ctx.strokeStyle = skin.accent;
-    ctx.lineWidth = 1.5;
-    ctx.shadowColor = skin.accent;
-    ctx.shadowBlur = 9;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, half * 1.42, half * 1.22, -0.45, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.strokeStyle = '#b895ff';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, half * 1.42, half * 1.22, 0.45, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.restore();
-  } else if (skin.pattern === 'roger') {
+  if (skin.pattern === 'roger') {
     ctx.save();
     ctx.shadowColor = '#ffd36e';
     ctx.shadowBlur = 7;
@@ -1433,6 +1419,8 @@ function drawSkinBody(skin) {
     }
   }
 
+  if (skin.omanMotif) drawOmanSkinMotif(skin.omanMotif, skin.accent);
+
   const volume = ctx.createLinearGradient(0, -half, 0, half);
   volume.addColorStop(0, 'rgba(255,255,255,0.2)');
   volume.addColorStop(0.42, 'rgba(255,255,255,0.015)');
@@ -1440,6 +1428,131 @@ function drawSkinBody(skin) {
   ctx.fillStyle = volume;
   ctx.fillRect(-half, -half, player.size, player.size);
   ctx.restore();
+  ctx.restore();
+}
+
+function drawOmanSkinMotif(motif, color) {
+  ctx.save();
+  ctx.lineWidth = 1.4;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+
+  if (motif === 'flag') {
+    ctx.fillStyle = '#f5f0e5';
+    ctx.fillRect(-7, 8, 14, 2.2);
+    ctx.fillStyle = '#c82032';
+    ctx.fillRect(-7, 8, 3, 6.5);
+    ctx.fillRect(-4, 10.2, 11, 2.2);
+    ctx.fillStyle = '#218653';
+    ctx.fillRect(-4, 12.4, 11, 2.1);
+    ctx.strokeStyle = 'rgba(20,18,18,0.7)';
+    ctx.strokeRect(-7, 8, 14, 6.5);
+  } else if (motif === 'khanjar') {
+    ctx.beginPath();
+    ctx.moveTo(-2.2, 14);
+    ctx.lineTo(-2.8, 11);
+    ctx.quadraticCurveTo(-5, 9.5, -2.2, 7.5);
+    ctx.lineTo(1.7, 7.5);
+    ctx.quadraticCurveTo(4.4, 10, 1.3, 11.5);
+    ctx.lineTo(2.2, 14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-3.2, 8);
+    ctx.lineTo(3.2, 8);
+    ctx.stroke();
+  } else if (motif === 'dunes') {
+    ctx.beginPath();
+    ctx.moveTo(-8, 13);
+    ctx.quadraticCurveTo(-4, 8, 0, 12);
+    ctx.quadraticCurveTo(4, 15, 8, 10);
+    ctx.moveTo(-8, 15);
+    ctx.quadraticCurveTo(-3, 12, 2, 14);
+    ctx.quadraticCurveTo(5, 15, 8, 13);
+    ctx.stroke();
+  } else if (motif === 'mountain') {
+    ctx.beginPath();
+    ctx.moveTo(-8, 15);
+    ctx.lineTo(-3, 9);
+    ctx.lineTo(-1, 11);
+    ctx.lineTo(3, 7);
+    ctx.lineTo(8, 15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = '#f5f0e5';
+    ctx.beginPath();
+    ctx.moveTo(-4, 10);
+    ctx.lineTo(-3, 9);
+    ctx.lineTo(-1, 11);
+    ctx.moveTo(1, 9);
+    ctx.lineTo(3, 7);
+    ctx.lineTo(5, 10);
+    ctx.stroke();
+  } else if (motif === 'incense') {
+    ctx.beginPath();
+    ctx.moveTo(-4, 12);
+    ctx.lineTo(-3, 15);
+    ctx.lineTo(3, 15);
+    ctx.lineTo(4, 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-2, 10);
+    ctx.bezierCurveTo(-5, 7, 1, 7, -1, 4);
+    ctx.moveTo(2, 10);
+    ctx.bezierCurveTo(5, 7, 0, 6, 2, 3);
+    ctx.stroke();
+  } else if (motif === 'dhow') {
+    ctx.beginPath();
+    ctx.moveTo(-8, 12);
+    ctx.lineTo(8, 12);
+    ctx.lineTo(5, 15);
+    ctx.lineTo(-5, 15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-1, 11);
+    ctx.lineTo(-1, 5);
+    ctx.lineTo(-6, 10);
+    ctx.closePath();
+    ctx.moveTo(1, 10);
+    ctx.lineTo(1, 4);
+    ctx.lineTo(6, 10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  } else if (motif === 'fort') {
+    ctx.fillRect(-7, 10, 14, 5);
+    ctx.fillRect(-6, 7, 3, 3);
+    ctx.fillRect(-1.5, 8, 3, 2);
+    ctx.fillRect(3, 6, 3, 4);
+    ctx.fillStyle = 'rgba(20,18,18,0.72)';
+    ctx.fillRect(-2, 12, 4, 3);
+  } else if (motif === 'palm') {
+    ctx.beginPath();
+    ctx.moveTo(-1, 15);
+    ctx.lineTo(1, 15);
+    ctx.lineTo(0.7, 8);
+    ctx.lineTo(-0.2, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, 9);
+    ctx.quadraticCurveTo(-7, 8, -8, 5);
+    ctx.moveTo(0, 9);
+    ctx.quadraticCurveTo(-5, 4, -4, 3);
+    ctx.moveTo(0, 9);
+    ctx.quadraticCurveTo(1, 3, 3, 2);
+    ctx.moveTo(0, 9);
+    ctx.quadraticCurveTo(7, 6, 8, 5);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -2141,7 +2254,7 @@ function refreshSkinGallery() {
       gallery,
       skin,
       skin.id,
-      BELTS[skin.unlockBelt].name + ' BELT STYLE',
+      'OMAN · ' + BELTS[skin.unlockBelt].name + ' BELT',
       true
     );
   }
@@ -2150,15 +2263,15 @@ function refreshSkinGallery() {
       gallery,
       skin,
       skin.id,
-      'BONUS COLOR CUBE',
+      'OMAN-INSPIRED BONUS CUBE',
       true
     );
   }
   if (secretIUUnlocked) {
-    addSkinCard(gallery, SECRET_IU_SKIN, SECRET_IU_SKIN.id, 'SECRET CHARACTER', true);
+    addSkinCard(gallery, SECRET_IU_SKIN, SECRET_IU_SKIN.id, 'OMANI SKELETON', true);
   }
   if (secretRogerUnlocked) {
-    addSkinCard(gallery, SECRET_ROGER_SKIN, SECRET_ROGER_SKIN.id, 'SECRET PIRATE CUBE', true);
+    addSkinCard(gallery, SECRET_ROGER_SKIN, SECRET_ROGER_SKIN.id, 'OMANI DHOW PIRATE', true);
   }
   for (const skin of customSkins) addSkinCard(gallery, skin, skin.id, 'YOUR ORIGINAL SKIN', true);
 
