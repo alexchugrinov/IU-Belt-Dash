@@ -1482,6 +1482,22 @@ function drawOmanSkinMotif(motif, color) {
     ctx.lineTo(side * 9, 7.5);
     ctx.stroke();
   }
+  ctx.fillStyle = 'rgba(255,244,216,0.12)';
+  ctx.beginPath();
+  ctx.moveTo(-12, -14);
+  ctx.lineTo(-8, -14);
+  ctx.lineTo(8, 14);
+  ctx.lineTo(4, 14);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,242,206,0.72)';
+  ctx.lineWidth = 0.75;
+  ctx.beginPath();
+  ctx.moveTo(-13.5, 0);
+  ctx.lineTo(-13.5, 9);
+  ctx.moveTo(13.5, -9);
+  ctx.lineTo(13.5, 0);
+  ctx.stroke();
   ctx.save();
   ctx.scale(1.55, 1.55);
   ctx.strokeStyle = color;
@@ -1491,6 +1507,29 @@ function drawOmanSkinMotif(motif, color) {
   ctx.lineJoin = 'round';
 
   if (motif === 'khanjar') {
+    ctx.fillStyle = '#fff2ce';
+    ctx.beginPath();
+    ctx.moveTo(-1.5, -1.5);
+    ctx.lineTo(2.4, -1.5);
+    ctx.bezierCurveTo(6, 1.5, 4, 6.5, -4.5, 9);
+    ctx.bezierCurveTo(0, 4, -0.5, 1, -1.5, -1.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#d9b866';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    ctx.strokeStyle = '#f4c46b';
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.moveTo(-5, -6);
+    ctx.lineTo(5, -6);
+    ctx.moveTo(-3, -2);
+    ctx.lineTo(3, -2);
+    ctx.moveTo(0, -6);
+    ctx.lineTo(0, -2);
+    ctx.stroke();
+    ctx.strokeStyle = '#fff2ce';
+    ctx.lineWidth = 0.8;
     ctx.beginPath();
     ctx.moveTo(-5, -6);
     ctx.lineTo(5, -6);
@@ -1503,6 +1542,10 @@ function drawOmanSkinMotif(motif, color) {
     ctx.bezierCurveTo(0, 4, 1, 1, 0, -2);
     ctx.stroke();
   } else if (motif === 'dunes') {
+    ctx.fillStyle = 'rgba(245,194,107,0.24)';
+    ctx.beginPath();
+    ctx.arc(5, -5, 6, 0, Math.PI * 2);
+    ctx.fill();
     ctx.beginPath();
     ctx.arc(5, -5, 2.5, 0, Math.PI * 2);
     ctx.fill();
@@ -1529,6 +1572,13 @@ function drawOmanSkinMotif(motif, color) {
     ctx.quadraticCurveTo(4, 10, 8, 5);
     ctx.stroke();
   } else if (motif === 'mountain') {
+    ctx.fillStyle = 'rgba(33,134,83,0.35)';
+    ctx.beginPath();
+    ctx.moveTo(-10, 8);
+    ctx.lineTo(-5, 1);
+    ctx.lineTo(-1, 8);
+    ctx.closePath();
+    ctx.fill();
     ctx.beginPath();
     ctx.moveTo(-8, 7);
     ctx.lineTo(-3, -2);
@@ -1548,6 +1598,10 @@ function drawOmanSkinMotif(motif, color) {
     ctx.lineTo(7, 1);
     ctx.stroke();
   } else if (motif === 'incense') {
+    ctx.fillStyle = 'rgba(255,242,206,0.16)';
+    ctx.beginPath();
+    ctx.ellipse(0, 4, 9, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.beginPath();
     ctx.moveTo(-6, 4);
     ctx.lineTo(-4, 8);
@@ -1579,6 +1633,16 @@ function drawOmanSkinMotif(motif, color) {
     ctx.lineTo(-5, 8);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = '#d9b866';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-8, 4);
+    ctx.lineTo(8, 4);
+    ctx.moveTo(-5, 6);
+    ctx.lineTo(5, 6);
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(-1, 3);
     ctx.lineTo(-1, -7);
@@ -1605,12 +1669,19 @@ function drawOmanSkinMotif(motif, color) {
     ctx.quadraticCurveTo(0, 6.5, 10, 9);
     ctx.stroke();
   } else if (motif === 'fort') {
+    ctx.fillStyle = '#e2c283';
     ctx.fillRect(-8, -2, 16, 10);
+    ctx.fillStyle = color;
     ctx.fillRect(-7, -6, 4, 4);
     ctx.fillRect(-2, -4, 4, 2);
     ctx.fillRect(3, -7, 4, 5);
+    ctx.fillStyle = '#f5f0e5';
+    ctx.fillRect(-6, 0, 2, 2);
+    ctx.fillRect(4, 0, 2, 2);
     ctx.fillStyle = '#172027';
     ctx.fillRect(-2, 3, 4, 5);
+    ctx.fillStyle = '#d9b866';
+    ctx.fillRect(-1, 5, 2, 2);
   } else if (motif === 'palm') {
     ctx.beginPath();
     ctx.moveTo(-1, 8);
