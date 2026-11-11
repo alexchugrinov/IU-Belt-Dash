@@ -4,6 +4,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 const GROUND_Y = 430, PLAYER_SIZE = 34;
+const GAME_SPEED_MULTIPLIER = 1.05;
 
 const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 const IS_MOBILE = IS_TOUCH && Math.min(window.innerWidth, window.innerHeight) < 900;
@@ -621,7 +622,7 @@ function startLevel(b) {
   belt = b;
   pointerHeld = false;
   // Faster speed scaling with each belt
-  speed = 5 + b * 0.5;
+  speed = (5 + b * 0.5) * GAME_SPEED_MULTIPLIER;
   player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
   player.onGround = true; player.rotation = 0;
   cameraX = 0; particles = [];
@@ -645,7 +646,7 @@ function startSecretLevel(idx, mode) {
   secretIdx = idx;
   secretMode = mode;
   pointerHeld = false;
-  speed = SECRETS[idx].speed;
+  speed = SECRETS[idx].speed * GAME_SPEED_MULTIPLIER;
   player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
   player.onGround = true; player.rotation = 0;
   cameraX = 0; particles = [];
