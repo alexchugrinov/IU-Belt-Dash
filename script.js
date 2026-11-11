@@ -94,7 +94,7 @@ let pausedDuration = 0, pauseStartTime = 0;
 let levelStartTime = 0, levelPausedDuration = 0;
 
 const player = { x: 120, y: GROUND_Y - PLAYER_SIZE, vy: 0, size: PLAYER_SIZE, onGround: true, rotation: 0 };
-const keys = {}; let jumpQueued = false;
+const keys = {}; let jumpQueued = false, pointerHeld = false, flightMode = false;
 
 // ============== Helpers ==============
 function vibrate(p) { if (navigator.vibrate) { try { navigator.vibrate(p); } catch(e){} } }
@@ -129,7 +129,7 @@ checkOrientation();
 window.addEventListener('keydown', (e) => {
   if (gameState === 'menu') return;
   if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-    if (!keys[e.key]) jumpQueued = true;
+    if (!keys[e.key] && !flightMode) jumpQueued = true;
     keys[e.key] = true;
     e.preventDefault();
   }
@@ -147,7 +147,8 @@ window.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
 function tapJump(e) {
   if (gameState === 'menu' || gameState === 'paused') return;
-  jumpQueued = true;
+  pointerHeld = true;
+  if (!flightMode) jumpQueued = true;
   const t = (e.touches && e.touches[0]) || e;
   if (t && typeof t.clientX === 'number') {
     const r = document.createElement('div');
@@ -160,6 +161,9 @@ function tapJump(e) {
 }
 canvas.addEventListener('mousedown', tapJump);
 canvas.addEventListener('touchstart', (e) => { tapJump(e); e.preventDefault(); }, { passive: false });
+window.addEventListener('mouseup', () => { pointerHeld = false; });
+window.addEventListener('touchend', () => { pointerHeld = false; });
+window.addEventListener('touchcancel', () => { pointerHeld = false; });
 
 function bindBtn(id, handler) {
   const el = document.getElementById(id);
@@ -308,6 +312,8 @@ const PATTERNS = [
   ['jumpPad',      6, 9],    // NEW: green pad → boosted jump → tall block ahead
   ['saw',          7, 12],   // NEW: rotating circular saw (circle hitbox)
   ['staircase',    7, 8],
+  ['orbGap',       5, 10],   // NEW: long spike field — tap the orange orb mid-air to jump again
+  ['airplane',     5, 6],
 ];
 
 function pickPattern(currentBelt, isSecret) {
@@ -396,10 +402,25 @@ function placePattern(obstacles, x, p, d) {
       obstacles.push({ type:'pad',   x,       y:GROUND_Y-12,  w:60, h:12 });
       obstacles.push({ type:'block', x:x+250, y:GROUND_Y-130, w:60, h:130 });
       return 310;
+    case 'orbGap':
+      // 11 spikes is too long for one jump; orb floats mid-field
+      for (let i=0;i<11;i++) obstacles.push({ type:'spike', x:x+i*30, y:GROUND_Y-30, w:30, h:30 });
+      obstacles.push({ type:'orb', x:x+165-18, y:GROUND_Y-120-18, w:36, h:36, used:false });
+      return 330;
     case 'saw':
       // rotating saw at jump-arc height
       obstacles.push({ type:'saw', x:x+10, y:GROUND_Y-95, w:50, h:50 });
       return 70;
+    case 'airplane':
+      obstacles.push({ type:'portal', mode:'airplane', x, y:GROUND_Y-150, w:46, h:150 });
+      obstacles.push({ type:'block', x:x+240, y:0, w:48, h:180 });
+      obstacles.push({ type:'block', x:x+240, y:300, w:48, h:GROUND_Y-300 });
+      obstacles.push({ type:'block', x:x+480, y:0, w:48, h:245 });
+      obstacles.push({ type:'block', x:x+480, y:365, w:48, h:GROUND_Y-365 });
+      obstacles.push({ type:'block', x:x+700, y:0, w:48, h:140 });
+      obstacles.push({ type:'block', x:x+700, y:280, w:48, h:GROUND_Y-280 });
+      obstacles.push({ type:'portal', mode:'cube', x:x+870, y:GROUND_Y-150, w:46, h:150 });
+      return 916;
   }
   return 50;
 }
@@ -460,6 +481,8 @@ function startLevel(b) {
   customLevelActive = false;
   activeCustomLevel = null;
   belt = b;
+  flightMode = false;
+  pointerHeld = false;
   // Faster speed scaling with each belt
   speed = 5 + b * 0.5;
   player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
@@ -484,6 +507,8 @@ function startSecretLevel(idx, mode) {
   activeCustomLevel = null;
   secretIdx = idx;
   secretMode = mode;
+  flightMode = false;
+  pointerHeld = false;
   speed = SECRETS[idx].speed;
   player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
   player.onGround = true; player.rotation = 0;
@@ -529,9 +554,12 @@ function respawn() {
   attempts++;
   player.x = lastCheckpointX;
   player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
+  flightMode = false;
+  pointerHeld = false;
   player.onGround = true; player.rotation = 0;
   cameraX = Math.max(0, player.x - 280);
   particles = [];
+  if (levelData) for (const o of levelData.obstacles) if (o.type === 'orb') o.used = false;
   gameState = 'playing';
   updateHUD();
 }
@@ -663,10 +691,13 @@ function update() {
     return;
   }
 
-  const jumpHeld = keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W'] || jumpQueued;
-  if (jumpHeld && player.onGround) {
+  const jumpHeld = keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W'] || pointerHeld || jumpQueued;
+  const tapped = jumpQueued;   // fresh press this frame (orbs need a tap, not a hold)
+  let groundJumped = false;
+  if (!flightMode && jumpHeld && player.onGround) {
     player.vy = -14.5;
     player.onGround = false;
+    groundJumped = true;
     if (IS_MOBILE) vibrate(VIBE.jump);
   }
   jumpQueued = false;
@@ -674,19 +705,37 @@ function update() {
   const wasOnGround = player.onGround;
   player.onGround = false;
 
-  player.vy += 0.88;
-  if (player.vy > 18) player.vy = 18;
+  if (flightMode) {
+    player.vy += jumpHeld ? -0.72 : 1.15;
+    player.vy = Math.max(-8.5, Math.min(8.5, player.vy));
+  } else {
+    player.vy += 0.88;
+    if (player.vy > 18) player.vy = 18;
+  }
+  const previousX = player.x;
   player.y += player.vy;
   player.x += speed;
 
-  if (!wasOnGround) player.rotation += 0.18;
+  for (const o of levelData.obstacles) {
+    if (o.type !== 'portal' || previousX + player.size > o.x || player.x + player.size <= o.x) continue;
+    flightMode = o.mode === 'airplane';
+    player.onGround = false;
+    if (!flightMode) player.rotation = 0;
+  }
+
+  if (flightMode) {
+    player.y = Math.max(12, Math.min(GROUND_Y - player.size - 12, player.y));
+  }
+
+  if (flightMode) player.rotation = 0;
+  else if (!wasOnGround) player.rotation += 0.18;
   else {
     const target = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
     player.rotation += (target - player.rotation) * 0.4;
   }
 
   // Ground / pit
-  if (player.y + player.size >= GROUND_Y) {
+  if (!flightMode && player.y + player.size >= GROUND_Y) {
     let overPit = false;
     for (const o of levelData.obstacles) {
       if (o.type === 'pit' && player.x + player.size > o.x + 6 && player.x < o.x + o.w - 6) { overPit = true; break; }
@@ -706,6 +755,7 @@ function update() {
     const overlapX = player.x < o.x + o.w && player.x + player.size > o.x;
     const overlapY = player.y < o.y + o.h && player.y + player.size > o.y;
     if (!overlapX || !overlapY) continue;
+    if (flightMode) { die(); return; }
     const playerBottom = player.y + player.size;
     const prevBottom = playerBottom - player.vy;
     if (player.vy >= 0 && prevBottom <= o.y + 2) {
@@ -758,6 +808,32 @@ function update() {
         player.vy = -22;
         player.onGround = false;
         vibrate(VIBE.pad);
+      }
+    }
+  }
+
+  // Jump orbs: tap while touching to jump again (one use per orb)
+  if (tapped && !groundJumped && !flightMode) {
+    for (const o of levelData.obstacles) {
+      if (o.type !== 'orb' || o.used) continue;
+      if (o.x + o.w < player.x) continue;
+      if (o.x > player.x + player.size) continue;
+      const cx = o.x + o.w/2, cy = o.y + o.h/2, r = o.w/2;
+      const closestX = Math.max(player.x, Math.min(cx, player.x + player.size));
+      const closestY = Math.max(player.y, Math.min(cy, player.y + player.size));
+      const dx = cx - closestX, dy = cy - closestY;
+      if (dx*dx + dy*dy <= r*r) {
+        o.used = true;
+        player.vy = -14.5;
+        player.onGround = false;
+        vibrate(VIBE.pad);
+        for (let i = 0; i < 12; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const sp = 2 + Math.random() * 4;
+          particles.push({ x: cx, y: cy, vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp,
+            size: 3 + Math.random()*3, life: 1, decay: 0.04, color: '#ff9a1f' });
+        }
+        break;
       }
     }
   }
@@ -886,6 +962,10 @@ function drawBeltMotif(B) {
 }
 
 function drawPlayer(B) {
+  if (flightMode) {
+    drawAirplane(B);
+    return;
+  }
   ctx.save();
   ctx.translate(player.x + player.size/2, player.y + player.size/2);
   ctx.rotate(player.rotation);
@@ -905,6 +985,44 @@ function drawPlayer(B) {
   ctx.restore();
 }
 
+function drawAirplane(B) {
+  ctx.save();
+  ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
+  ctx.rotate(Math.max(-0.35, Math.min(0.35, player.vy * 0.035)));
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(-15, 7, 30, 5);
+  ctx.fillStyle = B.fg;
+  ctx.beginPath();
+  ctx.moveTo(17, 0);
+  ctx.lineTo(-10, -5);
+  ctx.lineTo(-16, -10);
+  ctx.lineTo(-14, -2);
+  ctx.lineTo(-17, 0);
+  ctx.lineTo(-14, 2);
+  ctx.lineTo(-16, 10);
+  ctx.lineTo(-10, 5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = B.accent;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = B.accent;
+  ctx.beginPath();
+  ctx.moveTo(2, 0);
+  ctx.lineTo(-7, -15);
+  ctx.lineTo(-11, -14);
+  ctx.lineTo(-7, 0);
+  ctx.lineTo(-11, 14);
+  ctx.lineTo(-7, 15);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = B.bg1;
+  ctx.fillRect(6, -2, 6, 4);
+  ctx.fillStyle = B.glow;
+  ctx.fillRect(-17, -2, 3, 4);
+  ctx.restore();
+}
+
 function drawObstacle(o, B) {
   if (o.type === 'spike') {
     drawTriUp(o, B);
@@ -916,7 +1034,56 @@ function drawObstacle(o, B) {
     drawSaw(o, B);
   } else if (o.type === 'pad') {
     drawPad(o, B);
+  } else if (o.type === 'orb') {
+    drawOrb(o);
+  } else if (o.type === 'portal') {
+    drawPortal(o, B);
   }
+}
+
+function drawOrb(o) {
+  const cx = o.x + o.w/2, cy = o.y + o.h/2, r = o.w/2;
+  const pulse = 0.5 + Math.sin(frame * 0.15 + o.x * 0.01) * 0.5;
+  ctx.save();
+  ctx.globalAlpha = o.used ? 0.3 : 1;
+  // outer pulsing ring
+  ctx.strokeStyle = '#ffb347';
+  ctx.lineWidth = 2;
+  ctx.globalAlpha *= 0.5 + pulse * 0.4;
+  ctx.beginPath(); ctx.arc(cx, cy, r + 5 + pulse * 4, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = o.used ? 0.3 : 1;
+  // orb body
+  ctx.shadowColor = '#ff8c00';
+  ctx.shadowBlur = o.used ? 0 : 16;
+  ctx.fillStyle = '#ff8c00';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#ffc266';
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
+function drawPortal(o, B) {
+  const color = o.mode === 'airplane' ? '#38e8ff' : '#ffe34d';
+  const pulse = 0.7 + Math.sin(frame * 0.12 + o.x) * 0.3;
+  ctx.save();
+  ctx.globalAlpha = 0.18 * pulse;
+  ctx.fillStyle = color;
+  ctx.fillRect(o.x - 8, o.y - 8, o.w + 16, o.h + 8);
+  ctx.globalAlpha = pulse;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 6;
+  ctx.strokeRect(o.x + 3, o.y + 3, o.w - 6, o.h - 6);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(o.x + 11, o.y + 11, o.w - 22, o.h - 22);
+  ctx.fillStyle = color;
+  ctx.font = 'bold 12px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillText(o.mode === 'airplane' ? 'FLY' : 'EXIT', o.x + o.w / 2, o.y + 22);
+  ctx.restore();
 }
 
 function drawTriUp(o, B) {
