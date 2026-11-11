@@ -4,10 +4,6 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 const GROUND_Y = 430, PLAYER_SIZE = 34;
-const GAME_SPEED_MULTIPLIER = 1.3;
-const NORMAL_GRAVITY = 0.88;
-const JUMP_MAX_HEIGHT = 115;
-const JUMP_MAX_DISTANCE = 180;
 
 const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 const IS_MOBILE = IS_TOUCH && Math.min(window.innerWidth, window.innerHeight) < 900;
@@ -290,7 +286,7 @@ let sessionStartTime = 0, iuTalents = 0;
 let pausedDuration = 0, pauseStartTime = 0;
 let levelStartTime = 0, levelPausedDuration = 0;
 
-const player = { x: 120, y: GROUND_Y - PLAYER_SIZE, vy: 0, size: PLAYER_SIZE, onGround: true, rotation: 0, gravity: NORMAL_GRAVITY };
+const player = { x: 120, y: GROUND_Y - PLAYER_SIZE, vy: 0, size: PLAYER_SIZE, onGround: true, rotation: 0 };
 const keys = {}; let jumpQueued = false, pointerHeld = false;
 
 // ============== Helpers ==============
@@ -625,9 +621,9 @@ function startLevel(b) {
   belt = b;
   pointerHeld = false;
   // Faster speed scaling with each belt
-  speed = (5 + b * 0.5) * GAME_SPEED_MULTIPLIER;
+  speed = 5 + b * 0.5;
   player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
-  player.onGround = true; player.rotation = 0; player.gravity = NORMAL_GRAVITY;
+  player.onGround = true; player.rotation = 0;
   cameraX = 0; particles = [];
   lastCheckpointX = 120;
   levelData = generateLevel(b);
@@ -649,9 +645,9 @@ function startSecretLevel(idx, mode) {
   secretIdx = idx;
   secretMode = mode;
   pointerHeld = false;
-  speed = SECRETS[idx].speed * GAME_SPEED_MULTIPLIER;
+  speed = SECRETS[idx].speed;
   player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
-  player.onGround = true; player.rotation = 0; player.gravity = NORMAL_GRAVITY;
+  player.onGround = true; player.rotation = 0;
   cameraX = 0; particles = [];
   lastCheckpointX = 120;
   levelData = generateSecretLevel(idx);
@@ -668,7 +664,7 @@ function respawn() {
   player.x = lastCheckpointX;
   player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
   pointerHeld = false;
-  player.onGround = true; player.rotation = 0; player.gravity = NORMAL_GRAVITY;
+  player.onGround = true; player.rotation = 0;
   cameraX = Math.max(0, player.x - 280);
   particles = [];
   gameState = 'playing';
@@ -799,12 +795,7 @@ function update() {
 
   const jumpHeld = keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W'] || pointerHeld || jumpQueued;
   if (jumpHeld && player.onGround) {
-    const jumpDuration = Math.min(
-      2 * Math.sqrt(2 * JUMP_MAX_HEIGHT / NORMAL_GRAVITY),
-      JUMP_MAX_DISTANCE / speed,
-    );
-    player.gravity = 8 * JUMP_MAX_HEIGHT / (jumpDuration * jumpDuration);
-    player.vy = -4 * JUMP_MAX_HEIGHT / jumpDuration;
+    player.vy = -14.5;
     player.onGround = false;
     if (IS_MOBILE) vibrate(VIBE.jump);
   }
@@ -813,12 +804,12 @@ function update() {
   const wasOnGround = player.onGround;
   player.onGround = false;
 
-  player.vy += player.gravity;
+  player.vy += 0.88;
   if (player.vy > 18) player.vy = 18;
   player.y += player.vy;
   player.x += speed;
 
-  if (!wasOnGround) player.rotation += 0.35;
+  if (!wasOnGround) player.rotation += 0.18;
   else {
     const target = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
     player.rotation += (target - player.rotation) * 0.4;
@@ -895,14 +886,11 @@ function update() {
         player.y + player.size > o.y && player.y < o.y + o.h) {
       if (player.vy >= -10) {
         player.vy = -22;
-        player.gravity = NORMAL_GRAVITY;
         player.onGround = false;
         vibrate(VIBE.pad);
       }
     }
   }
-
-  if (player.onGround) player.gravity = NORMAL_GRAVITY;
 
   cameraX = player.x - 280;
   if (cameraX < 0) cameraX = 0;
@@ -1470,6 +1458,32 @@ function drawSkinBody(skin) {
   volume.addColorStop(1, 'rgba(0,0,0,0.22)');
   ctx.fillStyle = volume;
   ctx.fillRect(-half, -half, player.size, player.size);
+  if (skin.shape === 'cube') {
+    ctx.beginPath();
+    ctx.moveTo(-half + 2, -half + 2);
+    ctx.lineTo(half * 0.62, -half + 2);
+    ctx.lineTo(-half + 2, half * 0.62);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(half - 2, half - 2);
+    ctx.lineTo(-half * 0.48, half - 2);
+    ctx.lineTo(half - 2, -half * 0.48);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.fill();
+
+    const bevel = ctx.createLinearGradient(-half, -half, half, half);
+    bevel.addColorStop(0, 'rgba(255,255,255,0.72)');
+    bevel.addColorStop(0.5, 'rgba(255,255,255,0.12)');
+    bevel.addColorStop(1, 'rgba(0,0,0,0.62)');
+    ctx.strokeStyle = bevel;
+    ctx.lineWidth = 1;
+    drawSkinPath(skin.shape, player.size - 4);
+    ctx.stroke();
+  }
   ctx.restore();
   ctx.restore();
 }
