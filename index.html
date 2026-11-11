@@ -96,14 +96,40 @@
         </div>
         <div class="skin-gallery" id="skinGallery"></div>
         <div class="skin-editor-status skin-progress" id="skinProgress" aria-live="polite"></div>
+        <details class="theme-customizer">
+          <summary><span>✦</span> DESIGN YOUR OWN INTERFACE</summary>
+          <div class="theme-preview" id="themePreview" aria-label="Live interface style preview">
+            <div class="theme-preview-top"><span></span><i></i><i></i><i></i></div>
+            <div class="theme-preview-content">
+              <span class="theme-preview-mark">IU</span>
+              <span class="theme-preview-title">YOUR ARCADE. YOUR STYLE.</span>
+              <span class="theme-preview-bar"></span>
+              <span class="theme-preview-button">PLAY YOUR WAY <b>↗</b></span>
+            </div>
+          </div>
+          <form class="theme-editor" id="customThemeForm">
+            <label class="skin-field">MAIN GLOW
+              <input id="themeAccent" type="color" value="#ff526f" aria-label="Main interface accent color">
+            </label>
+            <label class="skin-field">NEON GLOW
+              <input id="themeSecondary" type="color" value="#62e5db" aria-label="Secondary interface color">
+            </label>
+            <label class="skin-field">NIGHT BACKGROUND
+              <input id="themeBackground" type="color" value="#111329" aria-label="Interface background color">
+            </label>
+            <button class="skin-create-btn theme-save-btn" type="submit">SAVE MY STYLE</button>
+            <button class="theme-reset-btn" id="themeResetBtn" type="button">RESET</button>
+          </form>
+          <div class="skin-editor-status" id="themeEditorStatus" aria-live="polite"></div>
+        </details>
         <details class="skin-customizer">
-          <summary><span>✦</span> CREATE YOUR OWN SKIN</summary>
+          <summary><span>✦</span> BUILD YOUR OWN CUBE</summary>
           <div class="custom-preview-stage">
             <span class="custom-preview-label">LIVE PREVIEW</span>
             <div class="custom-preview-cube cube" id="customSkinPreview" role="img" aria-label="Preview of your custom runner skin">
               <span class="custom-preview-side"></span>
               <span class="custom-preview-top"></span>
-              <span class="custom-preview-face"><i></i><i></i><b></b></span>
+              <span class="custom-preview-face"></span>
             </div>
             <span class="custom-preview-name" id="customSkinPreviewName">MY RUNNER</span>
           </div>
@@ -123,6 +149,18 @@
                 <option value="diamond">DIAMOND</option>
                 <option value="circle">CIRCLE</option>
                 <option value="hexagon">HEXAGON</option>
+              </select>
+            </label>
+            <label class="skin-field skin-pattern-field">PATTERN
+              <select id="customSkinPattern">
+                <option value="prism">PRISM</option>
+                <option value="circuit">CIRCUIT</option>
+                <option value="ember">EMBER</option>
+                <option value="grid">GRID</option>
+                <option value="flare">FLARE</option>
+                <option value="crystal">CRYSTAL</option>
+                <option value="stone">STONE</option>
+                <option value="nebula">NEBULA</option>
               </select>
             </label>
             <button class="skin-create-btn" type="submit">CREATE &amp; EQUIP</button>

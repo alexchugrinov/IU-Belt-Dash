@@ -40,6 +40,8 @@ const SPECIAL_SKINS = [
   { id:'bonus-orange', name:'ORANGE CUBE', main:'#ff7626', accent:'#ffd166', shape:'cube', pattern:'ember', unlockBelt:7 },
 ];
 const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
+const CUSTOM_SKIN_PATTERNS = ['prism', 'circuit', 'ember', 'grid', 'flare', 'crystal', 'stone', 'nebula'];
+const DEFAULT_INTERFACE_THEME = { accent: '#ff526f', secondary: '#62e5db', background: '#111329' };
 const SKIN_STORAGE_KEY = 'iuBeltDashSkins';
 const LEGACY_ANIMAL_SKIN_IDS = ['special-chameleon', 'special-lion', 'special-leopard'];
 
@@ -65,24 +67,31 @@ function loadSkinSave() {
       main: skin.main,
       accent: skin.accent,
       shape: skin.shape,
-      pattern: 'custom',
+      pattern: CUSTOM_SKIN_PATTERNS.includes(skin.pattern) ? skin.pattern : 'prism',
     })) : [];
+    const savedTheme = saved.theme && typeof saved.theme === 'object' ? saved.theme : {};
     return {
       maxBeltReached: Number.isInteger(saved.maxBeltReached) ? Math.max(0, Math.min(8, saved.maxBeltReached)) : 0,
       selectedSkinId: LEGACY_ANIMAL_SKIN_IDS.includes(saved.selectedSkinId)
         ? 'level'
         : typeof saved.selectedSkinId === 'string' ? saved.selectedSkinId : 'level',
       customSkins,
+      theme: {
+        accent: /^#[0-9a-f]{6}$/i.test(savedTheme.accent) ? savedTheme.accent : DEFAULT_INTERFACE_THEME.accent,
+        secondary: /^#[0-9a-f]{6}$/i.test(savedTheme.secondary) ? savedTheme.secondary : DEFAULT_INTERFACE_THEME.secondary,
+        background: /^#[0-9a-f]{6}$/i.test(savedTheme.background) ? savedTheme.background : DEFAULT_INTERFACE_THEME.background,
+      },
     };
   } catch (error) {
     reportSkinStorageError('load', error);
-    return { maxBeltReached: 0, selectedSkinId: 'level', customSkins: [] };
+    return { maxBeltReached: 0, selectedSkinId: 'level', customSkins: [], theme: { ...DEFAULT_INTERFACE_THEME } };
   }
 }
 
 const skinSave = loadSkinSave();
 let selectedSkinId = skinSave.selectedSkinId;
 const customSkins = skinSave.customSkins;
+let interfaceTheme = skinSave.theme;
 
 function saveSkinProgress() {
   try {
@@ -90,6 +99,7 @@ function saveSkinProgress() {
       maxBeltReached: stats.maxBeltReached,
       selectedSkinId,
       customSkins,
+      theme: interfaceTheme,
     }));
     return true;
   } catch (error) {
@@ -922,10 +932,6 @@ function drawPlayer() {
   ctx.lineWidth = 1;
   drawSkinPath(skin.shape, player.size - 7);
   ctx.stroke();
-  if (skin.pattern !== 'plain') {
-    drawSkinPattern(skin);
-    if (skin.pattern === 'custom') drawSkinFace(skin);
-  }
   ctx.restore();
 }
 
@@ -1987,11 +1993,63 @@ function updateCustomSkinPreview() {
   const nameLabel = document.getElementById('customSkinPreviewName');
   if (!preview || !nameInput || !nameLabel) return;
   const shape = document.getElementById('customSkinShape').value;
-  preview.className = 'custom-preview-cube ' + (SKIN_SHAPES.includes(shape) ? shape : 'cube');
+  const pattern = document.getElementById('customSkinPattern').value;
+  preview.className = 'custom-preview-cube ' +
+    (SKIN_SHAPES.includes(shape) ? shape : 'cube') + ' pattern-' +
+    (CUSTOM_SKIN_PATTERNS.includes(pattern) ? pattern : 'prism');
   preview.style.setProperty('--preview-main', document.getElementById('customSkinMain').value);
   preview.style.setProperty('--preview-accent', document.getElementById('customSkinAccent').value);
   nameLabel.textContent = nameInput.value.trim().slice(0, 16) || 'MY RUNNER';
 }
+
+function getInterfaceThemeFromInputs() {
+  return {
+    accent: document.getElementById('themeAccent').value,
+    secondary: document.getElementById('themeSecondary').value,
+    background: document.getElementById('themeBackground').value,
+  };
+}
+
+function applyInterfaceTheme(theme) {
+  const root = document.documentElement;
+  root.style.setProperty('--user-ui-accent', theme.accent);
+  root.style.setProperty('--user-ui-secondary', theme.secondary);
+  root.style.setProperty('--user-ui-background', theme.background);
+}
+
+function updateInterfaceThemePreview() {
+  applyInterfaceTheme(getInterfaceThemeFromInputs());
+}
+
+const themeAccentInput = document.getElementById('themeAccent');
+const themeSecondaryInput = document.getElementById('themeSecondary');
+const themeBackgroundInput = document.getElementById('themeBackground');
+const themeEditorStatus = document.getElementById('themeEditorStatus');
+themeAccentInput.value = interfaceTheme.accent;
+themeSecondaryInput.value = interfaceTheme.secondary;
+themeBackgroundInput.value = interfaceTheme.background;
+applyInterfaceTheme(interfaceTheme);
+
+document.getElementById('customThemeForm').addEventListener('input', updateInterfaceThemePreview);
+document.getElementById('customThemeForm').addEventListener('change', updateInterfaceThemePreview);
+document.getElementById('customThemeForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  interfaceTheme = getInterfaceThemeFromInputs();
+  applyInterfaceTheme(interfaceTheme);
+  const saved = saveSkinProgress();
+  themeEditorStatus.textContent = saved ? 'YOUR INTERFACE STYLE IS SAVED' : 'STYLE APPLIED, BUT COULD NOT BE SAVED';
+  themeEditorStatus.dataset.state = saved ? 'success' : 'error';
+});
+document.getElementById('themeResetBtn').addEventListener('click', () => {
+  themeAccentInput.value = DEFAULT_INTERFACE_THEME.accent;
+  themeSecondaryInput.value = DEFAULT_INTERFACE_THEME.secondary;
+  themeBackgroundInput.value = DEFAULT_INTERFACE_THEME.background;
+  interfaceTheme = { ...DEFAULT_INTERFACE_THEME };
+  applyInterfaceTheme(interfaceTheme);
+  const saved = saveSkinProgress();
+  themeEditorStatus.textContent = saved ? 'DEFAULT STYLE RESTORED' : 'DEFAULT STYLE APPLIED, BUT COULD NOT BE SAVED';
+  themeEditorStatus.dataset.state = saved ? 'success' : 'error';
+});
 
 document.getElementById('customSkinForm').addEventListener('input', updateCustomSkinPreview);
 document.getElementById('customSkinForm').addEventListener('change', updateCustomSkinPreview);
@@ -2015,7 +2073,7 @@ document.getElementById('customSkinForm').addEventListener('submit', (event) => 
     main: document.getElementById('customSkinMain').value,
     accent: document.getElementById('customSkinAccent').value,
     shape: document.getElementById('customSkinShape').value,
-    pattern: 'custom',
+    pattern: document.getElementById('customSkinPattern').value,
   };
   customSkins.push(skin);
   selectedSkinId = skin.id;
