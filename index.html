@@ -62,7 +62,48 @@
     </div>
   </div>
 
+  <section class="community-section" id="playerLevels">
+    <div class="section-label">— COMMUNITY —</div>
+    <h2 class="community-title">PLAYER LEVELS</h2>
+    <p class="community-copy">Create a level and share its link. Anyone with the link can play it.</p>
+    <button class="pauseBtn primary" id="createLevelBtn" type="button">CREATE A LEVEL</button>
+    <div id="sharedLevelFeature" class="shared-level-feature" hidden></div>
+    <div id="savedLevels" class="community-grid"></div>
+  </section>
+
   <footer>INTELLIGENT UNIVERSITY · OMAN</footer>
+</div>
+
+<div id="levelEditorModal" class="editor-modal" aria-hidden="true">
+  <section class="editor-dialog" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+    <button id="closeEditorBtn" class="editor-close" type="button" aria-label="Close level editor">×</button>
+    <div class="section-label">— LEVEL WORKSHOP —</div>
+    <h2 id="editorTitle">CREATE A LEVEL</h2>
+    <div class="editor-fields">
+      <label>LEVEL NAME<input id="levelNameInput" type="text" maxlength="40" value="My Level" autocomplete="off"></label>
+      <label>CREATOR<input id="levelAuthorInput" type="text" maxlength="24" value="Player" autocomplete="off"></label>
+      <label>LENGTH <span id="levelLengthValue">5000</span>
+        <input id="levelLengthInput" type="range" min="3000" max="9000" step="500" value="5000">
+      </label>
+    </div>
+    <div class="editor-tools" role="group" aria-label="Obstacle tools">
+      <button type="button" data-tool="spike" class="selected">SPIKE</button>
+      <button type="button" data-tool="block">BLOCK</button>
+      <button type="button" data-tool="pit">PIT</button>
+      <button type="button" data-tool="saw">SAW</button>
+      <button type="button" data-tool="pad">JUMP PAD</button>
+      <button type="button" data-tool="erase">ERASER</button>
+      <button type="button" id="undoObstacleBtn">UNDO</button>
+    </div>
+    <canvas id="editorCanvas" width="960" height="180" aria-label="Level layout. Click to place selected obstacle."></canvas>
+    <p class="editor-help">Click the track to place obstacles. Keep the start and finish clear. Up to 50 obstacles.</p>
+    <div id="editorStatus" class="editor-status" aria-live="polite"></div>
+    <input id="publishedLevelLink" class="published-level-link" type="text" readonly hidden aria-label="Published level link">
+    <div class="editor-actions">
+      <button class="pauseBtn" id="saveDraftBtn" type="button">SAVE DRAFT</button>
+      <button class="pauseBtn primary" id="publishLevelBtn" type="button">PUBLISH &amp; COPY LINK</button>
+    </div>
+  </section>
 </div>
 
 <!-- =========== GAME =========== -->
