@@ -17,15 +17,33 @@
 <body>
 
 <div class="bgStripes"></div>
+<button class="secret-corner-button" id="secretRogerButton" type="button" aria-label="Secret star button">✦</button>
 
 <!-- =========== LANDING =========== -->
 <div id="landingPage">
-
+  <header class="site-header">
+    <a class="site-brand" href="#landingPage" aria-label="IU Belt Dash home">
+      <span class="site-brand-mark">IU</span>
+      <span class="site-brand-copy"><strong>IU BELT DASH</strong><small>INTELLIGENT UNIVERSITY</small></span>
+    </a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="#howToPlay">HOW TO PLAY</a>
+      <a href="#skinsHeading">SKIN GARAGE</a>
+      <a href="#trialsHeading">SECRET TRIALS</a>
+      <button class="site-nav-play" id="playBtnNav" type="button">PLAY NOW <span>↗</span></button>
+    </nav>
+  </header>
   <div class="lp-hero">
     <div class="lp-left">
       <div class="brand">INTELLIGENT UNIVERSITY PRESENTS</div>
-      <h1>IU BELT DASH</h1>
-      <div class="tagline">FROM WHITE <span class="player-cube"></span> TO BLACK</div>
+      <div class="hero-kicker"><span></span> YOUR NEXT CHALLENGE STARTS HERE</div>
+      <h1>IU BELT <span>DASH</span></h1>
+      <div class="tagline">ONE RUN. EIGHT BELTS. YOUR LEGEND.</div>
+      <p class="hero-copy">Jump, dodge and conquer the belt ladder. Make every run your own.</p>
+      <div class="hero-pills">
+        <span><i></i> 8 BELTS TO CONQUER</span>
+        <span><i></i> 3 SECRET TRIALS</span>
+      </div>
 
       <div class="belt-strip">
         <div style="background:#fff;color:#fff"></div>
@@ -38,27 +56,126 @@
         <div style="background:#222;border:1px solid #444;color:#222"></div>
       </div>
 
+      <div class="game-preview" role="img" aria-label="Runner jumping over spikes on a colorful belt">
+        <div class="preview-topline"><span>YOUR NEXT RUN</span><span id="menuBeltProgress">BELT 1 / 8</span></div>
+        <div class="preview-world">
+          <div class="preview-sun"></div>
+          <div class="preview-ridge preview-ridge-back"></div>
+          <div class="preview-ridge preview-ridge-front"></div>
+          <div class="preview-spark spark-one"></div>
+          <div class="preview-spark spark-two"></div>
+          <div class="preview-player"><i></i><i></i></div>
+          <div class="preview-spike"></div>
+          <div class="preview-ground"></div>
+        </div>
+        <div class="preview-caption"><span>COLLECTION</span><strong id="menuSkinCount">01 SKIN AVAILABLE</strong></div>
+      </div>
+
       <button class="play-btn" id="playBtnTop">
-        <span>PLAY NOW</span><span class="play-arrow">▶</span>
+        <span>START YOUR RUN</span><span class="play-arrow">↗</span>
       </button>
-      <div class="quick-info">PHONE &amp; DESKTOP &nbsp;·&nbsp; NO INSTALL &nbsp;·&nbsp; FREE</div>
+      <div class="quick-info"><span>PHONE &amp; DESKTOP</span><b>·</b><span>NO INSTALL</span><b>·</b><span>FREE TO PLAY</span></div>
     </div>
 
     <div class="lp-right">
-      <div class="section-label">— HOW TO PLAY —</div>
+      <div class="section-label" id="howToPlay">— HOW TO PLAY —</div>
       <div class="tip-list">
         <div class="tip-item"><span class="tip-num">01</span>TAP / <kbd>SPACE</kbd> / <kbd>↑</kbd> — jump over spikes, blocks, saws and pits of lava</div>
-        <div class="tip-item"><span class="tip-num">✈</span>Find a portal to fly a plane — hold jump to climb and release to descend</div>
+        <div class="tip-item"><span class="tip-num">✦</span>Time your jumps carefully and use glowing jump pads to clear high obstacles</div>
         <div class="tip-item"><span class="tip-num">02</span>Reach checkpoints to save progress &nbsp;·&nbsp; <kbd>R</kbd> to respawn &nbsp;·&nbsp; <kbd>P</kbd> to pause</div>
         <div class="tip-item"><span class="tip-num">03</span>Climb 8 belts from White to Black — each belt is faster and longer than the last</div>
         <div class="tip-item"><span class="tip-num">✦</span>Complete achievements to unlock 3 secret trials &nbsp;·&nbsp; 5% chance of a random detour at every belt transition</div>
       </div>
 
-      <div class="section-label" style="margin-top:20px">— SECRET TRIALS —</div>
-      <div class="trial-progress" id="trialProgress">0 OF 3 TRIALS UNLOCKED</div>
-      <div class="trials" id="trialsContainer">
-        <!-- populated by JS -->
-      </div>
+      <section class="skin-section" aria-labelledby="skinsHeading">
+        <div class="skin-heading">
+          <div>
+            <div class="section-label" id="skinsHeading">— RUNNER GARAGE —</div>
+            <p class="skin-help">Explore Oman-inspired belt and bonus skins, or craft a skin of your own.</p>
+          </div>
+          <span class="garage-badge">SAVED ON THIS DEVICE</span>
+        </div>
+        <div class="skin-gallery" id="skinGallery"></div>
+        <div class="skin-editor-status skin-progress" id="skinProgress" aria-live="polite"></div>
+        <details class="theme-customizer">
+          <summary><span>✦</span> DESIGN YOUR OWN INTERFACE</summary>
+          <div class="theme-preview" id="themePreview" aria-label="Live interface style preview">
+            <div class="theme-preview-top"><span></span><i></i><i></i><i></i></div>
+            <div class="theme-preview-content">
+              <span class="theme-preview-mark">IU</span>
+              <span class="theme-preview-title">YOUR ARCADE. YOUR STYLE.</span>
+              <span class="theme-preview-bar"></span>
+              <span class="theme-preview-button">PLAY YOUR WAY <b>↗</b></span>
+            </div>
+          </div>
+          <form class="theme-editor" id="customThemeForm">
+            <label class="skin-field">MAIN GLOW
+              <input id="themeAccent" type="color" value="#ff526f" aria-label="Main interface accent color">
+            </label>
+            <label class="skin-field">NEON GLOW
+              <input id="themeSecondary" type="color" value="#62e5db" aria-label="Secondary interface color">
+            </label>
+            <label class="skin-field">NIGHT BACKGROUND
+              <input id="themeBackground" type="color" value="#111329" aria-label="Interface background color">
+            </label>
+            <button class="skin-create-btn theme-save-btn" type="submit">SAVE MY STYLE</button>
+            <button class="theme-random-btn" id="themeRandomBtn" type="button">RANDOM STYLE</button>
+            <button class="theme-reset-btn" id="themeResetBtn" type="button">RESET</button>
+          </form>
+          <div class="skin-editor-status" id="themeEditorStatus" aria-live="polite"></div>
+        </details>
+        <details class="skin-customizer">
+          <summary><span>✦</span> BUILD YOUR OWN CUBE</summary>
+          <div class="custom-preview-stage">
+            <span class="custom-preview-label">LIVE PREVIEW</span>
+            <div class="custom-preview-cube cube" id="customSkinPreview" role="img" aria-label="Preview of your custom runner skin">
+              <span class="custom-preview-side"></span>
+              <span class="custom-preview-top"></span>
+              <span class="custom-preview-face"></span>
+            </div>
+            <span class="custom-preview-name" id="customSkinPreviewName">MY RUNNER</span>
+          </div>
+          <form class="skin-editor" id="customSkinForm">
+            <label class="skin-field skin-name-field">SKIN NAME
+              <input id="customSkinName" type="text" maxlength="16" placeholder="MY RUNNER" required>
+            </label>
+            <label class="skin-field">BODY
+              <input id="customSkinMain" type="color" value="#38e8ff" aria-label="Skin body color">
+            </label>
+            <label class="skin-field">ACCENT
+              <input id="customSkinAccent" type="color" value="#ff4d4d" aria-label="Skin accent color">
+            </label>
+            <label class="skin-field skin-shape-field">SHAPE
+              <select id="customSkinShape">
+                <option value="cube">CUBE</option>
+                <option value="diamond">DIAMOND</option>
+                <option value="circle">CIRCLE</option>
+                <option value="hexagon">HEXAGON</option>
+              </select>
+            </label>
+            <label class="skin-field skin-pattern-field">PATTERN
+              <select id="customSkinPattern">
+                <option value="prism">PRISM</option>
+                <option value="circuit">CIRCUIT</option>
+                <option value="ember">EMBER</option>
+                <option value="grid">GRID</option>
+                <option value="flare">FLARE</option>
+                <option value="crystal">CRYSTAL</option>
+                <option value="stone">STONE</option>
+                <option value="nebula">NEBULA</option>
+              </select>
+            </label>
+            <button class="skin-create-btn" type="submit">CREATE &amp; EQUIP</button>
+          </form>
+          <div class="skin-editor-status" id="skinEditorStatus" aria-live="polite"></div>
+        </details>
+      </section>
+
+      <section class="trial-section" aria-labelledby="trialsHeading">
+        <div class="section-label" id="trialsHeading">— SECRET TRIALS —</div>
+        <div class="trial-progress" id="trialProgress">0 OF 3 TRIALS UNLOCKED</div>
+        <div class="trials" id="trialsContainer"></div>
+      </section>
     </div>
   </div>
 
@@ -86,7 +203,7 @@
     </div>
   </div>
 
-  <div class="hud" id="desktopHint">SPACE / ↑ / CLICK = JUMP · HOLD IN PLANE TO CLIMB &nbsp;·&nbsp; R = RESPAWN &nbsp;·&nbsp; P = PAUSE</div>
+  <div class="hud" id="desktopHint">SPACE / ↑ / CLICK = JUMP &nbsp;·&nbsp; R = RESPAWN &nbsp;·&nbsp; P = PAUSE</div>
 
   <div id="pauseOverlay">
     <h2 id="pauseTitle">PAUSED</h2>

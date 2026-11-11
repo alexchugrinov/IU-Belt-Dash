@@ -23,6 +23,197 @@ const BELTS = [
   { name: 'BLACK',    bg1:'#1a1a1a', bg2:'#000000', floor:'#660000', fg:'#ffffff', accent:'#cc0000', spike:'#cc0000', block:'#262626', glow:'#660000', stripe:'#0d0d0d' },
 ];
 
+const BELT_SKINS = [
+  null,
+  { id:'belt-1', name:'MUSCAT PEARL', main:'#eee8d8', accent:'#bd9a55', shape:'cube', pattern:'prism', omanMotif:'khanjar', unlockBelt:1 },
+  { id:'belt-2', name:'WAHIBA DUNE', main:'#d4a449', accent:'#ffe1a0', shape:'cube', pattern:'circuit', omanMotif:'dunes', unlockBelt:2 },
+  { id:'belt-3', name:'LUBAN EMBER', main:'#bc552c', accent:'#f4c46b', shape:'cube', pattern:'ember', omanMotif:'incense', unlockBelt:3 },
+  { id:'belt-4', name:'JABAL AKHDAR', main:'#27845c', accent:'#a8dfb5', shape:'cube', pattern:'grid', omanMotif:'mountain', unlockBelt:4 },
+  { id:'belt-5', name:'KHANJAR RUBY', main:'#c51f32', accent:'#fff0df', shape:'cube', pattern:'flare', omanMotif:'khanjar', unlockBelt:5 },
+  { id:'belt-6', name:'ARABIAN SEA', main:'#267f9a', accent:'#b9e8e4', shape:'cube', pattern:'crystal', omanMotif:'dhow', unlockBelt:6 },
+  { id:'belt-7', name:'NIZWA FORT', main:'#9b6949', accent:'#f1c27d', shape:'cube', pattern:'stone', omanMotif:'fort', unlockBelt:7 },
+  { id:'belt-8', name:'MUSCAT NIGHT', main:'#211b2a', accent:'#e4b85e', shape:'cube', pattern:'nebula', omanMotif:'incense', unlockBelt:8 },
+];
+const SPECIAL_SKINS = [
+  { id:'bonus-green', name:'OMAN PALM', main:'#287d50', accent:'#d7e8ad', shape:'cube', pattern:'grid', omanMotif:'palm', unlockBelt:3 },
+  { id:'bonus-yellow', name:'GOLDEN KHANJAR', main:'#d1a42f', accent:'#fff0a8', shape:'cube', pattern:'circuit', omanMotif:'khanjar', unlockBelt:5 },
+  { id:'bonus-orange', name:'LUBAN GLOW', main:'#c66b35', accent:'#ffe0a0', shape:'cube', pattern:'ember', omanMotif:'incense', unlockBelt:7 },
+];
+const SECRET_IU_SKIN = {
+  id: 'secret-iu',
+  name: 'IU OMAN',
+  main: '#9e1725',
+  accent: '#f5e8ce',
+  shape: 'cube',
+  pattern: 'iu',
+  unlockBelt: 1,
+};
+const SECRET_ROGER_SKIN = {
+  id: 'secret-roger',
+  name: 'OMANI ROGER',
+  main: '#182b35',
+  accent: '#e8c76b',
+  shape: 'cube',
+  pattern: 'roger',
+  unlockBelt: 1,
+};
+const OMAN_SKIN_ART = {
+  khanjar: [
+    'M18 18H46 M32 18V29 M24 29H40 M32 28C50 37 42 53 24 53C34 44 31 37 32 28Z',
+    'M22 18L26 13H38L42 18',
+    'M27 24L32 21L37 24L32 27Z M27 21L32 18L37 21',
+    'M28 34L35 41 M27 40L33 47 M25 45L30 50',
+  ],
+  dunes: [
+    'M12 38C21 27 29 29 36 38S51 41 54 30',
+    'M12 47C23 38 31 39 38 46S49 49 54 43',
+    'M47 18A3 3 0 1 0 47 24A3 3 0 1 0 47 18',
+    'M44 17V12 M51 20L55 18 M43 22L39 24',
+    'M12 53C22 49 27 51 33 54 M38 55L42 56 M47 51L52 49',
+  ],
+  mountain: [
+    'M12 49L24 28L31 37L41 17L54 49Z',
+    'M19 36L24 28L31 37 M36 27L41 17L48 35',
+    'M16 45L22 34 M33 37L40 22 M45 38L50 48',
+    'M17 53H49 M22 56H43',
+  ],
+  incense: [
+    'M20 39L23 51H41L44 39Z',
+    'M25 35C14 26 33 25 26 12 M38 35C49 25 32 22 40 11',
+    'M18 39H46',
+    'M31 34C25 28 37 26 32 20 M33 17C30 14 33 12 35 10',
+    'M25 43H39 M26 47H38',
+  ],
+  dhow: [
+    'M13 40H53L44 51H22Z',
+    'M31 38V15L17 37Z M35 36V12L49 36Z',
+    'M14 55C23 51 28 58 36 54S48 52 54 55',
+    'M21 37L29 37 M38 35L46 35 M31 20L19 36 M35 18L47 36',
+    'M17 58C24 56 29 60 35 58 M41 58L47 57',
+  ],
+  fort: [
+    'M15 30H49V51H15Z',
+    'M17 30V20H25V27H29V23H36V27H40V17H48V30',
+    'M28 51V40A5 5 0 0 1 38 40V51',
+    'M19 34H24V39H19Z M40 34H45V39H40Z M19 43H24V47H19Z M40 43H45V47H40Z',
+    'M14 52H50 M20 15V18 M44 12V15',
+  ],
+  palm: [
+    'M30 52L32 29L34 52',
+    'M32 30C18 30 13 23 12 17C21 17 28 20 32 28',
+    'M32 30C22 23 21 15 24 11C31 15 33 21 33 28',
+    'M33 29C32 19 37 12 42 11C45 19 41 25 35 30',
+    'M34 30C43 23 49 23 53 25C50 33 43 34 35 32',
+    'M15 19L29 28 M25 13L31 27 M40 14L34 27 M50 27L36 30',
+    'M28 43H35 M29 47H35',
+  ],
+  flag: [
+    'M21 18V46 M22 20H44 M22 31H45 M22 42H45',
+    'M26 51C22 46 28 43 31 47C34 51 28 54 26 51Z',
+  ],
+};
+const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
+const CUSTOM_SKIN_PATTERNS = ['prism', 'circuit', 'ember', 'grid', 'flare', 'crystal', 'stone', 'nebula'];
+const DEFAULT_INTERFACE_THEME = { accent: '#ff526f', secondary: '#62e5db', background: '#111329' };
+const RANDOM_INTERFACE_THEMES = [
+  { accent: '#ff5470', secondary: '#62e5db', background: '#111329' },
+  { accent: '#ffb547', secondary: '#a8f07a', background: '#172116' },
+  { accent: '#b88cff', secondary: '#61e8ff', background: '#171329' },
+  { accent: '#ff795e', secondary: '#ffd166', background: '#241516' },
+  { accent: '#50d6b2', secondary: '#f5cf68', background: '#10231f' },
+  { accent: '#f472cf', secondary: '#80a9ff', background: '#21142a' },
+  { accent: '#75c9ff', secondary: '#ffcb68', background: '#101f32' },
+];
+const SKIN_STORAGE_KEY = 'iuBeltDashSkins';
+const LEGACY_ANIMAL_SKIN_IDS = ['special-chameleon', 'special-lion', 'special-leopard'];
+
+function reportSkinStorageError(action, error) {
+  console.error('Could not ' + action + ' skin data:', error);
+  const status = document.getElementById('skinEditorStatus');
+  if (status) {
+    status.textContent = action === 'load' ? 'Saved skin data could not be loaded.' : 'Skin data could not be saved.';
+    status.dataset.state = 'error';
+  }
+}
+
+function loadSkinSave() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SKIN_STORAGE_KEY) || '{}');
+    const customSkins = Array.isArray(saved.customSkins) ? saved.customSkins.filter((skin) =>
+      skin && typeof skin.name === 'string' && skin.name.trim() &&
+      /^#[0-9a-f]{6}$/i.test(skin.main) && /^#[0-9a-f]{6}$/i.test(skin.accent) &&
+      SKIN_SHAPES.includes(skin.shape)
+    ).map((skin, index) => ({
+      id: typeof skin.id === 'string' && skin.id ? skin.id : 'custom-saved-' + index,
+      name: skin.name.trim().slice(0, 16),
+      main: skin.main,
+      accent: skin.accent,
+      shape: skin.shape,
+      pattern: CUSTOM_SKIN_PATTERNS.includes(skin.pattern) ? skin.pattern : 'prism',
+    })) : [];
+    const savedTheme = saved.theme && typeof saved.theme === 'object' ? saved.theme : {};
+    return {
+      maxBeltReached: Number.isInteger(saved.maxBeltReached) ? Math.max(0, Math.min(8, saved.maxBeltReached)) : 0,
+      selectedSkinId: LEGACY_ANIMAL_SKIN_IDS.includes(saved.selectedSkinId)
+        ? 'level'
+        : typeof saved.selectedSkinId === 'string' ? saved.selectedSkinId : 'level',
+      customSkins,
+      secretIUUnlocked: saved.secretIUUnlocked === true,
+      secretRogerUnlocked: saved.secretRogerUnlocked === true,
+      theme: {
+        accent: /^#[0-9a-f]{6}$/i.test(savedTheme.accent) ? savedTheme.accent : DEFAULT_INTERFACE_THEME.accent,
+        secondary: /^#[0-9a-f]{6}$/i.test(savedTheme.secondary) ? savedTheme.secondary : DEFAULT_INTERFACE_THEME.secondary,
+        background: /^#[0-9a-f]{6}$/i.test(savedTheme.background) ? savedTheme.background : DEFAULT_INTERFACE_THEME.background,
+      },
+    };
+  } catch (error) {
+    reportSkinStorageError('load', error);
+    return {
+      maxBeltReached: 0,
+      selectedSkinId: 'level',
+      customSkins: [],
+      secretIUUnlocked: false,
+      secretRogerUnlocked: false,
+      theme: { ...DEFAULT_INTERFACE_THEME },
+    };
+  }
+}
+
+const skinSave = loadSkinSave();
+let selectedSkinId = skinSave.selectedSkinId;
+const customSkins = skinSave.customSkins;
+let secretIUUnlocked = skinSave.secretIUUnlocked;
+let secretRogerUnlocked = skinSave.secretRogerUnlocked;
+let interfaceTheme = skinSave.theme;
+
+function saveSkinProgress() {
+  try {
+    localStorage.setItem(SKIN_STORAGE_KEY, JSON.stringify({
+      maxBeltReached: stats.maxBeltReached,
+      selectedSkinId,
+      customSkins,
+      secretIUUnlocked,
+      secretRogerUnlocked,
+      theme: interfaceTheme,
+    }));
+    return true;
+  } catch (error) {
+    reportSkinStorageError('save', error);
+    return false;
+  }
+}
+
+function getPlayerSkin() {
+  if (selectedSkinId === 'level') return BELT_SKINS[belt] || BELT_SKINS[1];
+  return customSkins.find((skin) => skin.id === selectedSkinId) ||
+    BELT_SKINS.find((skin) => skin && skin.id === selectedSkinId) ||
+    SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId) ||
+    (secretIUUnlocked && selectedSkinId === SECRET_IU_SKIN.id ? SECRET_IU_SKIN : null) ||
+    (secretRogerUnlocked && selectedSkinId === SECRET_ROGER_SKIN.id ? SECRET_ROGER_SKIN : null) ||
+    BELT_SKINS[Math.max(1, Math.min(stats.maxBeltReached, BELT_SKINS.length - 1))] ||
+    BELT_SKINS[1];
+}
+
 // ============== Secret trials ==============
 const SECRETS = [
   {
@@ -61,13 +252,21 @@ const ACHIEVEMENTS = {
 };
 
 const stats = {
-  maxBeltReached: 0,
+  maxBeltReached: skinSave.maxBeltReached,
   totalDeaths: 0,
   currentBeltDeaths: 0,
   flawlessBeltAchieved: false,
   unlockedSecrets: new Set(),
   achievements: new Set(),
 };
+const savedBeltSkin = BELT_SKINS.find((skin) => skin && skin.id === selectedSkinId);
+const savedSpecialSkin = SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId);
+if (!savedBeltSkin && !savedSpecialSkin &&
+    !(secretIUUnlocked && selectedSkinId === SECRET_IU_SKIN.id) &&
+    !(secretRogerUnlocked && selectedSkinId === SECRET_ROGER_SKIN.id) &&
+    selectedSkinId !== 'level' && !customSkins.some((skin) => skin.id === selectedSkinId)) {
+  selectedSkinId = 'level';
+}
 
 // ============== State ==============
 let belt = 0;            // current campaign belt index (0 = training)
@@ -88,7 +287,7 @@ let pausedDuration = 0, pauseStartTime = 0;
 let levelStartTime = 0, levelPausedDuration = 0;
 
 const player = { x: 120, y: GROUND_Y - PLAYER_SIZE, vy: 0, size: PLAYER_SIZE, onGround: true, rotation: 0 };
-const keys = {}; let jumpQueued = false, pointerHeld = false, flightMode = false;
+const keys = {}; let jumpQueued = false, pointerHeld = false;
 
 // ============== Helpers ==============
 function vibrate(p) { if (navigator.vibrate) { try { navigator.vibrate(p); } catch(e){} } }
@@ -123,7 +322,7 @@ checkOrientation();
 window.addEventListener('keydown', (e) => {
   if (gameState === 'menu') return;
   if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-    if (!keys[e.key] && !flightMode) jumpQueued = true;
+    if (!keys[e.key]) jumpQueued = true;
     keys[e.key] = true;
     e.preventDefault();
   }
@@ -142,7 +341,7 @@ window.addEventListener('keyup', (e) => { keys[e.key] = false; });
 function tapJump(e) {
   if (gameState === 'menu' || gameState === 'paused') return;
   pointerHeld = true;
-  if (!flightMode) jumpQueued = true;
+  jumpQueued = true;
   const t = (e.touches && e.touches[0]) || e;
   if (t && typeof t.clientX === 'number') {
     const r = document.createElement('div');
@@ -182,6 +381,7 @@ bindBtn('restartBtn', () => {
 bindBtn('abandonBtn', () => { resumeGame(); abandonTrial(); });
 bindBtn('quitBtn', () => { resumeGame(); returnToMenu(); });
 bindBtn('playBtnTop', enterGame);
+bindBtn('playBtnNav', enterGame);
 bindBtn('playBtnBottom', enterGame);
 
 function enterGame() {
@@ -269,7 +469,6 @@ const PATTERNS = [
   ['jumpPad',      6, 9],    // NEW: green pad → boosted jump → tall block ahead
   ['saw',          7, 12],   // NEW: rotating circular saw (circle hitbox)
   ['staircase',    7, 8],
-  ['airplane',     5, 6],
 ];
 
 function pickPattern(currentBelt, isSecret) {
@@ -362,16 +561,6 @@ function placePattern(obstacles, x, p, d) {
       // rotating saw at jump-arc height
       obstacles.push({ type:'saw', x:x+10, y:GROUND_Y-95, w:50, h:50 });
       return 70;
-    case 'airplane':
-      obstacles.push({ type:'portal', mode:'airplane', x, y:GROUND_Y-150, w:46, h:150 });
-      obstacles.push({ type:'block', x:x+240, y:0, w:48, h:180 });
-      obstacles.push({ type:'block', x:x+240, y:300, w:48, h:GROUND_Y-300 });
-      obstacles.push({ type:'block', x:x+480, y:0, w:48, h:245 });
-      obstacles.push({ type:'block', x:x+480, y:365, w:48, h:GROUND_Y-365 });
-      obstacles.push({ type:'block', x:x+700, y:0, w:48, h:140 });
-      obstacles.push({ type:'block', x:x+700, y:280, w:48, h:GROUND_Y-280 });
-      obstacles.push({ type:'portal', mode:'cube', x:x+870, y:GROUND_Y-150, w:46, h:150 });
-      return 916;
   }
   return 50;
 }
@@ -430,7 +619,6 @@ function generateSecretLevel(idx) {
 function startLevel(b) {
   inSecret = false;
   belt = b;
-  flightMode = false;
   pointerHeld = false;
   // Faster speed scaling with each belt
   speed = 5 + b * 0.5;
@@ -445,6 +633,8 @@ function startLevel(b) {
   stats.currentBeltDeaths = 0;
   if (b > stats.maxBeltReached) {
     stats.maxBeltReached = b;
+    saveSkinProgress();
+    refreshSkinGallery();
     checkAchievements();
   }
   updateHUD();
@@ -454,7 +644,6 @@ function startSecretLevel(idx, mode) {
   inSecret = true;
   secretIdx = idx;
   secretMode = mode;
-  flightMode = false;
   pointerHeld = false;
   speed = SECRETS[idx].speed;
   player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
@@ -474,7 +663,6 @@ function respawn() {
   attempts++;
   player.x = lastCheckpointX;
   player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
-  flightMode = false;
   pointerHeld = false;
   player.onGround = true; player.rotation = 0;
   cameraX = Math.max(0, player.x - 280);
@@ -606,7 +794,7 @@ function update() {
   }
 
   const jumpHeld = keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W'] || pointerHeld || jumpQueued;
-  if (!flightMode && jumpHeld && player.onGround) {
+  if (jumpHeld && player.onGround) {
     player.vy = -14.5;
     player.onGround = false;
     if (IS_MOBILE) vibrate(VIBE.jump);
@@ -616,37 +804,19 @@ function update() {
   const wasOnGround = player.onGround;
   player.onGround = false;
 
-  if (flightMode) {
-    player.vy += jumpHeld ? -0.72 : 1.15;
-    player.vy = Math.max(-8.5, Math.min(8.5, player.vy));
-  } else {
-    player.vy += 0.88;
-    if (player.vy > 18) player.vy = 18;
-  }
-  const previousX = player.x;
+  player.vy += 0.88;
+  if (player.vy > 18) player.vy = 18;
   player.y += player.vy;
   player.x += speed;
 
-  for (const o of levelData.obstacles) {
-    if (o.type !== 'portal' || previousX + player.size > o.x || player.x + player.size <= o.x) continue;
-    flightMode = o.mode === 'airplane';
-    player.onGround = false;
-    if (!flightMode) player.rotation = 0;
-  }
-
-  if (flightMode) {
-    player.y = Math.max(12, Math.min(GROUND_Y - player.size - 12, player.y));
-  }
-
-  if (flightMode) player.rotation = 0;
-  else if (!wasOnGround) player.rotation += 0.18;
+  if (!wasOnGround) player.rotation += 0.18;
   else {
     const target = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
     player.rotation += (target - player.rotation) * 0.4;
   }
 
   // Ground / pit
-  if (!flightMode && player.y + player.size >= GROUND_Y) {
+  if (player.y + player.size >= GROUND_Y) {
     let overPit = false;
     for (const o of levelData.obstacles) {
       if (o.type === 'pit' && player.x + player.size > o.x + 6 && player.x < o.x + o.w - 6) { overPit = true; break; }
@@ -666,7 +836,6 @@ function update() {
     const overlapX = player.x < o.x + o.w && player.x + player.size > o.x;
     const overlapY = player.y < o.y + o.h && player.y + player.size > o.y;
     if (!overlapX || !overlapY) continue;
-    if (flightMode) { die(); return; }
     const playerBottom = player.y + player.size;
     const prevBottom = playerBottom - player.vy;
     if (player.vy >= 0 && prevBottom <= o.y + 2) {
@@ -800,7 +969,7 @@ function draw() {
   }
 
   ctx.globalAlpha = 1;
-  if (gameState === 'playing' || gameState === 'transition' || gameState === 'paused') drawPlayer(B);
+  if (gameState === 'playing' || gameState === 'transition' || gameState === 'paused') drawPlayer();
 
   for (const p of particles) {
     ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
@@ -845,66 +1014,1070 @@ function drawBeltMotif(B) {
   ctx.restore();
 }
 
-function drawPlayer(B) {
-  if (flightMode) {
-    drawAirplane(B);
-    return;
-  }
+function drawPlayer() {
+  const skin = getPlayerSkin();
   ctx.save();
   ctx.translate(player.x + player.size/2, player.y + player.size/2);
   ctx.rotate(player.rotation);
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(-player.size/2 + 3, -player.size/2 + 4, player.size, player.size);
-  ctx.fillStyle = B.fg;
-  ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
-  ctx.strokeStyle = B.accent;
-  ctx.lineWidth = 2.5;
-  ctx.strokeRect(-player.size/2 + 1, -player.size/2 + 1, player.size - 2, player.size - 2);
-  ctx.fillStyle = B.accent;
-  ctx.fillRect(-player.size/2 + 5, -3, player.size - 10, 6);
-  ctx.fillStyle = B.bg1;
-  ctx.fillRect(-5, -player.size/2 + 7, 10, 6);
-  ctx.fillStyle = B.fg;
-  ctx.fillRect(-2, -player.size/2 + 9, 4, 3);
+  drawSkinAccessories(skin);
+  drawSkinBody(skin);
+  ctx.shadowColor = skin.accent;
+  ctx.shadowBlur = 7;
+  ctx.strokeStyle = skin.accent;
+  ctx.lineWidth = 2;
+  drawSkinPath(skin.shape, player.size - 2);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.lineWidth = 1;
+  drawSkinPath(skin.shape, player.size - 7);
+  ctx.stroke();
   ctx.restore();
 }
 
-function drawAirplane(B) {
+function drawSkinAccessories(skin) {
+  const half = player.size / 2;
+  if (skin.pattern === 'roger') return;
+  if (skin.pattern === 'lion') {
+    const mane = ctx.createLinearGradient(-half * 1.4, -half * 1.4, half * 1.2, half * 1.4);
+    mane.addColorStop(0, '#ffdc72');
+    mane.addColorStop(0.65, '#d77b32');
+    mane.addColorStop(1, '#713319');
+    ctx.fillStyle = mane;
+    ctx.beginPath();
+    ctx.moveTo(-half * 1.25, -half * 0.9);
+    ctx.lineTo(-half * 1.35, -half * 1.35);
+    ctx.lineTo(-half * 0.75, -half * 1.2);
+    ctx.lineTo(-half * 0.35, -half * 1.45);
+    ctx.lineTo(0, -half * 1.2);
+    ctx.lineTo(half * 0.45, -half * 1.45);
+    ctx.lineTo(half * 0.8, -half * 1.15);
+    ctx.lineTo(half * 1.3, -half * 1.3);
+    ctx.lineTo(half * 1.2, -half * 0.7);
+    ctx.lineTo(half * 1.45, -half * 0.35);
+    ctx.lineTo(half * 1.2, 0);
+    ctx.lineTo(half * 1.45, half * 0.45);
+    ctx.lineTo(half * 1.15, half * 0.8);
+    ctx.lineTo(half * 1.3, half * 1.3);
+    ctx.lineTo(half * 0.65, half * 1.18);
+    ctx.lineTo(half * 0.25, half * 1.45);
+    ctx.lineTo(-half * 0.15, half * 1.2);
+    ctx.lineTo(-half * 0.6, half * 1.45);
+    ctx.lineTo(-half * 0.9, half * 1.15);
+    ctx.lineTo(-half * 1.35, half * 1.25);
+    ctx.lineTo(-half * 1.18, half * 0.65);
+    ctx.lineTo(-half * 1.45, half * 0.25);
+    ctx.lineTo(-half * 1.2, -half * 0.2);
+    ctx.lineTo(-half * 1.45, -half * 0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#713319';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,226,139,0.72)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 8; i++) {
+      const angle = Math.PI * 2 * i / 8;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * half * 0.95, Math.sin(angle) * half * 0.95);
+      ctx.lineTo(Math.cos(angle) * half * 1.35, Math.sin(angle) * half * 1.35);
+      ctx.stroke();
+    }
+  } else if (skin.pattern === 'chameleon' || skin.pattern === 'leopard') {
+    const tailColor = skin.pattern === 'chameleon' ? '#54ba43' : '#c58a38';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    if (skin.pattern === 'chameleon') {
+      ctx.strokeStyle = '#387e35';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(-half * 0.42, half * 0.52);
+      ctx.lineTo(-half * 0.82, half * 0.9);
+      ctx.lineTo(-half * 1.15, half * 0.86);
+      ctx.moveTo(half * 0.42, half * 0.52);
+      ctx.lineTo(half * 0.82, half * 0.9);
+      ctx.lineTo(half * 1.15, half * 0.86);
+      ctx.stroke();
+      ctx.fillStyle = '#baff45';
+      for (const x of [-half * 1.15, half * 1.15]) {
+        ctx.beginPath();
+        ctx.ellipse(x, half * 0.86, 3.5, 2.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.strokeStyle = '#26321e';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(-half * 0.55, half * 0.3);
+    if (skin.pattern === 'chameleon') {
+      ctx.bezierCurveTo(-half * 1.3, half * 0.55, -half * 1.72, half * 1.25, -half * 1.95, half * 0.9);
+      ctx.bezierCurveTo(-half * 2.18, half * 0.55, -half * 1.72, half * 0.3, -half * 1.5, half * 0.65);
+      ctx.bezierCurveTo(-half * 1.34, half * 0.9, -half * 1.62, half * 1.03, -half * 1.72, half * 0.82);
+    } else {
+      ctx.bezierCurveTo(-half * 1.25, half * 0.7, -half * 1.55, half * 1.3, -half * 1.85, half * 0.9);
+      ctx.bezierCurveTo(-half * 2.1, half * 0.45, -half * 1.55, half * 0.15, -half * 1.4, half * 0.6);
+    }
+    ctx.stroke();
+    ctx.strokeStyle = tailColor;
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    if (skin.pattern === 'leopard') {
+      ctx.fillStyle = '#f6d381';
+      for (const [x, y] of [[-25, 16], [-35, 18]]) {
+        ctx.beginPath();
+        ctx.arc(x, y, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  if (skin.pattern === 'lion' || skin.pattern === 'leopard') {
+    ctx.fillStyle = skin.pattern === 'lion' ? '#d98a39' : skin.main;
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(side * half * 0.15, -half * 0.72);
+      ctx.lineTo(side * half * 0.32, -half * 1.28);
+      ctx.lineTo(side * half * 0.9, -half * 1.12);
+      ctx.lineTo(side * half * 1.02, -half * 0.46);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = skin.accent;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = skin.pattern === 'lion' ? '#f5ae5b' : '#f6c39a';
+      ctx.beginPath();
+      ctx.moveTo(side * half * 0.36, -half * 0.78);
+      ctx.lineTo(side * half * 0.43, -half * 1.08);
+      ctx.lineTo(side * half * 0.77, -half * 1.01);
+      ctx.lineTo(side * half * 0.83, -half * 0.64);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = skin.pattern === 'lion' ? '#d98a39' : skin.main;
+    }
+  }
+
+}
+
+function drawSkinPath(shape, size) {
+  const half = size / 2;
+  ctx.beginPath();
+  if (shape === 'circle') {
+    ctx.arc(0, 0, half, 0, Math.PI * 2);
+  } else if (shape === 'diamond') {
+    ctx.moveTo(0, -half);
+    ctx.lineTo(half, 0);
+    ctx.lineTo(0, half);
+    ctx.lineTo(-half, 0);
+    ctx.closePath();
+  } else if (shape === 'hexagon') {
+    for (let i = 0; i < 6; i++) {
+      const angle = Math.PI / 3 * i - Math.PI / 6;
+      const x = Math.cos(angle) * half;
+      const y = Math.sin(angle) * half;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+  } else {
+    ctx.rect(-half, -half, size, size);
+  }
+}
+
+function drawSkinBody(skin) {
+  const half = player.size / 2;
+  const gradient = ctx.createLinearGradient(-half, -half, half, half);
+  gradient.addColorStop(0, skin.accent);
+  gradient.addColorStop(0.28, skin.main);
+  gradient.addColorStop(1, skin.main);
   ctx.save();
-  ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
-  ctx.rotate(Math.max(-0.35, Math.min(0.35, player.vy * 0.035)));
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(-15, 7, 30, 5);
-  ctx.fillStyle = B.fg;
-  ctx.beginPath();
-  ctx.moveTo(17, 0);
-  ctx.lineTo(-10, -5);
-  ctx.lineTo(-16, -10);
-  ctx.lineTo(-14, -2);
-  ctx.lineTo(-17, 0);
-  ctx.lineTo(-14, 2);
-  ctx.lineTo(-16, 10);
-  ctx.lineTo(-10, 5);
-  ctx.closePath();
+  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 3;
+  ctx.fillStyle = gradient;
+  drawSkinPath(skin.shape, player.size);
   ctx.fill();
-  ctx.strokeStyle = B.accent;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.fillStyle = B.accent;
-  ctx.beginPath();
-  ctx.moveTo(2, 0);
-  ctx.lineTo(-7, -15);
-  ctx.lineTo(-11, -14);
-  ctx.lineTo(-7, 0);
-  ctx.lineTo(-11, 14);
-  ctx.lineTo(-7, 15);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = B.bg1;
-  ctx.fillRect(6, -2, 6, 4);
-  ctx.fillStyle = B.glow;
-  ctx.fillRect(-17, -2, 3, 4);
+  ctx.save();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  drawSkinPath(skin.shape, player.size - 2);
+  ctx.clip();
+  if (skin.omanMotif) drawOmanFlagBase(half);
+  if (skin.pattern === 'roger') {
+    ctx.save();
+    ctx.strokeStyle = '#f7eedc';
+    ctx.fillStyle = '#f7eedc';
+    ctx.lineWidth = 2.1;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-8, 7);
+    ctx.lineTo(8, 14);
+    ctx.moveTo(8, 7);
+    ctx.lineTo(-8, 14);
+    ctx.stroke();
+    for (const [x, y] of [[-8, 7], [8, 7], [-8, 14], [8, 14]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.ellipse(0, -3, 6.2, 6.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(-4.3, 1, 8.6, 3.2);
+    ctx.fillStyle = '#211829';
+    ctx.beginPath();
+    ctx.ellipse(-2.3, -3, 1.7, 2.1, 0, 0, Math.PI * 2);
+    ctx.ellipse(2.3, -3, 1.7, 2.1, 0, 0, Math.PI * 2);
+    ctx.moveTo(0.8, -0.5);
+    ctx.lineTo(-0.8, -0.5);
+    ctx.lineTo(0, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#211829';
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(-2.6, 1.7);
+    ctx.lineTo(-2.6, 3.6);
+    ctx.moveTo(0, 1.7);
+    ctx.lineTo(0, 3.6);
+    ctx.moveTo(2.6, 1.7);
+    ctx.lineTo(2.6, 3.6);
+    ctx.stroke();
+    ctx.restore();
+  } else if (skin.pattern === 'iu') {
+    ctx.fillStyle = 'rgba(7,8,28,0.8)';
+    ctx.fillRect(-half * 0.58, -half * 0.42, half * 1.16, half * 0.84);
+    ctx.strokeStyle = skin.accent;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-half * 0.58, -half * 0.42, half * 1.16, half * 0.84);
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = skin.accent;
+    ctx.shadowBlur = 4;
+    ctx.strokeStyle = '#e9ffff';
+    ctx.fillStyle = '#e9ffff';
+    ctx.lineWidth = 1.25;
+    ctx.beginPath();
+    ctx.moveTo(-2.2, -2.6);
+    ctx.lineTo(-2.5, -4.5);
+    ctx.quadraticCurveTo(-2.5, -7, 0, -7);
+    ctx.quadraticCurveTo(2.5, -7, 2.5, -4.5);
+    ctx.lineTo(2.2, -2.4);
+    ctx.lineTo(1.4, -1.6);
+    ctx.lineTo(-1.4, -1.6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#25194e';
+    ctx.beginPath();
+    ctx.arc(-1.25, -4.3, 0.72, 0, Math.PI * 2);
+    ctx.arc(1.25, -4.3, 0.72, 0, Math.PI * 2);
+    ctx.moveTo(0.35, -2.9);
+    ctx.lineTo(-0.35, -2.9);
+    ctx.lineTo(0, -3.8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#e9ffff';
+    ctx.lineWidth = 1.15;
+    ctx.beginPath();
+    ctx.moveTo(0, -1.5);
+    ctx.lineTo(0, 7.7);
+    ctx.moveTo(-4.6, 1);
+    ctx.quadraticCurveTo(0, -0.5, 4.6, 1);
+    ctx.moveTo(-4.2, 3.2);
+    ctx.quadraticCurveTo(0, 1.7, 4.2, 3.2);
+    ctx.moveTo(-3.7, 5.4);
+    ctx.quadraticCurveTo(0, 3.9, 3.7, 5.4);
+    ctx.moveTo(-4.8, 0.8);
+    ctx.lineTo(-6.2, 3.9);
+    ctx.moveTo(4.8, 0.8);
+    ctx.lineTo(6.2, 3.9);
+    ctx.stroke();
+    ctx.fillStyle = '#ffe27a';
+    for (const [x, y] of [[-6.2, 3.9], [6.2, 3.9], [0, 7.8]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, 0.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  } else if (skin.pattern === 'chameleon') {
+    ctx.strokeStyle = 'rgba(35, 115, 49, 0.72)';
+    ctx.lineWidth = 1.2;
+    for (let row = -1; row <= 1; row++) {
+      for (let col = -1; col <= 1; col++) {
+        const x = col * 8 + (row % 2 ? 4 : 0);
+        const y = row * 8;
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  } else if (skin.pattern === 'leopard') {
+    for (const [x, y, radius] of [[-8,-8,3], [1,-10,2.5], [9,-5,3], [-10,1,2.5], [0,0,3.5], [9,5,2.5], [-6,9,3], [3,10,2]]) {
+      ctx.fillStyle = skin.accent;
+      ctx.beginPath();
+      ctx.ellipse(x, y, radius, radius * 0.78, (x + y) * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f6d381';
+      ctx.beginPath();
+      ctx.ellipse(x, y, radius * 0.38, radius * 0.28, (x + y) * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (skin.pattern === 'leaf') {
+    ctx.fillStyle = skin.accent;
+    for (const [x, y, angle] of [[-8,-7,-0.6], [7,-8,0.7], [-8,7,0.5], [8,6,-0.6]]) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 3, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  } else if (skin.pattern === 'stone') {
+    ctx.fillStyle = 'rgba(61,42,33,0.36)';
+    for (const [x, y, width, height] of [[-10,-9,7,4], [1,-10,8,5], [-7,1,9,5], [5,4,8,6], [-2,10,6,3]]) {
+      ctx.fillRect(x, y, width, height);
+      ctx.strokeStyle = 'rgba(255,231,190,0.36)';
+      ctx.strokeRect(x, y, width, height);
+    }
+  } else if (skin.pattern === 'nebula') {
+    for (const [x, y, radius] of [[-8,-8,2], [6,-7,1.5], [0,0,3], [-7,7,1.4], [8,6,2]]) {
+      ctx.fillStyle = '#08090d';
+      ctx.shadowColor = '#08090d';
+      ctx.shadowBlur = 5;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(8,9,13,0.8)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, -2.6, -0.2);
+    ctx.stroke();
+  } else if (skin.pattern === 'flare' || skin.pattern === 'ember') {
+    ctx.strokeStyle = 'rgba(8,10,15,0.82)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(0, -13);
+    ctx.lineTo(2, -4);
+    ctx.lineTo(9, -8);
+    ctx.lineTo(5, 0);
+    ctx.lineTo(12, 4);
+    ctx.lineTo(3, 5);
+    ctx.lineTo(0, 13);
+    ctx.lineTo(-3, 5);
+    ctx.lineTo(-12, 4);
+    ctx.lineTo(-5, 0);
+    ctx.lineTo(-9, -8);
+    ctx.lineTo(-2, -4);
+    ctx.closePath();
+    ctx.stroke();
+  } else if (skin.pattern === 'prism') {
+    ctx.strokeStyle = 'rgba(7,10,18,0.82)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-half + 3, -half + 4);
+    ctx.lineTo(0, -half + 10);
+    ctx.lineTo(half - 4, -half + 3);
+    ctx.lineTo(half - 8, 1);
+    ctx.lineTo(2, half - 4);
+    ctx.lineTo(-half + 5, 2);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -half + 10);
+    ctx.lineTo(2, half - 4);
+    ctx.stroke();
+  } else if (skin.pattern === 'circuit') {
+    ctx.strokeStyle = 'rgba(8,11,18,0.84)';
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'square';
+    for (const [x, y, direction] of [[-10,-9,1], [10,-8,-1], [-9,10,-1], [10,9,1]]) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + direction * 4, y);
+      ctx.lineTo(x + direction * 4, y + (y < 0 ? 5 : -5));
+      ctx.stroke();
+      ctx.fillStyle = '#080b12';
+      ctx.beginPath();
+      ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(8,11,18,0.82)';
+    ctx.beginPath();
+    ctx.moveTo(-4, 0);
+    ctx.lineTo(4, 0);
+    ctx.stroke();
+  } else if (skin.pattern === 'grid') {
+    ctx.strokeStyle = 'rgba(5,10,12,0.78)';
+    ctx.lineWidth = 1;
+    for (let offset = -half + 7; offset <= half - 5; offset += 7) {
+      ctx.beginPath();
+      ctx.moveTo(offset, -half + 3);
+      ctx.lineTo(offset, half - 3);
+      ctx.moveTo(-half + 3, offset);
+      ctx.lineTo(half - 3, offset);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#050a0c';
+    for (const [x, y] of [[-8,-8], [8,-8], [-8,8], [8,8]]) {
+      ctx.fillRect(x - 1, y - 1, 2, 2);
+    }
+  } else if (skin.pattern === 'crystal') {
+    ctx.fillStyle = 'rgba(6,9,17,0.82)';
+    ctx.beginPath();
+    ctx.moveTo(0, -12);
+    ctx.lineTo(5, -2);
+    ctx.lineTo(1, 1);
+    ctx.lineTo(7, 11);
+    ctx.lineTo(-2, 3);
+    ctx.lineTo(-6, -4);
+    ctx.closePath();
+    ctx.fill();
+  } else if (skin.pattern !== 'plain') {
+    ctx.strokeStyle = skin.pattern === 'glow' ? 'rgba(255,255,255,0.68)' : 'rgba(255,255,255,0.48)';
+    ctx.lineWidth = skin.pattern === 'glow' ? 2 : 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-half + 6, -half + 7);
+    ctx.lineTo(half - 6, -half + 7);
+    ctx.stroke();
+    if (skin.pattern === 'glow') {
+      ctx.fillStyle = 'rgba(102,206,255,0.82)';
+      ctx.fillRect(-half + 5, half - 7, player.size - 10, 2);
+    }
+  }
+
+  if (skin.omanMotif) drawOmanSkinMotif(skin.omanMotif, skin.accent);
+
+  const volume = ctx.createLinearGradient(0, -half, 0, half);
+  volume.addColorStop(0, 'rgba(255,255,255,0.2)');
+  volume.addColorStop(0.42, 'rgba(255,255,255,0.015)');
+  volume.addColorStop(1, 'rgba(0,0,0,0.22)');
+  ctx.fillStyle = volume;
+  ctx.fillRect(-half, -half, player.size, player.size);
+  if (skin.shape === 'cube') {
+    ctx.beginPath();
+    ctx.moveTo(-half + 2, -half + 2);
+    ctx.lineTo(half * 0.62, -half + 2);
+    ctx.lineTo(-half + 2, half * 0.62);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(half - 2, half - 2);
+    ctx.lineTo(-half * 0.48, half - 2);
+    ctx.lineTo(half - 2, -half * 0.48);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.fill();
+
+    const bevel = ctx.createLinearGradient(-half, -half, half, half);
+    bevel.addColorStop(0, 'rgba(255,255,255,0.72)');
+    bevel.addColorStop(0.5, 'rgba(255,255,255,0.12)');
+    bevel.addColorStop(1, 'rgba(0,0,0,0.62)');
+    ctx.strokeStyle = bevel;
+    ctx.lineWidth = 1;
+    drawSkinPath(skin.shape, player.size - 4);
+    ctx.stroke();
+  }
   ctx.restore();
+  ctx.restore();
+}
+
+function drawOmanSkinMotif(motif, color) {
+  ctx.save();
+  if (motif === 'flag') {
+    ctx.fillStyle = '#f5f0e5';
+    ctx.fillRect(-7, 8, 14, 2.2);
+    ctx.fillStyle = '#c82032';
+    ctx.fillRect(-7, 8, 3, 6.5);
+    ctx.fillRect(-4, 10.2, 11, 2.2);
+    ctx.fillStyle = '#218653';
+    ctx.fillRect(-4, 12.4, 11, 2.1);
+    ctx.strokeStyle = '#172027';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-7, 8, 14, 6.5);
+    ctx.restore();
+    return;
+  }
+
+  ctx.fillStyle = 'rgba(11,19,24,0.94)';
+  ctx.fillRect(-15, -15, 30, 30);
+  ctx.strokeStyle = '#d9b866';
+  ctx.lineWidth = 1.4;
+  ctx.strokeRect(-15, -15, 30, 30);
+  ctx.strokeStyle = '#f5f0e5';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-12, -12, 24, 24);
+  ctx.fillStyle = '#d9b866';
+  for (const [x, y] of [[-13, -13], [13, -13], [-13, 13], [13, 13]]) {
+    ctx.beginPath();
+    ctx.arc(x, y, 1.15, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(217,184,102,0.82)';
+  ctx.lineWidth = 1;
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(side * 9, -11.5);
+    ctx.lineTo(side * 7.5, -9.5);
+    ctx.lineTo(side * 9, -7.5);
+    ctx.moveTo(side * 9, 11.5);
+    ctx.lineTo(side * 7.5, 9.5);
+    ctx.lineTo(side * 9, 7.5);
+    ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(255,244,216,0.12)';
+  ctx.beginPath();
+  ctx.moveTo(-12, -14);
+  ctx.lineTo(-8, -14);
+  ctx.lineTo(8, 14);
+  ctx.lineTo(4, 14);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,242,206,0.72)';
+  ctx.lineWidth = 0.75;
+  ctx.beginPath();
+  ctx.moveTo(-13.5, 0);
+  ctx.lineTo(-13.5, 9);
+  ctx.moveTo(13.5, -9);
+  ctx.lineTo(13.5, 0);
+  ctx.stroke();
+  ctx.save();
+  ctx.scale(1.55, 1.55);
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (motif === 'khanjar') {
+    ctx.fillStyle = '#fff2ce';
+    ctx.beginPath();
+    ctx.moveTo(-1.5, -1.5);
+    ctx.lineTo(2.4, -1.5);
+    ctx.bezierCurveTo(6, 1.5, 4, 6.5, -4.5, 9);
+    ctx.bezierCurveTo(0, 4, -0.5, 1, -1.5, -1.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#d9b866';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    ctx.strokeStyle = '#f4c46b';
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.moveTo(-5, -6);
+    ctx.lineTo(5, -6);
+    ctx.moveTo(-3, -2);
+    ctx.lineTo(3, -2);
+    ctx.moveTo(0, -6);
+    ctx.lineTo(0, -2);
+    ctx.stroke();
+    ctx.strokeStyle = '#fff2ce';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-5, -6);
+    ctx.lineTo(5, -6);
+    ctx.moveTo(0, -6);
+    ctx.lineTo(0, -2);
+    ctx.moveTo(-3, -2);
+    ctx.lineTo(3, -2);
+    ctx.moveTo(0, -2);
+    ctx.bezierCurveTo(5, 1, 3, 7, -2, 8);
+    ctx.bezierCurveTo(0, 4, 1, 1, 0, -2);
+    ctx.stroke();
+  } else if (motif === 'dunes') {
+    ctx.fillStyle = 'rgba(245,194,107,0.24)';
+    ctx.beginPath();
+    ctx.arc(5, -5, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(5, -5, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(5, -5, 4, Math.PI * 1.12, Math.PI * 1.86);
+    ctx.stroke();
+    ctx.strokeStyle = '#fff2ce';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.arc(5, -5, 4, Math.PI * 1.12, Math.PI * 1.86);
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-8, -1);
+    ctx.quadraticCurveTo(-3, -6, 1, -1);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-8, 2);
+    ctx.quadraticCurveTo(-3, -4, 1, 2);
+    ctx.quadraticCurveTo(4, 7, 8, 0);
+    ctx.moveTo(-8, 7);
+    ctx.quadraticCurveTo(-3, 2, 1, 7);
+    ctx.quadraticCurveTo(4, 10, 8, 5);
+    ctx.stroke();
+  } else if (motif === 'mountain') {
+    ctx.fillStyle = 'rgba(33,134,83,0.35)';
+    ctx.beginPath();
+    ctx.moveTo(-10, 8);
+    ctx.lineTo(-5, 1);
+    ctx.lineTo(-1, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-8, 7);
+    ctx.lineTo(-3, -2);
+    ctx.lineTo(0, 2);
+    ctx.lineTo(4, -7);
+    ctx.lineTo(9, 7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#f5f0e5';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-5, 2);
+    ctx.lineTo(-3, -2);
+    ctx.lineTo(0, 2);
+    ctx.moveTo(2, -2);
+    ctx.lineTo(4, -7);
+    ctx.lineTo(7, 1);
+    ctx.stroke();
+  } else if (motif === 'incense') {
+    ctx.fillStyle = 'rgba(255,242,206,0.16)';
+    ctx.beginPath();
+    ctx.ellipse(0, 4, 9, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-6, 4);
+    ctx.lineTo(-4, 8);
+    ctx.lineTo(4, 8);
+    ctx.lineTo(6, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#fff2ce';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-5, 5);
+    ctx.lineTo(5, 5);
+    ctx.moveTo(-4, 7);
+    ctx.lineTo(4, 7);
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-3, 3);
+    ctx.bezierCurveTo(-8, -2, 1, -3, -2, -8);
+    ctx.moveTo(2, 3);
+    ctx.bezierCurveTo(7, -1, 0, -4, 3, -8);
+    ctx.stroke();
+  } else if (motif === 'dhow') {
+    ctx.beginPath();
+    ctx.moveTo(-8, 4);
+    ctx.lineTo(8, 4);
+    ctx.lineTo(4, 8);
+    ctx.lineTo(-5, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#d9b866';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-8, 4);
+    ctx.lineTo(8, 4);
+    ctx.moveTo(-5, 6);
+    ctx.lineTo(5, 6);
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-1, 3);
+    ctx.lineTo(-1, -7);
+    ctx.lineTo(-7, 2);
+    ctx.closePath();
+    ctx.moveTo(1, 2);
+    ctx.lineTo(1, -8);
+    ctx.lineTo(7, 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = '#fff2ce';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-1, -5);
+    ctx.lineTo(-4, 1);
+    ctx.moveTo(1, -6);
+    ctx.lineTo(4, 1);
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-10, 9);
+    ctx.quadraticCurveTo(0, 6.5, 10, 9);
+    ctx.stroke();
+  } else if (motif === 'fort') {
+    ctx.fillStyle = '#e2c283';
+    ctx.fillRect(-8, -2, 16, 10);
+    ctx.fillStyle = color;
+    ctx.fillRect(-7, -6, 4, 4);
+    ctx.fillRect(-2, -4, 4, 2);
+    ctx.fillRect(3, -7, 4, 5);
+    ctx.fillStyle = '#f5f0e5';
+    ctx.fillRect(-6, 0, 2, 2);
+    ctx.fillRect(4, 0, 2, 2);
+    ctx.fillStyle = '#172027';
+    ctx.fillRect(-2, 3, 4, 5);
+    ctx.fillStyle = '#d9b866';
+    ctx.fillRect(-1, 5, 2, 2);
+  } else if (motif === 'palm') {
+    ctx.beginPath();
+    ctx.moveTo(-1, 8);
+    ctx.lineTo(1, 8);
+    ctx.lineTo(1, -1);
+    ctx.moveTo(-2, 5);
+    ctx.lineTo(3, 5);
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-7, -1, -8, -6);
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-5, -7, -3, -8);
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(0, -7, 3, -8);
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(7, -3, 8, -6);
+    ctx.stroke();
+    ctx.strokeStyle = '#fff2ce';
+    ctx.lineWidth = 0.9;
+    for (const [x, y, angle] of [[-5, -2, -0.5], [-2, -5, -0.3], [3, -5, 0.25], [6, -2, 0.5]]) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(-2, 0);
+      ctx.lineTo(2, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#c82032';
+    for (const [x, y] of [[-2.5, 4], [3, 6]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+  ctx.restore();
+}
+
+function drawOmanFlagBase(half) {
+  const size = half * 2;
+  ctx.save();
+  ctx.globalAlpha = 0.32;
+  ctx.fillStyle = '#f5f0e5';
+  ctx.fillRect(-half, -half, size, size / 3);
+  ctx.fillStyle = '#c82032';
+  ctx.fillRect(-half, -half, size / 4, size);
+  ctx.fillRect(-half + size / 4, -half + size / 3, size * 0.75, size / 3);
+  ctx.fillStyle = '#218653';
+  ctx.fillRect(-half + size / 4, half - size / 3, size * 0.75, size / 3);
+  ctx.restore();
+}
+
+function drawSkinPattern(skin) {
+  const half = player.size / 2;
+  ctx.save();
+  drawSkinPath(skin.shape, player.size - 5);
+  ctx.clip();
+  const ink = 'rgba(5,7,12,0.9)';
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 1.8;
+  ctx.lineCap = 'square';
+  ctx.lineJoin = 'miter';
+
+  if (skin.pattern === 'prism') {
+    ctx.beginPath();
+    ctx.moveTo(0, -13);
+    ctx.lineTo(9, -5);
+    ctx.lineTo(6, 6);
+    ctx.lineTo(0, 12);
+    ctx.lineTo(-7, 5);
+    ctx.lineTo(-9, -5);
+    ctx.closePath();
+    ctx.moveTo(0, -13);
+    ctx.lineTo(0, 12);
+    ctx.moveTo(-9, -5);
+    ctx.lineTo(0, 1);
+    ctx.lineTo(9, -5);
+    ctx.stroke();
+  } else if (skin.pattern === 'circuit') {
+    ctx.beginPath();
+    ctx.moveTo(-12, -9);
+    ctx.lineTo(-6, -9);
+    ctx.lineTo(-6, -3);
+    ctx.lineTo(-3, -3);
+    ctx.moveTo(12, -9);
+    ctx.lineTo(7, -9);
+    ctx.lineTo(7, 3);
+    ctx.lineTo(3, 3);
+    ctx.moveTo(-12, 9);
+    ctx.lineTo(-7, 9);
+    ctx.lineTo(-7, 4);
+    ctx.lineTo(-3, 4);
+    ctx.moveTo(12, 9);
+    ctx.lineTo(6, 9);
+    ctx.lineTo(6, -3);
+    ctx.lineTo(3, -3);
+    ctx.stroke();
+    ctx.strokeRect(-3, -3, 6, 6);
+    ctx.fillStyle = ink;
+    for (const [x, y] of [[-12,-9], [12,-9], [-12,9], [12,9]]) {
+      ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+    }
+  } else if (skin.pattern === 'ember') {
+    ctx.beginPath();
+    ctx.moveTo(-10, 11);
+    ctx.lineTo(-8, 2);
+    ctx.lineTo(-4, 6);
+    ctx.lineTo(-3, -3);
+    ctx.lineTo(0, -12);
+    ctx.lineTo(3, -3);
+    ctx.lineTo(7, -7);
+    ctx.lineTo(6, 2);
+    ctx.lineTo(10, -1);
+    ctx.lineTo(9, 11);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-4, 10);
+    ctx.lineTo(0, 3);
+    ctx.lineTo(4, 10);
+    ctx.stroke();
+  } else if (skin.pattern === 'grid') {
+    ctx.strokeRect(-10, -10, 20, 20);
+    ctx.strokeRect(-5, -5, 10, 10);
+    ctx.beginPath();
+    ctx.moveTo(-10, 0);
+    ctx.lineTo(-5, 0);
+    ctx.moveTo(5, 0);
+    ctx.lineTo(10, 0);
+    ctx.moveTo(0, -10);
+    ctx.lineTo(0, -5);
+    ctx.moveTo(0, 5);
+    ctx.lineTo(0, 10);
+    ctx.stroke();
+    ctx.fillStyle = ink;
+    for (const [x, y] of [[-10,-10], [10,-10], [-10,10], [10,10]]) {
+      ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+    }
+  } else if (skin.pattern === 'flare') {
+    ctx.beginPath();
+    for (let point = 0; point < 16; point++) {
+      const angle = -Math.PI / 2 + point * Math.PI / 8;
+      const radius = point % 2 === 0 ? 12 : 4.5;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      if (point === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 2, 0, Math.PI * 2);
+    ctx.fillStyle = ink;
+    ctx.fill();
+  } else if (skin.pattern === 'crystal') {
+    ctx.beginPath();
+    ctx.moveTo(0, -13);
+    ctx.lineTo(5, -3);
+    ctx.lineTo(2, 0);
+    ctx.lineTo(7, 11);
+    ctx.lineTo(-1, 5);
+    ctx.lineTo(-5, -3);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(5,7,12,0.82)';
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-10, -7);
+    ctx.lineTo(-5, -4);
+    ctx.lineTo(-8, 5);
+    ctx.closePath();
+    ctx.moveTo(10, -8);
+    ctx.lineTo(6, -4);
+    ctx.lineTo(10, 4);
+    ctx.closePath();
+    ctx.stroke();
+  } else if (skin.pattern === 'stone') {
+    ctx.beginPath();
+    ctx.moveTo(-12, -8);
+    ctx.lineTo(-4, -10);
+    ctx.lineTo(-2, -4);
+    ctx.lineTo(-8, 0);
+    ctx.lineTo(-12, -2);
+    ctx.closePath();
+    ctx.moveTo(2, -10);
+    ctx.lineTo(10, -8);
+    ctx.lineTo(12, -1);
+    ctx.lineTo(6, 2);
+    ctx.lineTo(1, -3);
+    ctx.closePath();
+    ctx.moveTo(-8, 4);
+    ctx.lineTo(-2, 1);
+    ctx.lineTo(3, 5);
+    ctx.lineTo(2, 11);
+    ctx.lineTo(-7, 10);
+    ctx.closePath();
+    ctx.moveTo(7, 5);
+    ctx.lineTo(12, 3);
+    ctx.lineTo(11, 10);
+    ctx.lineTo(5, 11);
+    ctx.closePath();
+    ctx.stroke();
+  } else if (skin.pattern === 'nebula') {
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 12, 5, -Math.PI / 4, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 12, 5, Math.PI / 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = ink;
+    for (const [x, y] of [[0,-11], [10,0], [0,11], [-10,0]]) {
+      ctx.beginPath();
+      ctx.moveTo(x, y - 2);
+      ctx.lineTo(x + 2, y);
+      ctx.lineTo(x, y + 2);
+      ctx.lineTo(x - 2, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawSkinFace(skin) {
+  if (skin.pattern === 'chameleon') {
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#387e35';
+    ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    ctx.moveTo(-6, -12);
+    ctx.quadraticCurveTo(-8, -23, -8, -27);
+    ctx.moveTo(6, -12);
+    ctx.quadraticCurveTo(10, -22, 10, -26);
+    ctx.stroke();
+
+    for (const [x, y] of [[-8, -28], [10, -27]]) {
+      ctx.fillStyle = '#f6ffff';
+      ctx.beginPath();
+      ctx.ellipse(x, y, 5.4, 5.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#387e35';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#25351f';
+      ctx.beginPath();
+      ctx.ellipse(x + 1.1, y + 0.3, 1.7, 2.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x + 0.4, y - 1.5, 1.2, 1.2);
+    }
+
+    ctx.fillStyle = '#baff45';
+    ctx.beginPath();
+    ctx.ellipse(0, 3, 12, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#387e35';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#25351f';
+    ctx.beginPath();
+    ctx.arc(-4, 2, 1, 0, Math.PI * 2);
+    ctx.arc(4, 2, 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#31542b';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-5, 8);
+    ctx.quadraticCurveTo(0, 12, 5, 8);
+    ctx.stroke();
+    ctx.strokeStyle = '#ff7893';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(4, 9);
+    ctx.quadraticCurveTo(12, 11, 14, 14);
+    ctx.stroke();
+    ctx.fillStyle = '#ffb0bd';
+    ctx.beginPath();
+    ctx.moveTo(13, 13);
+    ctx.lineTo(17, 14);
+    ctx.lineTo(14, 17);
+    ctx.closePath();
+    ctx.fill();
+    return;
+  }
+
+  if (skin.pattern === 'lion' || skin.pattern === 'leopard') {
+    const eyeColor = skin.pattern === 'lion' ? '#4a2718' : '#38251b';
+    for (const x of [-6, 6]) {
+      ctx.fillStyle = '#fffaf1';
+      ctx.beginPath();
+      ctx.ellipse(x, -3, 3.2, 4.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = eyeColor;
+      ctx.beginPath();
+      ctx.ellipse(x + 0.6, -2.5, 1.25, 2.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(x - 0.3, -4, 0.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = skin.pattern === 'lion' ? '#fff0bd' : '#f6d9a1';
+    for (const x of [-3, 3]) {
+      ctx.beginPath();
+      ctx.ellipse(x, 5, 4, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#493020';
+    ctx.beginPath();
+    ctx.moveTo(-2.2, 3);
+    ctx.quadraticCurveTo(0, 1.5, 2.2, 3);
+    ctx.lineTo(0, 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#493020';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 6);
+    ctx.lineTo(0, 9);
+    ctx.moveTo(0, 9);
+    ctx.quadraticCurveTo(-3, 11, -5, 9);
+    ctx.moveTo(0, 9);
+    ctx.quadraticCurveTo(3, 11, 5, 9);
+    ctx.stroke();
+    return;
+  }
+
+  ctx.fillStyle = 'rgba(10,18,32,0.8)';
+  ctx.beginPath();
+  ctx.rect(-11, -5, 22, 10);
+  ctx.fill();
+  ctx.strokeStyle = skin.accent;
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  for (const x of [-6, 6]) {
+    ctx.fillStyle = skin.pattern === 'nebula' ? '#ff8db8' : '#e9fbff';
+    ctx.shadowColor = skin.accent;
+    ctx.shadowBlur = 4;
+    ctx.beginPath();
+    ctx.ellipse(x, -1, 2.3, 2.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,0.68)';
+  ctx.fillRect(-3, 7, 6, 1);
 }
 
 function drawObstacle(o, B) {
@@ -918,29 +2091,7 @@ function drawObstacle(o, B) {
     drawSaw(o, B);
   } else if (o.type === 'pad') {
     drawPad(o, B);
-  } else if (o.type === 'portal') {
-    drawPortal(o, B);
   }
-}
-
-function drawPortal(o, B) {
-  const color = o.mode === 'airplane' ? '#38e8ff' : '#ffe34d';
-  const pulse = 0.7 + Math.sin(frame * 0.12 + o.x) * 0.3;
-  ctx.save();
-  ctx.globalAlpha = 0.18 * pulse;
-  ctx.fillStyle = color;
-  ctx.fillRect(o.x - 8, o.y - 8, o.w + 16, o.h + 8);
-  ctx.globalAlpha = pulse;
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 6;
-  ctx.strokeRect(o.x + 3, o.y + 3, o.w - 6, o.h - 6);
-  ctx.lineWidth = 2;
-  ctx.strokeRect(o.x + 11, o.y + 11, o.w - 22, o.h - 22);
-  ctx.fillStyle = color;
-  ctx.font = 'bold 12px Courier New';
-  ctx.textAlign = 'center';
-  ctx.fillText(o.mode === 'airplane' ? 'FLY' : 'EXIT', o.x + o.w / 2, o.y + 22);
-  ctx.restore();
 }
 
 function drawTriUp(o, B) {
@@ -1272,6 +2423,296 @@ function updateHUD() {
     bar.appendChild(pip);
   }
 }
+
+// ============== Player skin gallery ==============
+function addSkinCard(container, skin, id, description, unlocked) {
+  const selected = selectedSkinId === id;
+  const card = document.createElement('button');
+  card.type = 'button';
+  card.className = 'skin-card' + (selected ? ' selected' : '');
+  card.disabled = !unlocked;
+  card.dataset.skinId = id;
+  card.setAttribute('aria-pressed', String(selected));
+  card.setAttribute('aria-label', skin.name + (unlocked ? ', equip skin' : ', locked'));
+  card.style.setProperty('--skin-main', skin.main);
+  card.style.setProperty('--skin-accent', skin.accent);
+
+  const preview = document.createElement('span');
+  preview.className = 'skin-swatch ' + skin.shape + ' ' + skin.pattern +
+    (skin.omanMotif ? ' oman-skin' : '');
+  if (skin.omanMotif) preview.dataset.omanMotif = skin.omanMotif;
+  const top = document.createElement('span');
+  top.className = 'skin-swatch-top';
+  const side = document.createElement('span');
+  side.className = 'skin-swatch-side';
+  const face = document.createElement('span');
+  face.className = 'skin-swatch-front';
+  if (skin.omanMotif && OMAN_SKIN_ART[skin.omanMotif]) {
+    const artwork = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    artwork.classList.add('oman-motif-art');
+    artwork.setAttribute('viewBox', '0 0 64 64');
+    artwork.setAttribute('aria-hidden', 'true');
+    const panel = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    panel.setAttribute('x', '5');
+    panel.setAttribute('y', '5');
+    panel.setAttribute('width', '54');
+    panel.setAttribute('height', '54');
+    panel.setAttribute('rx', '9');
+    panel.setAttribute('class', 'oman-motif-panel');
+    artwork.appendChild(panel);
+    for (const [index, pathData] of OMAN_SKIN_ART[skin.omanMotif].entries()) {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', pathData);
+      path.setAttribute('class', index === 0 ? 'oman-motif-primary' : 'oman-motif-detail');
+      artwork.appendChild(path);
+    }
+    face.appendChild(artwork);
+  }
+  preview.append(top, side, face);
+  const copy = document.createElement('span');
+  copy.className = 'skin-card-copy';
+  copy.textContent = skin.name;
+  const detail = document.createElement('small');
+  detail.textContent = description;
+  copy.appendChild(detail);
+  card.appendChild(preview);
+  card.appendChild(copy);
+  if (unlocked) {
+    card.addEventListener('click', () => {
+      selectedSkinId = id;
+      const saved = saveSkinProgress();
+      const status = document.getElementById('skinEditorStatus');
+      if (status && saved) {
+        status.textContent = skin.name + ' EQUIPPED';
+        status.dataset.state = 'success';
+      }
+      refreshSkinGallery();
+    });
+  }
+  container.appendChild(card);
+}
+
+function refreshSkinGallery() {
+  const gallery = document.getElementById('skinGallery');
+  if (!gallery) return;
+  gallery.replaceChildren();
+
+  const autoBelt = Math.max(1, Math.min(8, stats.maxBeltReached));
+  addSkinCard(gallery, BELT_SKINS[autoBelt], 'level', 'AUTO · NEW EACH BELT', true);
+  for (let i = 1; i < BELT_SKINS.length; i++) {
+    const skin = BELT_SKINS[i];
+    addSkinCard(
+      gallery,
+      skin,
+      skin.id,
+      'OMAN · ' + BELTS[skin.unlockBelt].name + ' BELT',
+      true
+    );
+  }
+  for (const skin of SPECIAL_SKINS) {
+    addSkinCard(
+      gallery,
+      skin,
+      skin.id,
+      'OMAN-INSPIRED BONUS CUBE',
+      true
+    );
+  }
+  if (secretIUUnlocked) {
+    addSkinCard(gallery, SECRET_IU_SKIN, SECRET_IU_SKIN.id, 'SECRET SKELETON', true);
+  }
+  if (secretRogerUnlocked) {
+    addSkinCard(gallery, SECRET_ROGER_SKIN, SECRET_ROGER_SKIN.id, 'PIRATE SKELETON', true);
+  }
+  for (const skin of customSkins) addSkinCard(gallery, skin, skin.id, 'YOUR ORIGINAL SKIN', true);
+
+  const unlockedCount = BELT_SKINS.length - 1 + SPECIAL_SKINS.length +
+    (secretIUUnlocked ? 1 : 0) + (secretRogerUnlocked ? 1 : 0);
+  const progress = document.getElementById('skinProgress');
+  if (progress) {
+    progress.textContent = 'ALL ' + unlockedCount + ' GAME SKINS UNLOCKED  ·  BELT ' +
+      stats.maxBeltReached + ' / 8';
+  }
+  const beltProgress = document.getElementById('menuBeltProgress');
+  if (beltProgress) beltProgress.textContent = 'BELT ' + Math.max(1, stats.maxBeltReached) + ' / 8';
+  const skinCount = document.getElementById('menuSkinCount');
+  if (skinCount) {
+    skinCount.textContent = String(unlockedCount).padStart(2, '0') + ' SKINS UNLOCKED';
+  }
+}
+
+function updateCustomSkinPreview() {
+  const preview = document.getElementById('customSkinPreview');
+  const nameInput = document.getElementById('customSkinName');
+  const nameLabel = document.getElementById('customSkinPreviewName');
+  if (!preview || !nameInput || !nameLabel) return;
+  const shape = document.getElementById('customSkinShape').value;
+  const pattern = document.getElementById('customSkinPattern').value;
+  preview.className = 'custom-preview-cube ' +
+    (SKIN_SHAPES.includes(shape) ? shape : 'cube') + ' pattern-' +
+    (CUSTOM_SKIN_PATTERNS.includes(pattern) ? pattern : 'prism');
+  preview.style.setProperty('--preview-main', document.getElementById('customSkinMain').value);
+  preview.style.setProperty('--preview-accent', document.getElementById('customSkinAccent').value);
+  nameLabel.textContent = nameInput.value.trim().slice(0, 16) || 'MY RUNNER';
+}
+
+function getInterfaceThemeFromInputs() {
+  return {
+    accent: document.getElementById('themeAccent').value,
+    secondary: document.getElementById('themeSecondary').value,
+    background: document.getElementById('themeBackground').value,
+  };
+}
+
+function applyInterfaceTheme(theme) {
+  const root = document.documentElement;
+  root.style.setProperty('--user-ui-accent', theme.accent);
+  root.style.setProperty('--user-ui-secondary', theme.secondary);
+  root.style.setProperty('--user-ui-background', theme.background);
+}
+
+function updateInterfaceThemePreview() {
+  applyInterfaceTheme(getInterfaceThemeFromInputs());
+}
+
+const themeAccentInput = document.getElementById('themeAccent');
+const themeSecondaryInput = document.getElementById('themeSecondary');
+const themeBackgroundInput = document.getElementById('themeBackground');
+const themeEditorStatus = document.getElementById('themeEditorStatus');
+themeAccentInput.value = interfaceTheme.accent;
+themeSecondaryInput.value = interfaceTheme.secondary;
+themeBackgroundInput.value = interfaceTheme.background;
+applyInterfaceTheme(interfaceTheme);
+
+document.getElementById('customThemeForm').addEventListener('input', updateInterfaceThemePreview);
+document.getElementById('customThemeForm').addEventListener('change', updateInterfaceThemePreview);
+document.getElementById('customThemeForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  interfaceTheme = getInterfaceThemeFromInputs();
+  applyInterfaceTheme(interfaceTheme);
+  const saved = saveSkinProgress();
+  themeEditorStatus.textContent = saved ? 'YOUR INTERFACE STYLE IS SAVED' : 'STYLE APPLIED, BUT COULD NOT BE SAVED';
+  themeEditorStatus.dataset.state = saved ? 'success' : 'error';
+});
+document.getElementById('themeResetBtn').addEventListener('click', () => {
+  themeAccentInput.value = DEFAULT_INTERFACE_THEME.accent;
+  themeSecondaryInput.value = DEFAULT_INTERFACE_THEME.secondary;
+  themeBackgroundInput.value = DEFAULT_INTERFACE_THEME.background;
+  interfaceTheme = { ...DEFAULT_INTERFACE_THEME };
+  applyInterfaceTheme(interfaceTheme);
+  const saved = saveSkinProgress();
+  themeEditorStatus.textContent = saved ? 'DEFAULT STYLE RESTORED' : 'DEFAULT STYLE APPLIED, BUT COULD NOT BE SAVED';
+  themeEditorStatus.dataset.state = saved ? 'success' : 'error';
+});
+document.getElementById('themeRandomBtn').addEventListener('click', () => {
+  const choices = RANDOM_INTERFACE_THEMES.filter((theme) =>
+    theme.accent !== interfaceTheme.accent ||
+    theme.secondary !== interfaceTheme.secondary ||
+    theme.background !== interfaceTheme.background
+  );
+  const theme = choices[Math.floor(Math.random() * choices.length)] || RANDOM_INTERFACE_THEMES[0];
+  themeAccentInput.value = theme.accent;
+  themeSecondaryInput.value = theme.secondary;
+  themeBackgroundInput.value = theme.background;
+  interfaceTheme = { ...theme };
+  applyInterfaceTheme(interfaceTheme);
+  const saved = saveSkinProgress();
+  themeEditorStatus.textContent = saved ? 'RANDOM STYLE APPLIED & SAVED' : 'RANDOM STYLE APPLIED, BUT COULD NOT BE SAVED';
+  themeEditorStatus.dataset.state = saved ? 'success' : 'error';
+});
+
+document.getElementById('customSkinForm').addEventListener('input', updateCustomSkinPreview);
+document.getElementById('customSkinForm').addEventListener('change', updateCustomSkinPreview);
+updateCustomSkinPreview();
+
+document.getElementById('customSkinForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const nameInput = document.getElementById('customSkinName');
+  const name = nameInput.value.trim();
+  const status = document.getElementById('skinEditorStatus');
+  if (!name) {
+    status.textContent = 'ENTER A NAME FOR YOUR SKIN';
+    status.dataset.state = 'error';
+    nameInput.focus();
+    return;
+  }
+
+  const skin = {
+    id: 'custom-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    name: name.slice(0, 16),
+    main: document.getElementById('customSkinMain').value,
+    accent: document.getElementById('customSkinAccent').value,
+    shape: document.getElementById('customSkinShape').value,
+    pattern: document.getElementById('customSkinPattern').value,
+  };
+  customSkins.push(skin);
+  selectedSkinId = skin.id;
+  const saved = saveSkinProgress();
+  nameInput.value = '';
+  status.textContent = saved ? skin.name + ' CREATED & EQUIPPED' : 'CREATED FOR THIS SESSION · SAVE FAILED';
+  status.dataset.state = saved ? 'success' : 'error';
+  refreshSkinGallery();
+});
+
+const siteBrand = document.querySelector('.site-brand');
+let secretBrandClickCount = 0;
+let secretBrandClickTimer;
+if (secretIUUnlocked) siteBrand.classList.add('secret-unlocked');
+siteBrand.addEventListener('click', (event) => {
+  if (secretIUUnlocked) return;
+  secretBrandClickCount++;
+  window.clearTimeout(secretBrandClickTimer);
+  secretBrandClickTimer = window.setTimeout(() => {
+    secretBrandClickCount = 0;
+  }, 2200);
+  if (secretBrandClickCount < 5) return;
+
+  event.preventDefault();
+  window.clearTimeout(secretBrandClickTimer);
+  secretBrandClickCount = 0;
+  secretIUUnlocked = true;
+  selectedSkinId = SECRET_IU_SKIN.id;
+  siteBrand.classList.add('secret-unlocked');
+  const saved = saveSkinProgress();
+  refreshSkinGallery();
+
+  const progress = document.getElementById('skinProgress');
+  progress.textContent = saved
+    ? 'SECRET CHARACTER IU DISCOVERED · EQUIPPED'
+    : 'SECRET CHARACTER IU UNLOCKED FOR THIS SESSION · SAVE FAILED';
+  progress.dataset.state = saved ? 'success' : 'error';
+  const secretCard = document.querySelector('#skinGallery [data-skin-id="secret-iu"]');
+  secretCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  secretCard.focus({ preventScroll: true });
+});
+
+const secretRogerButton = document.getElementById('secretRogerButton');
+if (secretRogerUnlocked) {
+  secretRogerButton.classList.add('secret-found');
+  secretRogerButton.textContent = '☠';
+  secretRogerButton.setAttribute('aria-label', 'Secret skin unlocked: Vesoliy Roger');
+}
+secretRogerButton.addEventListener('click', () => {
+  if (secretRogerUnlocked) return;
+  secretRogerUnlocked = true;
+  selectedSkinId = SECRET_ROGER_SKIN.id;
+  secretRogerButton.classList.add('secret-found');
+  secretRogerButton.textContent = '☠';
+  secretRogerButton.setAttribute('aria-label', 'Secret skin unlocked: Vesoliy Roger');
+  const saved = saveSkinProgress();
+  refreshSkinGallery();
+
+  const progress = document.getElementById('skinProgress');
+  progress.textContent = saved
+    ? 'SECRET SKIN VESOLIY ROGER DISCOVERED · EQUIPPED'
+    : 'SECRET SKIN VESOLIY ROGER UNLOCKED FOR THIS SESSION · SAVE FAILED';
+  progress.dataset.state = saved ? 'success' : 'error';
+  const secretCard = document.querySelector('#skinGallery [data-skin-id="secret-roger"]');
+  secretCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  secretCard.focus({ preventScroll: true });
+});
+
+refreshSkinGallery();
 
 // ============== Trials UI on landing ==============
 function refreshTrialsUI() {

@@ -1,15 +1,20 @@
-# Simple HTML/JS Game
+# IU Belt Dash
 
-A minimal browser game built with HTML, CSS, and JavaScript.
+A Geometry Dash-inspired browser game. Run and jump through eight belts, then unlock secret trials and collect runner skins.
 
-## Getting started
+## Play
 
-1. Open `index.html` in your browser.
-2. Use the left and right arrow keys to dodge the red obstacles.
-3. Press `Restart` or `Play Again` to restart after a game over.
+Open `index.html` in a modern browser.
 
-## Files
+- Press Space, Up, or W, or tap/click, to jump.
+- Use glowing jump pads to clear higher obstacles.
+- Reach checkpoints to save your place. Press R to respawn and P or Escape to pause.
+- Each belt has its own plain color-cube runner; choose **AUTO · NEW EACH BELT** in the garage to change colors as you progress. Green, yellow, and orange bonus cubes also unlock at belts 3, 5, and 7.
+- Pick a skin in the Runner Garage, or open **Create your own skin** to preview and choose its name, colors, and shape.
+- Skin selection, custom skins, and belt unlocks are saved on this device.
 
-- `index.html` — game page and canvas container
-- `style.css` — layout and visual styling
-- `script.js` — game logic, animation loop, input handling
+## Project files
+
+- `index.html` — landing page, skin garage, and game canvas
+- `style.css` — responsive interface, skin cards, and animation
+- `script.js` — game logic, skin artwork, save data, and input handling
