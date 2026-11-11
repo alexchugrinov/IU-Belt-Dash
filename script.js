@@ -1172,6 +1172,7 @@ function drawSkinBody(skin) {
   ctx.shadowOffsetY = 0;
   drawSkinPath(skin.shape, player.size - 2);
   ctx.clip();
+  if (skin.omanMotif) drawOmanFlagBase(half);
   if (skin.pattern === 'roger') {
     ctx.save();
     ctx.strokeStyle = '#f7eedc';
@@ -1433,12 +1434,6 @@ function drawSkinBody(skin) {
 
 function drawOmanSkinMotif(motif, color) {
   ctx.save();
-  ctx.lineWidth = 1.4;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-
   if (motif === 'flag') {
     ctx.fillStyle = '#f5f0e5';
     ctx.fillRect(-7, 8, 14, 2.2);
@@ -1447,112 +1442,136 @@ function drawOmanSkinMotif(motif, color) {
     ctx.fillRect(-4, 10.2, 11, 2.2);
     ctx.fillStyle = '#218653';
     ctx.fillRect(-4, 12.4, 11, 2.1);
-    ctx.strokeStyle = 'rgba(20,18,18,0.7)';
+    ctx.strokeStyle = '#172027';
+    ctx.lineWidth = 1;
     ctx.strokeRect(-7, 8, 14, 6.5);
-  } else if (motif === 'khanjar') {
+    ctx.restore();
+    return;
+  }
+
+  ctx.fillStyle = 'rgba(11,19,24,0.86)';
+  ctx.fillRect(-10, -10, 20, 20);
+  ctx.strokeStyle = '#f5f0e5';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-10, -10, 20, 20);
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (motif === 'khanjar') {
     ctx.beginPath();
-    ctx.moveTo(-2.2, 14);
-    ctx.lineTo(-2.8, 11);
-    ctx.quadraticCurveTo(-5, 9.5, -2.2, 7.5);
-    ctx.lineTo(1.7, 7.5);
-    ctx.quadraticCurveTo(4.4, 10, 1.3, 11.5);
-    ctx.lineTo(2.2, 14);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(-3.2, 8);
-    ctx.lineTo(3.2, 8);
+    ctx.moveTo(-5, -6);
+    ctx.lineTo(5, -6);
+    ctx.moveTo(0, -6);
+    ctx.lineTo(0, -2);
+    ctx.moveTo(-3, -2);
+    ctx.lineTo(3, -2);
+    ctx.moveTo(0, -2);
+    ctx.bezierCurveTo(5, 1, 3, 7, -2, 8);
+    ctx.bezierCurveTo(0, 4, 1, 1, 0, -2);
     ctx.stroke();
   } else if (motif === 'dunes') {
     ctx.beginPath();
-    ctx.moveTo(-8, 13);
-    ctx.quadraticCurveTo(-4, 8, 0, 12);
-    ctx.quadraticCurveTo(4, 15, 8, 10);
-    ctx.moveTo(-8, 15);
-    ctx.quadraticCurveTo(-3, 12, 2, 14);
-    ctx.quadraticCurveTo(5, 15, 8, 13);
+    ctx.arc(5, -5, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-8, 2);
+    ctx.quadraticCurveTo(-3, -4, 1, 2);
+    ctx.quadraticCurveTo(4, 7, 8, 0);
+    ctx.moveTo(-8, 7);
+    ctx.quadraticCurveTo(-3, 2, 1, 7);
+    ctx.quadraticCurveTo(4, 10, 8, 5);
     ctx.stroke();
   } else if (motif === 'mountain') {
     ctx.beginPath();
-    ctx.moveTo(-8, 15);
-    ctx.lineTo(-3, 9);
-    ctx.lineTo(-1, 11);
-    ctx.lineTo(3, 7);
-    ctx.lineTo(8, 15);
+    ctx.moveTo(-8, 7);
+    ctx.lineTo(-3, -2);
+    ctx.lineTo(0, 2);
+    ctx.lineTo(4, -7);
+    ctx.lineTo(9, 7);
     ctx.closePath();
     ctx.fill();
-    ctx.stroke();
     ctx.strokeStyle = '#f5f0e5';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(-4, 10);
-    ctx.lineTo(-3, 9);
-    ctx.lineTo(-1, 11);
-    ctx.moveTo(1, 9);
-    ctx.lineTo(3, 7);
-    ctx.lineTo(5, 10);
+    ctx.moveTo(-5, 2);
+    ctx.lineTo(-3, -2);
+    ctx.lineTo(0, 2);
+    ctx.moveTo(2, -2);
+    ctx.lineTo(4, -7);
+    ctx.lineTo(7, 1);
     ctx.stroke();
   } else if (motif === 'incense') {
     ctx.beginPath();
-    ctx.moveTo(-4, 12);
-    ctx.lineTo(-3, 15);
-    ctx.lineTo(3, 15);
-    ctx.lineTo(4, 12);
+    ctx.moveTo(-6, 4);
+    ctx.lineTo(-4, 8);
+    ctx.lineTo(4, 8);
+    ctx.lineTo(6, 4);
     ctx.closePath();
     ctx.fill();
-    ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(-2, 10);
-    ctx.bezierCurveTo(-5, 7, 1, 7, -1, 4);
-    ctx.moveTo(2, 10);
-    ctx.bezierCurveTo(5, 7, 0, 6, 2, 3);
+    ctx.moveTo(-3, 3);
+    ctx.bezierCurveTo(-8, -2, 1, -3, -2, -8);
+    ctx.moveTo(2, 3);
+    ctx.bezierCurveTo(7, -1, 0, -4, 3, -8);
     ctx.stroke();
   } else if (motif === 'dhow') {
     ctx.beginPath();
-    ctx.moveTo(-8, 12);
-    ctx.lineTo(8, 12);
-    ctx.lineTo(5, 15);
-    ctx.lineTo(-5, 15);
+    ctx.moveTo(-8, 4);
+    ctx.lineTo(8, 4);
+    ctx.lineTo(4, 8);
+    ctx.lineTo(-5, 8);
     ctx.closePath();
     ctx.fill();
-    ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(-1, 11);
-    ctx.lineTo(-1, 5);
-    ctx.lineTo(-6, 10);
+    ctx.moveTo(-1, 3);
+    ctx.lineTo(-1, -7);
+    ctx.lineTo(-7, 2);
     ctx.closePath();
-    ctx.moveTo(1, 10);
-    ctx.lineTo(1, 4);
-    ctx.lineTo(6, 10);
+    ctx.moveTo(1, 2);
+    ctx.lineTo(1, -8);
+    ctx.lineTo(7, 2);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
   } else if (motif === 'fort') {
-    ctx.fillRect(-7, 10, 14, 5);
-    ctx.fillRect(-6, 7, 3, 3);
-    ctx.fillRect(-1.5, 8, 3, 2);
-    ctx.fillRect(3, 6, 3, 4);
-    ctx.fillStyle = 'rgba(20,18,18,0.72)';
-    ctx.fillRect(-2, 12, 4, 3);
+    ctx.fillRect(-8, -2, 16, 10);
+    ctx.fillRect(-7, -6, 4, 4);
+    ctx.fillRect(-2, -4, 4, 2);
+    ctx.fillRect(3, -7, 4, 5);
+    ctx.fillStyle = '#172027';
+    ctx.fillRect(-2, 3, 4, 5);
   } else if (motif === 'palm') {
     ctx.beginPath();
-    ctx.moveTo(-1, 15);
-    ctx.lineTo(1, 15);
-    ctx.lineTo(0.7, 8);
-    ctx.lineTo(-0.2, 8);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(0, 9);
-    ctx.quadraticCurveTo(-7, 8, -8, 5);
-    ctx.moveTo(0, 9);
-    ctx.quadraticCurveTo(-5, 4, -4, 3);
-    ctx.moveTo(0, 9);
-    ctx.quadraticCurveTo(1, 3, 3, 2);
-    ctx.moveTo(0, 9);
-    ctx.quadraticCurveTo(7, 6, 8, 5);
+    ctx.moveTo(-1, 8);
+    ctx.lineTo(1, 8);
+    ctx.lineTo(1, -1);
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-7, -1, -8, -6);
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-5, -7, -3, -8);
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(0, -7, 3, -8);
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(7, -3, 8, -6);
     ctx.stroke();
   }
+  ctx.restore();
+}
+
+function drawOmanFlagBase(half) {
+  const size = half * 2;
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  ctx.fillStyle = '#f5f0e5';
+  ctx.fillRect(-half, -half, size, size / 3);
+  ctx.fillStyle = '#c82032';
+  ctx.fillRect(-half, -half, size / 4, size);
+  ctx.fillRect(-half + size / 4, -half + size / 3, size * 0.75, size / 3);
+  ctx.fillStyle = '#218653';
+  ctx.fillRect(-half + size / 4, half - size / 3, size * 0.75, size / 3);
   ctx.restore();
 }
 
@@ -2210,7 +2229,9 @@ function addSkinCard(container, skin, id, description, unlocked) {
   card.style.setProperty('--skin-accent', skin.accent);
 
   const preview = document.createElement('span');
-  preview.className = 'skin-swatch ' + skin.shape + ' ' + skin.pattern;
+  preview.className = 'skin-swatch ' + skin.shape + ' ' + skin.pattern +
+    (skin.omanMotif ? ' oman-skin' : '');
+  if (skin.omanMotif) preview.dataset.omanMotif = skin.omanMotif;
   const top = document.createElement('span');
   top.className = 'skin-swatch-top';
   const side = document.createElement('span');

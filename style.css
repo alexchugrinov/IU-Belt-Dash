@@ -3763,3 +3763,50 @@
     text-shadow: 0 0 1px #f7eedc;
     transform: translate(-50%, -50%);
   }
+  .skin-swatch.oman-skin .skin-swatch-front {
+    background-image:
+      linear-gradient(90deg, #c82032 0 25%, transparent 25%),
+      linear-gradient(0deg, #218653 0 33%, #c82032 33% 66%, #f5f0e5 66% 100%);
+    box-shadow: inset 3px 3px 0 rgba(255,255,255,0.28),
+      inset -4px -5px 0 rgba(0,0,0,0.24),
+      0 0 17px color-mix(in srgb, var(--skin-accent) 48%, transparent);
+  }
+  .skin-swatch.oman-skin .skin-swatch-front::after {
+    display: grid;
+    width: 25px;
+    height: 25px;
+    place-items: center;
+    border: 1px solid #f5f0e5;
+    border-radius: 2px;
+    background: rgba(11,19,24,0.9);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    color: var(--skin-accent);
+    font: bold 20px/1 "Segoe UI Symbol", "Noto Sans Symbols 2", sans-serif;
+    text-shadow: 0 1px 3px #111;
+    transform: translate(-50%, -50%);
+  }
+  .skin-swatch.oman-skin[data-oman-motif="khanjar"] .skin-swatch-front::after { content: "\2020"; }
+  .skin-swatch.oman-skin[data-oman-motif="dunes"] .skin-swatch-front::after { content: "\224B"; }
+  .skin-swatch.oman-skin[data-oman-motif="mountain"] .skin-swatch-front::after { content: "\25B2"; }
+  .skin-swatch.oman-skin[data-oman-motif="incense"] .skin-swatch-front::after { content: "\2668"; }
+  .skin-swatch.oman-skin[data-oman-motif="dhow"] .skin-swatch-front::after { content: "\26F5"; }
+  .skin-swatch.oman-skin[data-oman-motif="fort"] .skin-swatch-front::after { content: "\265C"; }
+  .skin-swatch.oman-skin[data-oman-motif="palm"] .skin-swatch-front::after { content: "\2667"; }
+  .skin-swatch.oman-skin[data-oman-motif="flag"] .skin-swatch-front::after {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #fff;
+    content: "\2620\FE0E";
+    font-size: 19px;
+    text-shadow: 0 1px 3px #111, 0 0 5px #c82032;
+  }
+  .skin-swatch.oman-skin.roger .skin-swatch-front::after {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #f5f0e5;
+    content: "\2620\FE0E";
+    font-size: 16px;
+    text-shadow: 0 1px 3px #111;
+  }
