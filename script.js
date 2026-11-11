@@ -269,6 +269,7 @@ const PATTERNS = [
   ['jumpPad',      6, 9],    // NEW: green pad → boosted jump → tall block ahead
   ['saw',          7, 12],   // NEW: rotating circular saw (circle hitbox)
   ['staircase',    7, 8],
+  ['orbGap',       5, 10],   // NEW: long spike field — tap the orange orb mid-air to jump again
   ['airplane',     5, 6],
 ];
 
@@ -358,6 +359,11 @@ function placePattern(obstacles, x, p, d) {
       obstacles.push({ type:'pad',   x,       y:GROUND_Y-12,  w:60, h:12 });
       obstacles.push({ type:'block', x:x+250, y:GROUND_Y-130, w:60, h:130 });
       return 310;
+    case 'orbGap':
+      // 11 spikes is too long for one jump; orb floats mid-field
+      for (let i=0;i<11;i++) obstacles.push({ type:'spike', x:x+i*30, y:GROUND_Y-30, w:30, h:30 });
+      obstacles.push({ type:'orb', x:x+165-18, y:GROUND_Y-120-18, w:36, h:36, used:false });
+      return 330;
     case 'saw':
       // rotating saw at jump-arc height
       obstacles.push({ type:'saw', x:x+10, y:GROUND_Y-95, w:50, h:50 });
@@ -479,6 +485,7 @@ function respawn() {
   player.onGround = true; player.rotation = 0;
   cameraX = Math.max(0, player.x - 280);
   particles = [];
+  if (levelData) for (const o of levelData.obstacles) if (o.type === 'orb') o.used = false;
   gameState = 'playing';
   updateHUD();
 }
@@ -606,9 +613,12 @@ function update() {
   }
 
   const jumpHeld = keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W'] || pointerHeld || jumpQueued;
+  const tapped = jumpQueued;   // fresh press this frame (orbs need a tap, not a hold)
+  let groundJumped = false;
   if (!flightMode && jumpHeld && player.onGround) {
     player.vy = -14.5;
     player.onGround = false;
+    groundJumped = true;
     if (IS_MOBILE) vibrate(VIBE.jump);
   }
   jumpQueued = false;
@@ -719,6 +729,32 @@ function update() {
         player.vy = -22;
         player.onGround = false;
         vibrate(VIBE.pad);
+      }
+    }
+  }
+
+  // Jump orbs: tap while touching to jump again (one use per orb)
+  if (tapped && !groundJumped && !flightMode) {
+    for (const o of levelData.obstacles) {
+      if (o.type !== 'orb' || o.used) continue;
+      if (o.x + o.w < player.x) continue;
+      if (o.x > player.x + player.size) continue;
+      const cx = o.x + o.w/2, cy = o.y + o.h/2, r = o.w/2;
+      const closestX = Math.max(player.x, Math.min(cx, player.x + player.size));
+      const closestY = Math.max(player.y, Math.min(cy, player.y + player.size));
+      const dx = cx - closestX, dy = cy - closestY;
+      if (dx*dx + dy*dy <= r*r) {
+        o.used = true;
+        player.vy = -14.5;
+        player.onGround = false;
+        vibrate(VIBE.pad);
+        for (let i = 0; i < 12; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const sp = 2 + Math.random() * 4;
+          particles.push({ x: cx, y: cy, vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp,
+            size: 3 + Math.random()*3, life: 1, decay: 0.04, color: '#ff9a1f' });
+        }
+        break;
       }
     }
   }
@@ -918,9 +954,36 @@ function drawObstacle(o, B) {
     drawSaw(o, B);
   } else if (o.type === 'pad') {
     drawPad(o, B);
+  } else if (o.type === 'orb') {
+    drawOrb(o);
   } else if (o.type === 'portal') {
     drawPortal(o, B);
   }
+}
+
+function drawOrb(o) {
+  const cx = o.x + o.w/2, cy = o.y + o.h/2, r = o.w/2;
+  const pulse = 0.5 + Math.sin(frame * 0.15 + o.x * 0.01) * 0.5;
+  ctx.save();
+  ctx.globalAlpha = o.used ? 0.3 : 1;
+  // outer pulsing ring
+  ctx.strokeStyle = '#ffb347';
+  ctx.lineWidth = 2;
+  ctx.globalAlpha *= 0.5 + pulse * 0.4;
+  ctx.beginPath(); ctx.arc(cx, cy, r + 5 + pulse * 4, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = o.used ? 0.3 : 1;
+  // orb body
+  ctx.shadowColor = '#ff8c00';
+  ctx.shadowBlur = o.used ? 0 : 16;
+  ctx.fillStyle = '#ff8c00';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#ffc266';
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
 }
 
 function drawPortal(o, B) {
