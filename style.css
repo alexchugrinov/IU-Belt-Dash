@@ -3765,12 +3765,34 @@
   }
   .skin-swatch.oman-skin .skin-swatch-front {
     background-image:
+      var(--oman-texture, linear-gradient(transparent, transparent)),
       linear-gradient(90deg, rgba(200,32,50,0.68) 0 25%, transparent 25%),
       linear-gradient(0deg, rgba(33,134,83,0.68) 0 33%, rgba(200,32,50,0.68) 33% 66%, rgba(245,240,229,0.68) 66% 100%),
       linear-gradient(145deg, rgba(255,255,255,0.58), var(--skin-main) 48%, color-mix(in srgb, var(--skin-main) 68%, black));
     box-shadow: inset 3px 3px 0 rgba(255,255,255,0.28),
       inset -4px -5px 0 rgba(0,0,0,0.24),
       0 0 17px color-mix(in srgb, var(--skin-accent) 48%, transparent);
+  }
+  .skin-swatch.oman-skin[data-oman-motif="khanjar"] .skin-swatch-front {
+    --oman-texture: repeating-linear-gradient(135deg, transparent 0 8px, rgba(255,239,197,0.18) 8px 9px, transparent 10px 16px);
+  }
+  .skin-swatch.oman-skin[data-oman-motif="dunes"] .skin-swatch-front {
+    --oman-texture: repeating-linear-gradient(170deg, transparent 0 8px, rgba(255,228,170,0.3) 9px 10px, transparent 11px 17px);
+  }
+  .skin-swatch.oman-skin[data-oman-motif="mountain"] .skin-swatch-front {
+    --oman-texture: linear-gradient(135deg, transparent 0 42%, rgba(245,255,245,0.3) 43% 46%, transparent 47% 60%, rgba(5,45,33,0.28) 61% 64%, transparent 65%);
+  }
+  .skin-swatch.oman-skin[data-oman-motif="incense"] .skin-swatch-front {
+    --oman-texture: radial-gradient(ellipse at 24% 25%, rgba(255,229,172,0.3), transparent 27%), radial-gradient(ellipse at 78% 72%, rgba(255,207,122,0.2), transparent 31%);
+  }
+  .skin-swatch.oman-skin[data-oman-motif="dhow"] .skin-swatch-front {
+    --oman-texture: repeating-linear-gradient(0deg, transparent 0 7px, rgba(219,250,255,0.24) 8px 9px, transparent 10px 15px);
+  }
+  .skin-swatch.oman-skin[data-oman-motif="fort"] .skin-swatch-front {
+    --oman-texture: repeating-linear-gradient(0deg, transparent 0 9px, rgba(25,16,10,0.2) 10px 11px, transparent 12px 19px), repeating-linear-gradient(90deg, transparent 0 15px, rgba(25,16,10,0.12) 16px 17px, transparent 18px 27px);
+  }
+  .skin-swatch.oman-skin[data-oman-motif="palm"] .skin-swatch-front {
+    --oman-texture: repeating-linear-gradient(135deg, transparent 0 8px, rgba(230,255,190,0.2) 8px 9px, transparent 10px 16px);
   }
   .skin-swatch.oman-skin .skin-swatch-front::after {
     display: none;

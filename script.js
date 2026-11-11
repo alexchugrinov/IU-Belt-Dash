@@ -1014,40 +1014,8 @@ function drawPlayer() {
 
 function drawSkinAccessories(skin) {
   const half = player.size / 2;
-  if (skin.pattern === 'roger') {
-    ctx.save();
-    ctx.shadowColor = '#ffd36e';
-    ctx.shadowBlur = 7;
-    ctx.fillStyle = '#17121b';
-    ctx.strokeStyle = '#ffd36e';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(-half * 0.94, -half * 0.82);
-    ctx.lineTo(-half * 0.67, -half * 1.06);
-    ctx.lineTo(-half * 0.24, -half * 1.62);
-    ctx.lineTo(0, -half * 1.25);
-    ctx.lineTo(half * 0.24, -half * 1.62);
-    ctx.lineTo(half * 0.67, -half * 1.06);
-    ctx.lineTo(half * 0.94, -half * 0.82);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#d83e57';
-    ctx.beginPath();
-    ctx.moveTo(-half * 0.83, -half * 0.82);
-    ctx.lineTo(half * 0.83, -half * 0.82);
-    ctx.lineTo(half * 0.7, -half * 0.66);
-    ctx.lineTo(-half * 0.7, -half * 0.66);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = '#ffe9ac';
-    ctx.lineWidth = 0.8;
-    ctx.beginPath();
-    ctx.ellipse(0, -half * 1.04, 2.1, 2.3, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-  } else if (skin.pattern === 'lion') {
+  if (skin.pattern === 'roger') return;
+  if (skin.pattern === 'lion') {
     const mane = ctx.createLinearGradient(-half * 1.4, -half * 1.4, half * 1.2, half * 1.4);
     mane.addColorStop(0, '#ffdc72');
     mane.addColorStop(0.65, '#d77b32');
@@ -1501,6 +1469,18 @@ function drawOmanSkinMotif(motif, color) {
     ctx.beginPath();
     ctx.arc(x, y, 0.9, 0, Math.PI * 2);
     ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(217,184,102,0.82)';
+  ctx.lineWidth = 0.8;
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(side * 8, -10.5);
+    ctx.lineTo(side * 6.5, -8.5);
+    ctx.lineTo(side * 8, -6.5);
+    ctx.moveTo(side * 8, 10.5);
+    ctx.lineTo(side * 6.5, 8.5);
+    ctx.lineTo(side * 8, 6.5);
+    ctx.stroke();
   }
   ctx.save();
   ctx.scale(1.3, 1.3);
