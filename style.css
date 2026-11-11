@@ -2743,14 +2743,14 @@
   .theme-preview-button b { margin-left: 6px; }
   .theme-editor {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0,1fr)) auto auto;
+    grid-template-columns: repeat(3, minmax(0,1fr));
     gap: 9px;
     align-items: end;
     margin-top: 12px;
   }
   .theme-editor .skin-field input[type="color"] { height: 40px; }
-  .theme-save-btn, .theme-reset-btn { min-height: 40px; white-space: nowrap; }
-  .theme-reset-btn {
+  .theme-save-btn, .theme-reset-btn, .theme-random-btn { min-height: 40px; white-space: nowrap; }
+  .theme-reset-btn, .theme-random-btn {
     padding: 0 12px;
     border: 1px solid rgba(177,196,228,0.18);
     border-radius: 8px;
@@ -2760,7 +2760,12 @@
     letter-spacing: 0.7px;
     cursor: pointer;
   }
-  .theme-reset-btn:hover {
+  .theme-random-btn {
+    border-color: color-mix(in srgb, var(--user-ui-accent) 50%, rgba(177,196,228,0.18));
+    background: color-mix(in srgb, var(--user-ui-accent) 12%, rgba(255,255,255,0.04));
+    color: #fff;
+  }
+  .theme-reset-btn:hover, .theme-random-btn:hover {
     border-color: color-mix(in srgb, var(--user-ui-secondary) 45%, transparent);
     background: color-mix(in srgb, var(--user-ui-secondary) 10%, transparent);
   }
@@ -2825,13 +2830,12 @@
   .custom-preview-face { color: transparent; }
   @media (max-width: 800px) {
     .theme-editor { grid-template-columns: repeat(3, minmax(0,1fr)); }
-    .theme-save-btn { grid-column: span 2; }
   }
   @media (max-width: 520px) {
     .theme-customizer { padding: 12px; }
     .theme-editor { gap: 8px; }
     .theme-editor .skin-field { font-size: 7px; }
-    .theme-save-btn, .theme-reset-btn { grid-column: auto; padding: 0 8px; font-size: 7px; }
+    .theme-save-btn, .theme-reset-btn, .theme-random-btn { grid-column: auto; padding: 0 5px; font-size: 7px; }
     .theme-preview-content { grid-template-columns: 31px 1fr auto; gap: 7px; padding: 13px 10px; }
     .theme-preview-title { font-size: 8px; letter-spacing: 0.5px; }
     .theme-preview-button { padding: 8px; font-size: 7px; }

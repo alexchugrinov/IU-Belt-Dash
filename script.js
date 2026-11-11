@@ -115,6 +115,15 @@ const OMAN_SKIN_ART = {
 const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
 const CUSTOM_SKIN_PATTERNS = ['prism', 'circuit', 'ember', 'grid', 'flare', 'crystal', 'stone', 'nebula'];
 const DEFAULT_INTERFACE_THEME = { accent: '#ff526f', secondary: '#62e5db', background: '#111329' };
+const RANDOM_INTERFACE_THEMES = [
+  { accent: '#ff5470', secondary: '#62e5db', background: '#111329' },
+  { accent: '#ffb547', secondary: '#a8f07a', background: '#172116' },
+  { accent: '#b88cff', secondary: '#61e8ff', background: '#171329' },
+  { accent: '#ff795e', secondary: '#ffd166', background: '#241516' },
+  { accent: '#50d6b2', secondary: '#f5cf68', background: '#10231f' },
+  { accent: '#f472cf', secondary: '#80a9ff', background: '#21142a' },
+  { accent: '#75c9ff', secondary: '#ffcb68', background: '#101f32' },
+];
 const SKIN_STORAGE_KEY = 'iuBeltDashSkins';
 const LEGACY_ANIMAL_SKIN_IDS = ['special-chameleon', 'special-lion', 'special-leopard'];
 
@@ -2567,6 +2576,22 @@ document.getElementById('themeResetBtn').addEventListener('click', () => {
   applyInterfaceTheme(interfaceTheme);
   const saved = saveSkinProgress();
   themeEditorStatus.textContent = saved ? 'DEFAULT STYLE RESTORED' : 'DEFAULT STYLE APPLIED, BUT COULD NOT BE SAVED';
+  themeEditorStatus.dataset.state = saved ? 'success' : 'error';
+});
+document.getElementById('themeRandomBtn').addEventListener('click', () => {
+  const choices = RANDOM_INTERFACE_THEMES.filter((theme) =>
+    theme.accent !== interfaceTheme.accent ||
+    theme.secondary !== interfaceTheme.secondary ||
+    theme.background !== interfaceTheme.background
+  );
+  const theme = choices[Math.floor(Math.random() * choices.length)] || RANDOM_INTERFACE_THEMES[0];
+  themeAccentInput.value = theme.accent;
+  themeSecondaryInput.value = theme.secondary;
+  themeBackgroundInput.value = theme.background;
+  interfaceTheme = { ...theme };
+  applyInterfaceTheme(interfaceTheme);
+  const saved = saveSkinProgress();
+  themeEditorStatus.textContent = saved ? 'RANDOM STYLE APPLIED & SAVED' : 'RANDOM STYLE APPLIED, BUT COULD NOT BE SAVED';
   themeEditorStatus.dataset.state = saved ? 'success' : 'error';
 });
 
