@@ -4,7 +4,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 const GROUND_Y = 430, PLAYER_SIZE = 34;
-const GAME_SPEED_MULTIPLIER = 1.21;
+const GAME_SPEED_MULTIPLIER = 1.331;
 
 const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 const IS_MOBILE = IS_TOUCH && Math.min(window.innerWidth, window.innerHeight) < 900;
