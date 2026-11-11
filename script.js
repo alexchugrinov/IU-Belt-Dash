@@ -988,26 +988,6 @@ function drawSkinAccessories(skin) {
     ctx.ellipse(0, 0, half * 1.42, half * 1.22, 0.45, 0, Math.PI * 2);
     ctx.stroke();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = '#ffe27a';
-    ctx.strokeStyle = '#fff2b0';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(-half * 0.72, -half * 0.78);
-    ctx.lineTo(-half * 0.9, -half * 1.48);
-    ctx.lineTo(-half * 0.28, -half * 1.05);
-    ctx.lineTo(0, -half * 1.62);
-    ctx.lineTo(half * 0.28, -half * 1.05);
-    ctx.lineTo(half * 0.9, -half * 1.48);
-    ctx.lineTo(half * 0.72, -half * 0.78);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = '#55f6ff';
-    ctx.shadowColor = '#55f6ff';
-    ctx.shadowBlur = 8;
-    ctx.beginPath();
-    ctx.arc(0, -half * 1.08, 2.2, 0, Math.PI * 2);
-    ctx.fill();
     ctx.restore();
   } else if (skin.pattern === 'roger') {
     ctx.save();
