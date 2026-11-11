@@ -61,30 +61,42 @@ const OMAN_SKIN_ART = {
   khanjar: [
     'M18 18H46 M32 18V29 M24 29H40 M32 28C50 37 42 53 24 53C34 44 31 37 32 28Z',
     'M22 18L26 13H38L42 18',
+    'M27 24L32 21L37 24L32 27Z M27 21L32 18L37 21',
+    'M28 34L35 41 M27 40L33 47 M25 45L30 50',
   ],
   dunes: [
     'M12 38C21 27 29 29 36 38S51 41 54 30',
     'M12 47C23 38 31 39 38 46S49 49 54 43',
     'M47 18A3 3 0 1 0 47 24A3 3 0 1 0 47 18',
+    'M44 17V12 M51 20L55 18 M43 22L39 24',
+    'M12 53C22 49 27 51 33 54 M38 55L42 56 M47 51L52 49',
   ],
   mountain: [
     'M12 49L24 28L31 37L41 17L54 49Z',
     'M19 36L24 28L31 37 M36 27L41 17L48 35',
+    'M16 45L22 34 M33 37L40 22 M45 38L50 48',
+    'M17 53H49 M22 56H43',
   ],
   incense: [
     'M20 39L23 51H41L44 39Z',
     'M25 35C14 26 33 25 26 12 M38 35C49 25 32 22 40 11',
     'M18 39H46',
+    'M31 34C25 28 37 26 32 20 M33 17C30 14 33 12 35 10',
+    'M25 43H39 M26 47H38',
   ],
   dhow: [
     'M13 40H53L44 51H22Z',
     'M31 38V15L17 37Z M35 36V12L49 36Z',
     'M14 55C23 51 28 58 36 54S48 52 54 55',
+    'M21 37L29 37 M38 35L46 35 M31 20L19 36 M35 18L47 36',
+    'M17 58C24 56 29 60 35 58 M41 58L47 57',
   ],
   fort: [
     'M15 30H49V51H15Z',
     'M17 30V20H25V27H29V23H36V27H40V17H48V30',
     'M28 51V40A5 5 0 0 1 38 40V51',
+    'M19 34H24V39H19Z M40 34H45V39H40Z M19 43H24V47H19Z M40 43H45V47H40Z',
+    'M14 52H50 M20 15V18 M44 12V15',
   ],
   palm: [
     'M30 52L32 29L34 52',
@@ -92,6 +104,8 @@ const OMAN_SKIN_ART = {
     'M32 30C22 23 21 15 24 11C31 15 33 21 33 28',
     'M33 29C32 19 37 12 42 11C45 19 41 25 35 30',
     'M34 30C43 23 49 23 53 25C50 33 43 34 35 32',
+    'M15 19L29 28 M25 13L31 27 M40 14L34 27 M50 27L36 30',
+    'M28 43H35 M29 47H35',
   ],
   flag: [
     'M21 18V46 M22 20H44 M22 31H45 M22 42H45',
@@ -1698,6 +1712,24 @@ function drawOmanSkinMotif(motif, color) {
     ctx.moveTo(0, 0);
     ctx.quadraticCurveTo(7, -3, 8, -6);
     ctx.stroke();
+    ctx.strokeStyle = '#fff2ce';
+    ctx.lineWidth = 0.9;
+    for (const [x, y, angle] of [[-5, -2, -0.5], [-2, -5, -0.3], [3, -5, 0.25], [6, -2, 0.5]]) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(-2, 0);
+      ctx.lineTo(2, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#c82032';
+    for (const [x, y] of [[-2.5, 4], [3, 6]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
   ctx.restore();
   ctx.restore();

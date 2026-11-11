@@ -3831,3 +3831,8 @@
     stroke: #fff2ce;
     stroke-width: 2.6;
   }
+  .oman-motif-art path:nth-of-type(n + 3) {
+    stroke: #d9b866;
+    stroke-width: 1.8;
+    opacity: 0.95;
+  }
