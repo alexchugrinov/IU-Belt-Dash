@@ -47,7 +47,6 @@ const SECRET_IU_SKIN = {
   accent: '#f5e8ce',
   shape: 'cube',
   pattern: 'iu',
-  omanMotif: 'flag',
   unlockBelt: 1,
 };
 const SECRET_ROGER_SKIN = {
@@ -57,7 +56,6 @@ const SECRET_ROGER_SKIN = {
   accent: '#e8c76b',
   shape: 'cube',
   pattern: 'roger',
-  omanMotif: 'dhow',
   unlockBelt: 1,
 };
 const OMAN_SKIN_ART = {
@@ -2366,10 +2364,10 @@ function refreshSkinGallery() {
     );
   }
   if (secretIUUnlocked) {
-    addSkinCard(gallery, SECRET_IU_SKIN, SECRET_IU_SKIN.id, 'OMANI SKELETON', true);
+    addSkinCard(gallery, SECRET_IU_SKIN, SECRET_IU_SKIN.id, 'SECRET SKELETON', true);
   }
   if (secretRogerUnlocked) {
-    addSkinCard(gallery, SECRET_ROGER_SKIN, SECRET_ROGER_SKIN.id, 'OMANI DHOW PIRATE', true);
+    addSkinCard(gallery, SECRET_ROGER_SKIN, SECRET_ROGER_SKIN.id, 'PIRATE SKELETON', true);
   }
   for (const skin of customSkins) addSkinCard(gallery, skin, skin.id, 'YOUR ORIGINAL SKIN', true);
 
