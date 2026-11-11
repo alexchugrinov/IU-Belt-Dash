@@ -2221,6 +2221,19 @@
   @media (prefers-reduced-motion: reduce) {
     .skin-card:hover:not(:disabled) { transform: none; }
   }
+  .site-brand.secret-unlocked .site-brand-mark {
+    border-color: #55f6ff;
+    background: linear-gradient(145deg, rgba(85,246,255,0.28), rgba(82,60,255,0.32));
+    box-shadow: 0 0 20px rgba(85,246,255,0.38), inset 0 1px rgba(255,255,255,0.3);
+  }
+  #skinGallery .skin-card[data-skin-id="secret-iu"] {
+    border-color: rgba(85,246,255,0.72);
+    background:
+      radial-gradient(ellipse at 0% 50%, rgba(82,60,255,0.34), transparent 72%),
+      linear-gradient(145deg, rgba(34,28,69,0.99), rgba(8,13,28,0.99));
+    box-shadow: 0 0 0 1px rgba(85,246,255,0.28), 0 0 27px rgba(82,60,255,0.32),
+      inset 0 1px rgba(255,255,255,0.18);
+  }
   /* ============ FINAL GARAGE OVERRIDES ============ */
   #skinGallery.skin-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
   #skinGallery .skin-card { min-height: 92px; }

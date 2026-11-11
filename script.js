@@ -39,6 +39,15 @@ const SPECIAL_SKINS = [
   { id:'bonus-yellow', name:'YELLOW CUBE', main:'#ffd21f', accent:'#fff58a', shape:'cube', pattern:'circuit', unlockBelt:5 },
   { id:'bonus-orange', name:'ORANGE CUBE', main:'#ff7626', accent:'#ffd166', shape:'cube', pattern:'ember', unlockBelt:7 },
 ];
+const SECRET_IU_SKIN = {
+  id: 'secret-iu',
+  name: 'IU',
+  main: '#523cff',
+  accent: '#55f6ff',
+  shape: 'cube',
+  pattern: 'nebula',
+  unlockBelt: 1,
+};
 const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
 const CUSTOM_SKIN_PATTERNS = ['prism', 'circuit', 'ember', 'grid', 'flare', 'crystal', 'stone', 'nebula'];
 const DEFAULT_INTERFACE_THEME = { accent: '#ff526f', secondary: '#62e5db', background: '#111329' };
@@ -76,6 +85,7 @@ function loadSkinSave() {
         ? 'level'
         : typeof saved.selectedSkinId === 'string' ? saved.selectedSkinId : 'level',
       customSkins,
+      secretIUUnlocked: saved.secretIUUnlocked === true,
       theme: {
         accent: /^#[0-9a-f]{6}$/i.test(savedTheme.accent) ? savedTheme.accent : DEFAULT_INTERFACE_THEME.accent,
         secondary: /^#[0-9a-f]{6}$/i.test(savedTheme.secondary) ? savedTheme.secondary : DEFAULT_INTERFACE_THEME.secondary,
@@ -84,13 +94,20 @@ function loadSkinSave() {
     };
   } catch (error) {
     reportSkinStorageError('load', error);
-    return { maxBeltReached: 0, selectedSkinId: 'level', customSkins: [], theme: { ...DEFAULT_INTERFACE_THEME } };
+    return {
+      maxBeltReached: 0,
+      selectedSkinId: 'level',
+      customSkins: [],
+      secretIUUnlocked: false,
+      theme: { ...DEFAULT_INTERFACE_THEME },
+    };
   }
 }
 
 const skinSave = loadSkinSave();
 let selectedSkinId = skinSave.selectedSkinId;
 const customSkins = skinSave.customSkins;
+let secretIUUnlocked = skinSave.secretIUUnlocked;
 let interfaceTheme = skinSave.theme;
 
 function saveSkinProgress() {
@@ -99,6 +116,7 @@ function saveSkinProgress() {
       maxBeltReached: stats.maxBeltReached,
       selectedSkinId,
       customSkins,
+      secretIUUnlocked,
       theme: interfaceTheme,
     }));
     return true;
@@ -113,6 +131,7 @@ function getPlayerSkin() {
   return customSkins.find((skin) => skin.id === selectedSkinId) ||
     BELT_SKINS.find((skin) => skin && skin.id === selectedSkinId) ||
     SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId) ||
+    (secretIUUnlocked && selectedSkinId === SECRET_IU_SKIN.id ? SECRET_IU_SKIN : null) ||
     BELT_SKINS[Math.max(1, Math.min(stats.maxBeltReached, BELT_SKINS.length - 1))] ||
     BELT_SKINS[1];
 }
@@ -164,7 +183,8 @@ const stats = {
 };
 const savedBeltSkin = BELT_SKINS.find((skin) => skin && skin.id === selectedSkinId);
 const savedSpecialSkin = SPECIAL_SKINS.find((skin) => skin.id === selectedSkinId);
-if (!savedBeltSkin && !savedSpecialSkin && selectedSkinId !== 'level' && !customSkins.some((skin) => skin.id === selectedSkinId)) {
+if (!savedBeltSkin && !savedSpecialSkin && !(secretIUUnlocked && selectedSkinId === SECRET_IU_SKIN.id) &&
+    selectedSkinId !== 'level' && !customSkins.some((skin) => skin.id === selectedSkinId)) {
   selectedSkinId = 'level';
 }
 
@@ -1971,9 +1991,12 @@ function refreshSkinGallery() {
       true
     );
   }
+  if (secretIUUnlocked) {
+    addSkinCard(gallery, SECRET_IU_SKIN, SECRET_IU_SKIN.id, 'SECRET CHARACTER', true);
+  }
   for (const skin of customSkins) addSkinCard(gallery, skin, skin.id, 'YOUR ORIGINAL SKIN', true);
 
-  const unlockedCount = BELT_SKINS.length - 1 + SPECIAL_SKINS.length;
+  const unlockedCount = BELT_SKINS.length - 1 + SPECIAL_SKINS.length + (secretIUUnlocked ? 1 : 0);
   const progress = document.getElementById('skinProgress');
   if (progress) {
     progress.textContent = 'ALL ' + unlockedCount + ' GAME SKINS UNLOCKED  ·  BELT ' +
@@ -2082,6 +2105,38 @@ document.getElementById('customSkinForm').addEventListener('submit', (event) => 
   status.textContent = saved ? skin.name + ' CREATED & EQUIPPED' : 'CREATED FOR THIS SESSION · SAVE FAILED';
   status.dataset.state = saved ? 'success' : 'error';
   refreshSkinGallery();
+});
+
+const siteBrand = document.querySelector('.site-brand');
+let secretBrandClickCount = 0;
+let secretBrandClickTimer;
+if (secretIUUnlocked) siteBrand.classList.add('secret-unlocked');
+siteBrand.addEventListener('click', (event) => {
+  if (secretIUUnlocked) return;
+  secretBrandClickCount++;
+  window.clearTimeout(secretBrandClickTimer);
+  secretBrandClickTimer = window.setTimeout(() => {
+    secretBrandClickCount = 0;
+  }, 2200);
+  if (secretBrandClickCount < 5) return;
+
+  event.preventDefault();
+  window.clearTimeout(secretBrandClickTimer);
+  secretBrandClickCount = 0;
+  secretIUUnlocked = true;
+  selectedSkinId = SECRET_IU_SKIN.id;
+  siteBrand.classList.add('secret-unlocked');
+  const saved = saveSkinProgress();
+  refreshSkinGallery();
+
+  const progress = document.getElementById('skinProgress');
+  progress.textContent = saved
+    ? 'SECRET CHARACTER IU DISCOVERED · EQUIPPED'
+    : 'SECRET CHARACTER IU UNLOCKED FOR THIS SESSION · SAVE FAILED';
+  progress.dataset.state = saved ? 'success' : 'error';
+  const secretCard = document.querySelector('#skinGallery [data-skin-id="secret-iu"]');
+  secretCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  secretCard.focus({ preventScroll: true });
 });
 
 refreshSkinGallery();
