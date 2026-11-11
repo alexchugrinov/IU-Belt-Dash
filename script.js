@@ -45,7 +45,7 @@ const SECRET_IU_SKIN = {
   main: '#523cff',
   accent: '#55f6ff',
   shape: 'cube',
-  pattern: 'nebula',
+  pattern: 'iu',
   unlockBelt: 1,
 };
 const SKIN_SHAPES = ['cube', 'diamond', 'circle', 'hexagon'];
@@ -957,7 +957,43 @@ function drawPlayer() {
 
 function drawSkinAccessories(skin) {
   const half = player.size / 2;
-  if (skin.pattern === 'lion') {
+  if (skin.pattern === 'iu') {
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.strokeStyle = skin.accent;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = skin.accent;
+    ctx.shadowBlur = 9;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, half * 1.42, half * 1.22, -0.45, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = '#b895ff';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, half * 1.42, half * 1.22, 0.45, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffe27a';
+    ctx.strokeStyle = '#fff2b0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-half * 0.72, -half * 0.78);
+    ctx.lineTo(-half * 0.9, -half * 1.48);
+    ctx.lineTo(-half * 0.28, -half * 1.05);
+    ctx.lineTo(0, -half * 1.62);
+    ctx.lineTo(half * 0.28, -half * 1.05);
+    ctx.lineTo(half * 0.9, -half * 1.48);
+    ctx.lineTo(half * 0.72, -half * 0.78);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#55f6ff';
+    ctx.shadowColor = '#55f6ff';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(0, -half * 1.08, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  } else if (skin.pattern === 'lion') {
     const mane = ctx.createLinearGradient(-half * 1.4, -half * 1.4, half * 1.2, half * 1.4);
     mane.addColorStop(0, '#ffdc72');
     mane.addColorStop(0.65, '#d77b32');
@@ -1121,7 +1157,27 @@ function drawSkinBody(skin) {
   ctx.shadowOffsetY = 0;
   drawSkinPath(skin.shape, player.size - 2);
   ctx.clip();
-  if (skin.pattern === 'chameleon') {
+  if (skin.pattern === 'iu') {
+    ctx.fillStyle = 'rgba(7,8,28,0.8)';
+    ctx.fillRect(-half * 0.58, -half * 0.42, half * 1.16, half * 0.84);
+    ctx.strokeStyle = skin.accent;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-half * 0.58, -half * 0.42, half * 1.16, half * 0.84);
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = skin.accent;
+    ctx.shadowBlur = 6;
+    ctx.font = '900 10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('IU', 0, 0.5);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffe27a';
+    for (const [x, y] of [[-half * 0.64, -half * 0.64], [half * 0.64, half * 0.64]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (skin.pattern === 'chameleon') {
     ctx.strokeStyle = 'rgba(35, 115, 49, 0.72)';
     ctx.lineWidth = 1.2;
     for (let row = -1; row <= 1; row++) {

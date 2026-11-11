@@ -3668,3 +3668,27 @@
   @media (prefers-reduced-motion: reduce) {
     .skin-card:hover:not(:disabled) { transform: none; }
   }
+  .skin-swatch.iu .skin-swatch-front {
+    background-image:
+      radial-gradient(circle at 20% 20%, #fff 0 1px, transparent 1.7px),
+      radial-gradient(circle at 78% 24%, #ffe27a 0 1px, transparent 1.8px),
+      radial-gradient(circle at 68% 78%, #fff 0 1px, transparent 1.7px),
+      linear-gradient(145deg, #b895ff 0%, #523cff 48%, #17113e 100%);
+    box-shadow: inset 3px 3px 0 rgba(255,255,255,0.44),
+      inset -4px -5px 0 rgba(0,0,0,0.28),
+      0 0 18px rgba(85,246,255,0.55),
+      0 0 30px rgba(82,60,255,0.52);
+  }
+  .skin-swatch.iu .skin-swatch-front::after {
+    width: auto;
+    height: auto;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: #e8ffff;
+    content: "IU";
+    font: 900 14px/1 Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    text-shadow: 0 0 5px #55f6ff, 0 0 12px #55f6ff;
+    transform: translate(-50%, -50%);
+  }
