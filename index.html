@@ -39,15 +39,20 @@
       </div>
 
       <button class="play-btn" id="playBtnTop">
-        <span>PLAY NOW</span><span class="play-arrow">▶</span>
+        <span id="playBtnLabel">PLAY NOW</span><span class="play-arrow">▶</span>
+      </button>
+      <button class="play-btn continue-btn" id="continueBtn" type="button" hidden>
+        <span id="continueLabel">CONTINUE</span><span class="play-arrow">▶</span>
       </button>
       <div class="quick-info">PHONE &amp; DESKTOP &nbsp;·&nbsp; NO INSTALL &nbsp;·&nbsp; FREE</div>
+      <button class="reset-progress" id="resetProgressBtn" type="button" hidden>RESET SAVED PROGRESS</button>
     </div>
 
     <div class="lp-right">
       <div class="section-label">— HOW TO PLAY —</div>
       <div class="tip-list">
         <div class="tip-item"><span class="tip-num">01</span>TAP / <kbd>SPACE</kbd> / <kbd>↑</kbd> — jump over spikes, blocks, saws and pits of lava</div>
+        <div class="tip-item"><span class="tip-num">●</span>Orange orb — tap while touching it to jump again &nbsp;·&nbsp; Green orb — hold while touching it to dash straight (up to 1.5 s), release to fall</div>
         <div class="tip-item"><span class="tip-num">✈</span>Find a portal to fly a plane — hold jump to climb and release to descend</div>
         <div class="tip-item"><span class="tip-num">02</span>Reach checkpoints to save progress &nbsp;·&nbsp; <kbd>R</kbd> to respawn &nbsp;·&nbsp; <kbd>P</kbd> to pause</div>
         <div class="tip-item"><span class="tip-num">03</span>Climb 8 belts from White to Black — each belt is faster and longer than the last</div>
@@ -92,15 +97,21 @@
       <button type="button" data-tool="pit">PIT</button>
       <button type="button" data-tool="saw">SAW</button>
       <button type="button" data-tool="pad">JUMP PAD</button>
+      <button type="button" data-tool="orb">JUMP ORB</button>
+      <button type="button" data-tool="dashOrb">DASH ORB</button>
+      <button type="button" data-tool="portalFly">FLY PORTAL</button>
+      <button type="button" data-tool="portalCube">EXIT PORTAL</button>
       <button type="button" data-tool="erase">ERASER</button>
       <button type="button" id="undoObstacleBtn">UNDO</button>
     </div>
     <canvas id="editorCanvas" width="960" height="180" aria-label="Level layout. Click to place selected obstacle."></canvas>
     <p class="editor-help">Click the track to place obstacles. Keep the start and finish clear. Up to 50 obstacles.</p>
     <div id="editorStatus" class="editor-status" aria-live="polite"></div>
+    <div id="verifyBadge" class="verify-badge"></div>
     <input id="publishedLevelLink" class="published-level-link" type="text" readonly hidden aria-label="Published level link">
     <div class="editor-actions">
       <button class="pauseBtn" id="saveDraftBtn" type="button">SAVE DRAFT</button>
+      <button class="pauseBtn" id="verifyLevelBtn" type="button">TEST &amp; VERIFY</button>
       <button class="pauseBtn primary" id="publishLevelBtn" type="button">PUBLISH &amp; COPY LINK</button>
     </div>
   </section>
@@ -154,6 +165,9 @@
   <div class="ach-trial" id="achTrial">CRIMSON TRIAL UNLOCKED</div>
 </div>
 
+<button id="muteBtn" class="mute-btn" type="button" aria-label="Mute music" title="Mute / unmute music (M)">🔊</button>
+
+<script src="music.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
