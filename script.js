@@ -180,8 +180,9 @@ function bindBtn(id, handler) {
   const el = document.getElementById(id);
   if (!el) return;
   const fire = (e) => { e.preventDefault(); e.stopPropagation(); handler(); };
+  // 'click' only: touchstart is not a user activation in Chrome, so fullscreen /
+  // orientation lock requested from it were rejected on Android phones.
   el.addEventListener('click', fire);
-  el.addEventListener('touchstart', fire, { passive: false });
 }
 
 bindBtn('pauseBtn', () => { if (gameState === 'playing') pauseGame(); else if (gameState === 'paused') resumeGame(); });
@@ -265,7 +266,12 @@ function returnToMenu() {
 function tryFullscreen() {
   const el = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-  if (req) { try { req.call(el); } catch(e){} }
+  if (req) {
+    try {
+      const p = req.call(el);
+      if (p && p.catch) p.catch(() => {});   // denied (no gesture / iOS) — play windowed
+    } catch(e){}
+  }
   if (screen.orientation && screen.orientation.lock) {
     try { screen.orientation.lock('landscape').catch(()=>{}); } catch(e){}
   }
@@ -1816,7 +1822,6 @@ function refreshTrialsUI() {
         checkOrientation();
       };
       card.addEventListener('click', fire);
-      card.addEventListener('touchstart', fire, { passive: false });
     }
     cont.appendChild(card);
   });

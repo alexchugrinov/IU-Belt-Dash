@@ -750,3 +750,14 @@
   .st-rarity { font-size: 10px; letter-spacing: 3px; color: var(--rarity, #fff); }
   .skins-section { margin-top: 18px; margin-bottom: 4px; color: #cc0000; font-size: 11px; letter-spacing: 5px; }
   .skin-card canvas.silhouette { filter: brightness(0) invert(0.25); }
+
+  /* Compact unlock popup on phones so it doesn't cover the track */
+  body.mobile #skinToast {
+    top: 6px; padding: 4px 12px; gap: 0 8px;
+    display: grid; grid-template-columns: auto auto; align-items: center;
+    max-width: calc(100vw - 32px);
+  }
+  body.mobile #skinToastPreview { width: 30px; height: 30px; margin: 0; grid-row: 1 / span 3; }
+  body.mobile .st-label { font-size: 8px; letter-spacing: 2px; text-align: left; }
+  body.mobile .st-name { font-size: 12px; letter-spacing: 2px; text-align: left; }
+  body.mobile .st-rarity { font-size: 8px; letter-spacing: 2px; text-align: left; }
