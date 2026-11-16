@@ -276,6 +276,12 @@ let secretMode = 'campaign'; // 'campaign' (5% detour) | 'direct' (from menu)
 let pendingNextBelt = 1; // belt to start after a secret completes
 let pendingTransition = 'BELT'; // 'BELT' | 'SECRET'
 let pendingSecretIdx = 0;
+let customLevelActive = false;
+let activeCustomLevel = null;
+let sharedCustomLevel = null;
+let sharedLevelError = '';
+let editorObstacles = [];
+let editorTool = 'spike';
 
 let levelData = null, speed = 5, cameraX = 0;
 let particles = [];
@@ -328,7 +334,7 @@ window.addEventListener('keydown', (e) => {
   }
   if ((e.key === 'q' || e.key === 'Q') && inSecret && gameState === 'playing') abandonTrial();
   if (e.key === 'r' || e.key === 'R') {
-    if (gameState === 'won' || gameState === 'won-secret') { returnToMenu(); }
+    if (gameState === 'won' || gameState === 'won-secret' || gameState === 'won-custom') { returnToMenu(); }
     else respawn();
   }
   if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
@@ -368,14 +374,15 @@ function bindBtn(id, handler) {
 
 bindBtn('pauseBtn', () => { if (gameState === 'playing') pauseGame(); else if (gameState === 'paused') resumeGame(); });
 bindBtn('respawnBtn', () => {
-  if (gameState === 'won' || gameState === 'won-secret') returnToMenu();
+  if (gameState === 'won' || gameState === 'won-secret' || gameState === 'won-custom') returnToMenu();
   else if (gameState === 'playing' || gameState === 'dead') respawn();
 });
 bindBtn('resumeBtn', resumeGame);
 bindBtn('restartBtn', () => {
   resumeGame();
   attempts = 1;
-  if (inSecret) startSecretLevel(secretIdx, secretMode);
+  if (customLevelActive && activeCustomLevel) startCustomLevel(activeCustomLevel);
+  else if (inSecret) startSecretLevel(secretIdx, secretMode);
   else startLevel(belt);
 });
 bindBtn('abandonBtn', () => { resumeGame(); abandonTrial(); });
@@ -383,6 +390,40 @@ bindBtn('quitBtn', () => { resumeGame(); returnToMenu(); });
 bindBtn('playBtnTop', enterGame);
 bindBtn('playBtnNav', enterGame);
 bindBtn('playBtnBottom', enterGame);
+
+document.getElementById('createLevelBtn').addEventListener('click', openLevelEditor);
+document.getElementById('closeEditorBtn').addEventListener('click', closeLevelEditor);
+document.getElementById('saveDraftBtn').addEventListener('click', saveLevelDraft);
+document.getElementById('publishLevelBtn').addEventListener('click', publishLevel);
+document.getElementById('undoObstacleBtn').addEventListener('click', () => {
+  editorObstacles.pop();
+  drawEditor();
+});
+document.getElementById('levelLengthInput').addEventListener('input', (e) => {
+  document.getElementById('levelLengthValue').textContent = e.target.value;
+  const length = Number(e.target.value);
+  const before = editorObstacles.length;
+  editorObstacles = editorObstacles.filter((item) => {
+    const shape = EDITOR_OBSTACLES[item.type];
+    return shape && item.x >= 420 && item.x + shape.w <= length - 180;
+  });
+  drawEditor();
+  const removed = before - editorObstacles.length;
+  if (removed) document.getElementById('editorStatus').textContent = 'Removed ' + removed + ' obstacle(s) that no longer fit.';
+});
+document.querySelectorAll('.editor-tools [data-tool]').forEach((button) => {
+  button.addEventListener('click', () => {
+    editorTool = button.dataset.tool;
+    document.querySelectorAll('.editor-tools [data-tool]').forEach((tool) => tool.classList.toggle('selected', tool === button));
+  });
+});
+document.getElementById('editorCanvas').addEventListener('click', placeEditorObstacle);
+document.getElementById('levelEditorModal').addEventListener('click', (e) => {
+  if (e.target.id === 'levelEditorModal') closeLevelEditor();
+});
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('levelEditorModal').classList.contains('open')) closeLevelEditor();
+});
 
 function enterGame() {
   document.body.classList.add('playing');
@@ -401,6 +442,8 @@ function returnToMenu() {
   document.body.classList.remove('playing');
   gameState = 'menu';
   inSecret = false;
+  customLevelActive = false;
+  activeCustomLevel = null;
   releaseWakeLock();
   exitFullscreen();
   document.getElementById('pauseOverlay').classList.remove('visible');
@@ -468,7 +511,8 @@ const PATTERNS = [
   ['spikeOnBlock', 6, 12],
   ['jumpPad',      6, 9],    // NEW: green pad → boosted jump → tall block ahead
   ['saw',          7, 12],   // NEW: rotating circular saw (circle hitbox)
-  ['staircase',    7, 8],
+  ['staircase',   7, 8],
+  ['orbGap',       5, 10],   // NEW: long spike field — tap the orange orb mid-air to jump again
 ];
 
 function pickPattern(currentBelt, isSecret) {
@@ -557,6 +601,11 @@ function placePattern(obstacles, x, p, d) {
       obstacles.push({ type:'pad',   x,       y:GROUND_Y-12,  w:60, h:12 });
       obstacles.push({ type:'block', x:x+250, y:GROUND_Y-130, w:60, h:130 });
       return 310;
+    case 'orbGap':
+      // 11 spikes is too long for one jump; orb floats mid-field
+      for (let i=0;i<11;i++) obstacles.push({ type:'spike', x:x+i*30, y:GROUND_Y-30, w:30, h:30 });
+      obstacles.push({ type:'orb', x:x+165-18, y:GROUND_Y-120-18, w:36, h:36, used:false });
+      return 330;
     case 'saw':
       // rotating saw at jump-arc height
       obstacles.push({ type:'saw', x:x+10, y:GROUND_Y-95, w:50, h:50 });
@@ -618,6 +667,8 @@ function generateSecretLevel(idx) {
 // ============== Game flow ==============
 function startLevel(b) {
   inSecret = false;
+  customLevelActive = false;
+  activeCustomLevel = null;
   belt = b;
   pointerHeld = false;
   // Faster speed scaling with each belt
@@ -642,6 +693,8 @@ function startLevel(b) {
 
 function startSecretLevel(idx, mode) {
   inSecret = true;
+  customLevelActive = false;
+  activeCustomLevel = null;
   secretIdx = idx;
   secretMode = mode;
   pointerHeld = false;
@@ -658,6 +711,33 @@ function startSecretLevel(idx, mode) {
   updateHUD();
 }
 
+function startCustomLevel(level) {
+  inSecret = false;
+  customLevelActive = true;
+  activeCustomLevel = level;
+  belt = 3;
+  speed = 6;
+  player.x = 120; player.y = GROUND_Y - PLAYER_SIZE; player.vy = 0;
+  player.onGround = true; player.rotation = 0;
+  cameraX = 0; particles = [];
+  lastCheckpointX = 120;
+  const obstacles = level.obstacles.map((item) => {
+    if (item.type === 'spike') return { type: 'spike', x: item.x, y: GROUND_Y - 30, w: 30, h: 30 };
+    if (item.type === 'block') return { type: 'block', x: item.x, y: GROUND_Y - 60, w: 60, h: 60 };
+    if (item.type === 'pit') return { type: 'pit', x: item.x, y: GROUND_Y, w: 100, h: 120 };
+    if (item.type === 'saw') return { type: 'saw', x: item.x, y: GROUND_Y - 95, w: 50, h: 50 };
+    return { type: 'pad', x: item.x, y: GROUND_Y - 12, w: 60, h: 12 };
+  });
+  const checkpoints = [];
+  for (let x = 1700; x < level.length - 500; x += 1700) checkpoints.push({ x, reached: false });
+  levelData = { obstacles, checkpoints, length: level.length, infinite: false };
+  gameState = 'playing';
+  attempts = 1;
+  levelStartTime = Date.now(); levelPausedDuration = 0;
+  stats.currentBeltDeaths = 0;
+  updateHUD();
+}
+
 function respawn() {
   if (gameState === 'transition' || gameState === 'won' || gameState === 'won-secret' || gameState === 'menu') return;
   attempts++;
@@ -667,6 +747,7 @@ function respawn() {
   player.onGround = true; player.rotation = 0;
   cameraX = Math.max(0, player.x - 280);
   particles = [];
+  if (levelData) for (const o of levelData.obstacles) if (o.type === 'orb') o.used = false;
   gameState = 'playing';
   updateHUD();
 }
@@ -692,6 +773,11 @@ function die() {
 }
 
 function advanceLevel() {
+  if (customLevelActive) {
+    gameState = 'won-custom';
+    vibrate(VIBE.win);
+    return;
+  }
   // We just finished the current level — handle stats & determine next.
   if (inSecret) {
     // Came out of a secret level
@@ -786,7 +872,7 @@ function update() {
     }
     return;
   }
-  if (gameState === 'won' || gameState === 'won-secret') { updateParticles(); return; }
+  if (gameState === 'won' || gameState === 'won-secret' || gameState === 'won-custom') { updateParticles(); return; }
   if (gameState === 'dead') {
     deathTimer++; updateParticles();
     if (deathTimer > 55) respawn();
@@ -794,9 +880,12 @@ function update() {
   }
 
   const jumpHeld = keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W'] || pointerHeld || jumpQueued;
+  const tapped = jumpQueued;
+  let groundJumped = false;
   if (jumpHeld && player.onGround) {
     player.vy = -14.5;
     player.onGround = false;
+    groundJumped = true;
     if (IS_MOBILE) vibrate(VIBE.jump);
   }
   jumpQueued = false;
@@ -888,6 +977,32 @@ function update() {
         player.vy = -22;
         player.onGround = false;
         vibrate(VIBE.pad);
+      }
+    }
+  }
+
+  // Jump orbs: tap while touching to jump again (one use per orb)
+  if (tapped && !groundJumped) {
+    for (const o of levelData.obstacles) {
+      if (o.type !== 'orb' || o.used) continue;
+      if (o.x + o.w < player.x) continue;
+      if (o.x > player.x + player.size) continue;
+      const cx = o.x + o.w/2, cy = o.y + o.h/2, r = o.w/2;
+      const closestX = Math.max(player.x, Math.min(cx, player.x + player.size));
+      const closestY = Math.max(player.y, Math.min(cy, player.y + player.size));
+      const dx = cx - closestX, dy = cy - closestY;
+      if (dx*dx + dy*dy <= r*r) {
+        o.used = true;
+        player.vy = -14.5;
+        player.onGround = false;
+        vibrate(VIBE.pad);
+        for (let i = 0; i < 12; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const sp = 2 + Math.random() * 4;
+          particles.push({ x: cx, y: cy, vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp,
+            size: 3 + Math.random()*3, life: 1, decay: 0.04, color: '#ff9a1f' });
+        }
+        break;
       }
     }
   }
@@ -1000,6 +1115,7 @@ function draw() {
   if (gameState === 'transition')   drawTransitionOverlay();
   if (gameState === 'won')          drawWonOverlay();
   if (gameState === 'won-secret')   drawSecretWonOverlay();
+  if (gameState === 'won-custom')   drawCustomWonOverlay();
 }
 
 function drawBeltMotif(B) {
@@ -2091,7 +2207,34 @@ function drawObstacle(o, B) {
     drawSaw(o, B);
   } else if (o.type === 'pad') {
     drawPad(o, B);
+  } else if (o.type === 'orb') {
+    drawOrb(o);
   }
+}
+
+function drawOrb(o) {
+  const cx = o.x + o.w/2, cy = o.y + o.h/2, r = o.w/2;
+  const pulse = 0.5 + Math.sin(frame * 0.15 + o.x * 0.01) * 0.5;
+  ctx.save();
+  ctx.globalAlpha = o.used ? 0.3 : 1;
+  // outer pulsing ring
+  ctx.strokeStyle = '#ffb347';
+  ctx.lineWidth = 2;
+  ctx.globalAlpha *= 0.5 + pulse * 0.4;
+  ctx.beginPath(); ctx.arc(cx, cy, r + 5 + pulse * 4, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = o.used ? 0.3 : 1;
+  // orb body
+  ctx.shadowColor = '#ff8c00';
+  ctx.shadowBlur = o.used ? 0 : 16;
+  ctx.fillStyle = '#ff8c00';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#ffc266';
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
 }
 
 function drawTriUp(o, B) {
@@ -2397,12 +2540,34 @@ function drawSecretWonOverlay() {
   ctx.fillText(IS_MOBILE ? 'tap RESPAWN to return to menu' : 'press R to return to menu', W/2, H/2 + 40);
 }
 
+function drawCustomWonOverlay() {
+  const title = activeCustomLevel ? activeCustomLevel.name : 'LEVEL COMPLETE';
+  ctx.fillStyle = 'rgba(0,0,0,0.9)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#ffd700';
+  ctx.font = 'bold 15px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillText('— COMMUNITY LEVEL CLEARED —', W/2, H/2 - 60);
+  ctx.fillStyle = '#fff';
+  ctx.shadowColor = '#cc0000';
+  ctx.shadowBlur = 24;
+  ctx.font = 'bold 34px Courier New';
+  ctx.fillText(title.slice(0, 24), W/2, H/2 - 10);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px Courier New';
+  ctx.fillText(IS_MOBILE ? 'tap RESPAWN to return to menu' : 'press R to return to menu', W/2, H/2 + 40);
+}
+
 // ============== HUD ==============
 function updateHUD() {
   const B = getPalette();
   const nameEl = document.getElementById('beltName');
   const subEl  = document.getElementById('subtitle');
-  if (inSecret) {
+  if (customLevelActive && activeCustomLevel) {
+    nameEl.textContent = activeCustomLevel.name;
+    subEl.textContent = 'BY ' + activeCustomLevel.author;
+  } else if (inSecret) {
     nameEl.textContent = SECRETS[secretIdx].name;
     subEl.textContent = 'SECRET TRIAL';
   } else {
@@ -2413,10 +2578,11 @@ function updateHUD() {
   subEl.style.color = inSecret ? '#ff4040' : B.fg;
 
   const bar = document.getElementById('beltBar');
+  bar.style.visibility = customLevelActive ? 'hidden' : 'visible';
   bar.innerHTML = '';
   for (let i = 1; i < BELTS.length; i++) {
     const pip = document.createElement('div');
-    pip.className = 'pip' + ((!inSecret && i === belt) ? ' active' : '');
+    pip.className = 'pip' + ((!inSecret && !customLevelActive && i === belt) ? ' active' : '');
     pip.style.background = BELTS[i].bg1;
     pip.style.color = BELTS[i].bg1;
     pip.style.opacity = (i <= (inSecret ? belt : belt)) ? 1 : 0.28;
@@ -2714,6 +2880,315 @@ secretRogerButton.addEventListener('click', () => {
 
 refreshSkinGallery();
 
+// ============== Player level editor & sharing ==============
+const EDITOR_OBSTACLES = {
+  spike: { w: 30, y: GROUND_Y - 30, h: 30, color: '#ff5555' },
+  block: { w: 60, y: GROUND_Y - 60, h: 60, color: '#f0a070' },
+  pit:   { w: 100, y: GROUND_Y, h: 24, color: '#ff6a1a' },
+  saw:   { w: 50, y: GROUND_Y - 95, h: 50, color: '#b28cff' },
+  pad:   { w: 60, y: GROUND_Y - 12, h: 12, color: '#44dd66' },
+};
+const CUSTOM_LEVELS_KEY = 'iuBeltDashPlayerLevels';
+
+function openLevelEditor() {
+  document.getElementById('levelEditorModal').classList.add('open');
+  document.getElementById('levelEditorModal').setAttribute('aria-hidden', 'false');
+  document.getElementById('editorStatus').textContent = '';
+  document.getElementById('publishedLevelLink').hidden = true;
+  drawEditor();
+}
+
+function closeLevelEditor() {
+  const modal = document.getElementById('levelEditorModal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+function placeEditorObstacle(event) {
+  const canvasEl = event.currentTarget;
+  const rect = canvasEl.getBoundingClientRect();
+  const length = Number(document.getElementById('levelLengthInput').value);
+  const clickedX = ((event.clientX - rect.left) / rect.width) * canvasEl.width;
+  const worldX = Math.round((clickedX / canvasEl.width) * length / 30) * 30;
+  if (editorTool === 'erase') {
+    let nearest = -1;
+    let nearestDistance = Infinity;
+    editorObstacles.forEach((obstacle, index) => {
+      const distance = Math.abs(obstacle.x - worldX);
+      if (distance < nearestDistance && distance < 100) {
+        nearest = index;
+        nearestDistance = distance;
+      }
+    });
+    if (nearest >= 0) editorObstacles.splice(nearest, 1);
+    drawEditor();
+    return;
+  }
+  if (editorObstacles.length >= 50) {
+    document.getElementById('editorStatus').textContent = 'This level already has the maximum of 50 obstacles.';
+    return;
+  }
+  const obstacle = EDITOR_OBSTACLES[editorTool];
+  if (!obstacle || worldX < 420 || worldX + obstacle.w > length - 180) {
+    document.getElementById('editorStatus').textContent = 'Place obstacles after the start and before the finish.';
+    return;
+  }
+  editorObstacles.push({ type: editorTool, x: worldX });
+  editorObstacles.sort((a, b) => a.x - b.x);
+  document.getElementById('editorStatus').textContent = '';
+  drawEditor();
+}
+
+function drawEditor() {
+  const editorCanvas = document.getElementById('editorCanvas');
+  if (!editorCanvas) return;
+  const editorCtx = editorCanvas.getContext('2d');
+  const length = Number(document.getElementById('levelLengthInput').value);
+  editorCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+  editorCtx.fillStyle = '#171717';
+  editorCtx.fillRect(0, 0, editorCanvas.width, editorCanvas.height);
+  editorCtx.fillStyle = '#222';
+  for (let x = 0; x < editorCanvas.width; x += 48) editorCtx.fillRect(x, 0, 1, editorCanvas.height);
+  const groundY = editorCanvas.height * (GROUND_Y / H);
+  editorCtx.fillStyle = '#444';
+  editorCtx.fillRect(0, groundY, editorCanvas.width, editorCanvas.height - groundY);
+  editorCtx.fillStyle = '#cc0000';
+  editorCtx.fillRect(0, groundY, editorCanvas.width, 3);
+  editorCtx.fillStyle = '#66ccff';
+  editorCtx.fillRect(120 / length * editorCanvas.width, groundY - 38, 3, 38);
+  editorCtx.fillStyle = '#ffd700';
+  editorCtx.fillRect(editorCanvas.width - 4, 0, 4, groundY);
+  editorObstacles.forEach((item) => {
+    const shape = EDITOR_OBSTACLES[item.type];
+    if (!shape) return;
+    const x = item.x / length * editorCanvas.width;
+    const y = shape.y / H * editorCanvas.height;
+    const w = shape.w / length * editorCanvas.width;
+    const h = Math.max(4, shape.h / H * editorCanvas.height);
+    editorCtx.fillStyle = shape.color;
+    editorCtx.fillRect(x, y, Math.max(w, 4), h);
+  });
+  document.getElementById('editorStatus').textContent = editorObstacles.length + ' / 50 obstacles';
+}
+
+function readEditorLevel() {
+  const name = document.getElementById('levelNameInput').value.trim().slice(0, 40);
+  const author = document.getElementById('levelAuthorInput').value.trim().slice(0, 24);
+  const length = Number(document.getElementById('levelLengthInput').value);
+  if (!name || !author) throw new Error('Enter both a level name and a creator name.');
+  if (!Number.isInteger(length) || length < 3000 || length > 9000) throw new Error('Choose a valid level length.');
+  if (!editorObstacles.length) throw new Error('Add at least one obstacle before saving or publishing.');
+  return validateCustomLevel({
+    version: 1,
+    name,
+    author,
+    length,
+    obstacles: editorObstacles.map(({ type, x }) => ({ type, x })),
+  });
+}
+
+function loadSavedLevels() {
+  const stored = localStorage.getItem(CUSTOM_LEVELS_KEY);
+  if (!stored) return [];
+  const parsed = JSON.parse(stored);
+  if (!Array.isArray(parsed)) throw new Error('Saved levels data is not a list.');
+  return parsed.map(validateCustomLevel).slice(0, 10);
+}
+
+function persistLevel(level) {
+  const levels = loadSavedLevels().filter((saved) => !(saved.name === level.name && saved.author === level.author));
+  levels.unshift(level);
+  localStorage.setItem(CUSTOM_LEVELS_KEY, JSON.stringify(levels.slice(0, 10)));
+}
+
+function validateCustomLevel(value) {
+  if (!value || value.version !== 1 || typeof value.name !== 'string' || typeof value.author !== 'string' ||
+      !Number.isInteger(value.length) || value.length < 3000 || value.length > 9000 ||
+      !Array.isArray(value.obstacles) || value.obstacles.length < 1 || value.obstacles.length > 50) {
+    throw new Error('This level link is invalid or uses an unsupported format.');
+  }
+  const name = value.name.trim().slice(0, 40);
+  const author = value.author.trim().slice(0, 24);
+  if (!name || !author) throw new Error('This level link is missing its name or creator.');
+  const obstacles = value.obstacles.map((item) => {
+    if (!item || !Object.prototype.hasOwnProperty.call(EDITOR_OBSTACLES, item.type) ||
+        !Number.isInteger(item.x) || item.x < 420 || item.x + EDITOR_OBSTACLES[item.type].w > value.length - 180) {
+      throw new Error('This level contains an invalid obstacle.');
+    }
+    return { type: item.type, x: item.x };
+  });
+  return { version: 1, name, author, length: value.length, obstacles };
+}
+
+function encodeLevel(level) {
+  const bytes = new TextEncoder().encode(JSON.stringify(level));
+  let binary = '';
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function decodeLevel(encoded) {
+  if (!/^[A-Za-z0-9_-]+$/.test(encoded) || encoded.length > 8000) {
+    throw new Error('This level link is malformed or too large.');
+  }
+  const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+  const binary = atob(base64 + '='.repeat((4 - base64.length % 4) % 4));
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return validateCustomLevel(JSON.parse(new TextDecoder().decode(bytes)));
+}
+
+async function copyLevelLink(link) {
+  try {
+    if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('Clipboard access is unavailable.');
+    await navigator.clipboard.writeText(link);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+async function publishLevel() {
+  const status = document.getElementById('editorStatus');
+  const linkField = document.getElementById('publishedLevelLink');
+  try {
+    const level = readEditorLevel();
+    const link = window.location.href.split('#')[0] + '#level=' + encodeLevel(level);
+    if (link.length > 6000) throw new Error('This level link is too long to share. Remove some obstacles and try again.');
+    linkField.value = link;
+    linkField.hidden = false;
+    let localSaveError = '';
+    try {
+      persistLevel(level);
+      refreshCommunityLevels();
+    } catch (error) {
+      localSaveError = ' This browser could not save a local copy: ' + error.message;
+    }
+    const copied = await copyLevelLink(link);
+    if (copied) status.textContent = 'Published! Share the copied link so anyone can play your level.' + localSaveError;
+    else {
+      linkField.focus();
+      linkField.select();
+      status.textContent = 'Link ready. Clipboard access was denied; copy the selected link below.' + localSaveError;
+    }
+  } catch (error) {
+    status.textContent = error.message;
+  }
+}
+
+function saveLevelDraft() {
+  const status = document.getElementById('editorStatus');
+  try {
+    persistLevel(readEditorLevel());
+    refreshCommunityLevels();
+    status.textContent = 'Draft saved in this browser.';
+  } catch (error) {
+    status.textContent = error.message;
+  }
+}
+
+function editSavedLevel(level) {
+  document.getElementById('levelNameInput').value = level.name;
+  document.getElementById('levelAuthorInput').value = level.author;
+  document.getElementById('levelLengthInput').value = level.length;
+  document.getElementById('levelLengthValue').textContent = level.length;
+  editorObstacles = level.obstacles.map((item) => ({ type: item.type, x: item.x }));
+  openLevelEditor();
+}
+
+function removeSavedLevel(level) {
+  try {
+    const remaining = loadSavedLevels().filter((saved) => !(saved.name === level.name && saved.author === level.author));
+    localStorage.setItem(CUSTOM_LEVELS_KEY, JSON.stringify(remaining));
+    refreshCommunityLevels();
+  } catch (error) {
+    const saved = document.getElementById('savedLevels');
+    const message = document.createElement('p');
+    message.className = 'community-copy';
+    message.textContent = 'Could not remove this level: ' + error.message;
+    saved.prepend(message);
+  }
+}
+
+function startSharedLevel(level) {
+  closeLevelEditor();
+  document.body.classList.add('playing');
+  sessionStartTime = Date.now();
+  pausedDuration = 0;
+  iuTalents = 0;
+  startCustomLevel(level);
+  if (IS_MOBILE) tryFullscreen();
+  requestWakeLock();
+  checkOrientation();
+}
+
+function refreshCommunityLevels() {
+  const shared = document.getElementById('sharedLevelFeature');
+  const saved = document.getElementById('savedLevels');
+  shared.innerHTML = '';
+  saved.innerHTML = '';
+  if (sharedCustomLevel) {
+    const title = document.createElement('h3');
+    title.textContent = sharedCustomLevel.name;
+    const byline = document.createElement('p');
+    byline.textContent = 'SHARED LEVEL BY ' + sharedCustomLevel.author + ' · ' + sharedCustomLevel.obstacles.length + ' OBSTACLES';
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.textContent = 'PLAY THIS LEVEL';
+    play.addEventListener('click', () => startSharedLevel(sharedCustomLevel));
+    shared.append(title, byline, play);
+    shared.hidden = false;
+  } else if (sharedLevelError) {
+    shared.textContent = sharedLevelError;
+    shared.hidden = false;
+  } else {
+    shared.hidden = true;
+  }
+  try {
+    loadSavedLevels().forEach((level) => {
+      const card = document.createElement('article');
+      card.className = 'community-card';
+      const title = document.createElement('h3');
+      title.textContent = level.name;
+      const byline = document.createElement('p');
+      byline.textContent = 'BY ' + level.author + ' · ' + level.obstacles.length + ' OBSTACLES';
+      const play = document.createElement('button');
+      play.type = 'button';
+      play.textContent = 'PLAY';
+      play.addEventListener('click', () => startSharedLevel(level));
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.textContent = 'EDIT';
+      edit.addEventListener('click', () => editSavedLevel(level));
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.textContent = 'REMOVE';
+      remove.addEventListener('click', () => removeSavedLevel(level));
+      card.append(title, byline, play, edit, remove);
+      saved.appendChild(card);
+    });
+  } catch (error) {
+    const message = document.createElement('p');
+    message.className = 'community-copy';
+    message.textContent = 'Could not load saved levels: ' + error.message;
+    saved.appendChild(message);
+  }
+}
+
+function loadSharedLevelFromHash() {
+  const match = window.location.hash.match(/^#level=([A-Za-z0-9_-]+)$/);
+  if (!match) {
+    if (window.location.hash.startsWith('#level=')) {
+      sharedLevelError = 'This shared level link is invalid or has been damaged.';
+    }
+    return;
+  }
+  try {
+    sharedCustomLevel = decodeLevel(match[1]);
+  } catch (error) {
+    sharedLevelError = 'Could not load this shared level: ' + error.message;
+  }
+}
+
 // ============== Trials UI on landing ==============
 function refreshTrialsUI() {
   const cont = document.getElementById('trialsContainer');
@@ -2758,6 +3233,8 @@ function refreshTrialsUI() {
   });
   prog.textContent = unlocked + ' OF 3 TRIALS UNLOCKED';
 }
+loadSharedLevelFromHash();
+refreshCommunityLevels();
 refreshTrialsUI();
 
 // ============== Loop ==============

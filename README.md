@@ -1,20 +1,23 @@
 # IU Belt Dash
 
-A Geometry Dash-inspired browser game. Run and jump through eight belts, then unlock secret trials and collect runner skins.
+A Geometry Dash-inspired browser game. Run and jump through eight belts, unlock secret trials, collect runner skins, and create levels to share with friends.
 
 ## Play
 
-Open `index.html` in a modern browser.
+Open `index.html` in a modern browser. Tap/click or press `Space`, `Up`, or `W` to jump. Press `R` to respawn and `P` or `Escape` to pause.
 
-- Press Space, Up, or W, or tap/click, to jump.
-- Use glowing jump pads to clear higher obstacles.
-- Reach checkpoints to save your place. Press R to respawn and P or Escape to pause.
-- Each belt has its own plain color-cube runner; choose **AUTO · NEW EACH BELT** in the garage to change colors as you progress. Green, yellow, and orange bonus cubes also unlock at belts 3, 5, and 7.
-- Pick a skin in the Runner Garage, or open **Create your own skin** to preview and choose its name, colors, and shape.
-- Skin selection, custom skins, and belt unlocks are saved on this device.
+## Skins
+
+Each belt has an Oman-inspired runner skin. Choose a skin in the Runner Garage, create a custom cube or interface theme, and unlock bonus and secret skins as you progress. Skin selection, custom skins, and belt unlocks are saved on this device.
+
+## Create and share levels
+
+Choose **Create a Level** on the landing page. Place obstacles on the track, save a draft in this browser, or publish to copy a playable link. The level is encoded in the link, so anyone who opens it can play without an account. Drafts are stored locally in the browser.
+
+This project is a static site and has no server-side level directory: shared links work across players, but published levels are not listed globally for everyone.
 
 ## Project files
 
-- `index.html` — landing page, skin garage, and game canvas
-- `style.css` — responsive interface, skin cards, and animation
-- `script.js` — game logic, skin artwork, save data, and input handling
+- `index.html` — landing page, skin garage, community levels, level editor, and game canvas
+- `style.css` — responsive interface, skin cards, editor, and animations
+- `script.js` — game logic, skin artwork, level editor and sharing, save data, and input handling
