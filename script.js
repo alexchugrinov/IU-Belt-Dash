@@ -96,6 +96,17 @@ let levelStartTime = 0, levelPausedDuration = 0;
 const player = { x: 120, y: GROUND_Y - PLAYER_SIZE, vy: 0, size: PLAYER_SIZE, onGround: true, rotation: 0 };
 const keys = {}; let jumpQueued = false, pointerHeld = false, flightMode = false;
 
+// Airplane handling (per 60 Hz physics step).
+const PLANE = {
+  lift: -0.7,        // vertical acceleration while holding jump
+  gravity: 0.8,      // vertical acceleration while released (was 1.15 — felt like dropping)
+  maxSpeed: 8,
+  entrySpeed: 4,     // max |vy| kept when flying through the airplane portal
+  maxTilt: 0.4,
+  tiltPerSpeed: 0.05,
+  tiltEase: 0.2,
+};
+
 // ============== Helpers ==============
 function vibrate(p) { if (navigator.vibrate) { try { navigator.vibrate(p); } catch(e){} } }
 const VIBE = {
@@ -614,6 +625,7 @@ function advanceLevel() {
     if (stats.currentBeltDeaths === 0) stats.flawlessBeltAchieved = true;
     iuTalents += 1 / attempts;
     checkAchievements();
+    unlockPlaneForBelt(belt);   // skins.js — each belt rewards a plane skin
   }
 
   if (belt < BELTS.length - 1) {
@@ -706,8 +718,8 @@ function update() {
   player.onGround = false;
 
   if (flightMode) {
-    player.vy += jumpHeld ? -0.72 : 1.15;
-    player.vy = Math.max(-8.5, Math.min(8.5, player.vy));
+    player.vy += jumpHeld ? PLANE.lift : PLANE.gravity;
+    player.vy = Math.max(-PLANE.maxSpeed, Math.min(PLANE.maxSpeed, player.vy));
   } else {
     player.vy += 0.88;
     if (player.vy > 18) player.vy = 18;
@@ -718,16 +730,30 @@ function update() {
 
   for (const o of levelData.obstacles) {
     if (o.type !== 'portal' || previousX + player.size > o.x || player.x + player.size <= o.x) continue;
+    const enteringFlight = o.mode === 'airplane' && !flightMode;
     flightMode = o.mode === 'airplane';
     player.onGround = false;
+    if (enteringFlight) {
+      // Soften the jump momentum carried into the plane instead of a hard clamp.
+      player.vy = Math.max(-PLANE.entrySpeed, Math.min(PLANE.entrySpeed, player.vy * 0.4));
+      player.rotation = 0;
+    }
     if (!flightMode) player.rotation = 0;
   }
 
   if (flightMode) {
-    player.y = Math.max(12, Math.min(GROUND_Y - player.size - 12, player.y));
+    // Ceiling / floor: stop vertical speed so the plane reacts instantly when
+    // the player changes input (previously it "stuck" to the edge for ~8 frames).
+    const top = 12, bottom = GROUND_Y - player.size - 12;
+    if (player.y <= top) { player.y = top; if (player.vy < 0) player.vy = 0; }
+    if (player.y >= bottom) { player.y = bottom; if (player.vy > 0) player.vy = 0; }
   }
 
-  if (flightMode) player.rotation = 0;
+  if (flightMode) {
+    // Nose follows vertical speed with easing instead of snapping.
+    const tilt = Math.max(-PLANE.maxTilt, Math.min(PLANE.maxTilt, player.vy * PLANE.tiltPerSpeed));
+    player.rotation += (tilt - player.rotation) * PLANE.tiltEase;
+  }
   else if (!wasOnGround) player.rotation += 0.18;
   else {
     const target = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
@@ -977,13 +1003,25 @@ function drawPlayer(B) {
 }
 
 function drawAirplane(B) {
-  const k = skinColors(currentSkin(), B, frame);   // plane follows the equipped skin
-  B = Object.assign({}, B, { fg: k.body, accent: k.edge });
   ctx.save();
   ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
-  ctx.rotate(Math.max(-0.35, Math.min(0.35, player.vy * 0.035)));
+  ctx.rotate(player.rotation);   // eased tilt, computed in update()
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.fillRect(-15, 7, 30, 5);
+  const planeSkin = currentPlane();   // skins.js
+  if (planeSkin.draw) {
+    planeSkin.draw(ctx, frame);
+    ctx.restore();
+    return;
+  }
+  drawClassicPlane(ctx, B);
+  ctx.restore();
+}
+
+// Original plane silhouette; colors follow the equipped cube skin.
+function drawClassicPlane(ctx, B) {
+  const k = skinColors(currentSkin(), B, frame);
+  B = Object.assign({}, B, { fg: k.body, accent: k.edge });
   ctx.fillStyle = B.fg;
   ctx.beginPath();
   ctx.moveTo(17, 0);
@@ -1013,7 +1051,6 @@ function drawAirplane(B) {
   ctx.fillRect(6, -2, 6, 4);
   ctx.fillStyle = B.glow;
   ctx.fillRect(-17, -2, 3, 4);
-  ctx.restore();
 }
 
 function drawObstacle(o, B) {
@@ -1795,10 +1832,41 @@ function formatTime(ms) {
   const m = Math.floor(s / 60);
   return m + ':' + String(s % 60).padStart(2, '0');
 }
-function loop() {
+// Fixed 60 Hz physics with render interpolation: the game runs at the same
+// speed on 60/120/144 Hz screens and motion stays smooth when frames jitter.
+const STEP_MS = 1000 / 60;
+let lastFrameTime = 0, stepAcc = 0;
+const prevPos = { x: 0, y: 0, cam: 0 };
+
+function drawInterpolated(alpha) {
+  const real = { x: player.x, y: player.y, cam: cameraX };
+  // Skip interpolation across teleports (respawn, level start).
+  if (Math.abs(real.x - prevPos.x) < 60 && Math.abs(real.y - prevPos.y) < 60 &&
+      Math.abs(real.cam - prevPos.cam) < 60) {
+    player.x = prevPos.x + (real.x - prevPos.x) * alpha;
+    player.y = prevPos.y + (real.y - prevPos.y) * alpha;
+    cameraX = prevPos.cam + (real.cam - prevPos.cam) * alpha;
+  }
+  draw();
+  player.x = real.x; player.y = real.y; cameraX = real.cam;
+}
+
+function loop(now) {
+  now = now || performance.now();
   if (document.body.classList.contains('playing')) {
-    update();
-    draw();
+    let dt = lastFrameTime ? now - lastFrameTime : STEP_MS;
+    lastFrameTime = now;
+    if (Math.abs(dt - STEP_MS) < 1.5) dt = STEP_MS;   // absorb normal 60 Hz vsync jitter
+    stepAcc += Math.min(dt, 250);
+    let steps = 0;
+    while (stepAcc >= STEP_MS && steps < 5) {
+      prevPos.x = player.x; prevPos.y = player.y; prevPos.cam = cameraX;
+      update();
+      stepAcc -= STEP_MS;
+      steps++;
+    }
+    if (steps === 5) stepAcc = 0;   // way behind (tab was busy) — don't spiral
+    drawInterpolated(stepAcc / STEP_MS);
     if (levelData) {
       const now = Date.now();
       const onPause = (gameState === 'paused') ? (now - pauseStartTime) : 0;
@@ -1807,7 +1875,10 @@ function loop() {
       document.getElementById('timeHud').textContent = formatTime(now - sessionStartTime - pausedDuration - onPause);
       document.getElementById('talentsHud').textContent = iuTalents.toFixed(2);
     }
+  } else {
+    lastFrameTime = 0;
+    stepAcc = 0;
   }
   requestAnimationFrame(loop);
 }
-loop();
+requestAnimationFrame(loop);

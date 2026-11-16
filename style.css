@@ -748,3 +748,5 @@
   #skinToastPreview { width: 52px; height: 52px; margin: 4px 0; }
   .st-name { font-size: 18px; letter-spacing: 4px; font-weight: 700; color: #fff; }
   .st-rarity { font-size: 10px; letter-spacing: 3px; color: var(--rarity, #fff); }
+  .skins-section { margin-top: 18px; margin-bottom: 4px; color: #cc0000; font-size: 11px; letter-spacing: 5px; }
+  .skin-card canvas.silhouette { filter: brightness(0) invert(0.25); }
