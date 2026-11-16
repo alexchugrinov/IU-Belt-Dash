@@ -41,6 +41,7 @@
       <button class="play-btn" id="playBtnTop">
         <span>PLAY NOW</span><span class="play-arrow">▶</span>
       </button>
+      <div><button class="skins-btn" id="skinsBtn" type="button">◆ SKINS</button></div>
       <div class="quick-info">PHONE &amp; DESKTOP &nbsp;·&nbsp; NO INSTALL &nbsp;·&nbsp; FREE</div>
     </div>
 
@@ -154,6 +155,28 @@
   <div class="ach-trial" id="achTrial">CRIMSON TRIAL UNLOCKED</div>
 </div>
 
+<!-- Skins collection -->
+<div class="skins-modal" id="skinsModal" hidden>
+  <div class="skins-box" role="dialog" aria-labelledby="skinsTitle">
+    <div class="skins-title" id="skinsTitle">SKINS</div>
+    <div class="skins-count" id="skinCount"></div>
+    <div class="skins-note">New skins drop at random moments while you play. Tap a skin to equip it.</div>
+    <div class="skin-grid" id="skinGrid"></div>
+    <div class="skins-actions">
+      <button class="skins-btn primary" id="skinsCloseBtn" type="button">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- New skin drop popup -->
+<div id="skinToast">
+  <div class="st-label">✦ NEW SKIN DROPPED ✦</div>
+  <canvas id="skinToastPreview" width="64" height="64"></canvas>
+  <div class="st-name" id="skinToastName"></div>
+  <div class="st-rarity" id="skinToastRarity"></div>
+</div>
+
 <script src="script.js"></script>
+<script src="skins.js"></script>
 </body>
 </html>

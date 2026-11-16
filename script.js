@@ -860,6 +860,7 @@ function update() {
     }
   }
 
+  maybeDropSkin();   // skins.js — rare random skin drop during play
   updateParticles();
   if (!levelData.infinite && player.x >= levelData.length) advanceLevel();
 }
@@ -971,21 +972,13 @@ function drawPlayer(B) {
   ctx.rotate(player.rotation);
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.fillRect(-player.size/2 + 3, -player.size/2 + 4, player.size, player.size);
-  ctx.fillStyle = B.fg;
-  ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
-  ctx.strokeStyle = B.accent;
-  ctx.lineWidth = 2.5;
-  ctx.strokeRect(-player.size/2 + 1, -player.size/2 + 1, player.size - 2, player.size - 2);
-  ctx.fillStyle = B.accent;
-  ctx.fillRect(-player.size/2 + 5, -3, player.size - 10, 6);
-  ctx.fillStyle = B.bg1;
-  ctx.fillRect(-5, -player.size/2 + 7, 10, 6);
-  ctx.fillStyle = B.fg;
-  ctx.fillRect(-2, -player.size/2 + 9, 4, 3);
+  drawSkinCube(ctx, player.size, currentSkin(), B, frame);   // skins.js
   ctx.restore();
 }
 
 function drawAirplane(B) {
+  const k = skinColors(currentSkin(), B, frame);   // plane follows the equipped skin
+  B = Object.assign({}, B, { fg: k.body, accent: k.edge });
   ctx.save();
   ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
   ctx.rotate(Math.max(-0.35, Math.min(0.35, player.vy * 0.035)));
