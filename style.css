@@ -750,10 +750,6 @@
   }
   .skin-card.locked { opacity: 0.45; cursor: default; }
   .skin-card canvas { width: 64px; height: 64px; }
-  .skin-lock {
-    width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;
-    font-size: 28px; font-weight: 700; color: #555;
-  }
   .skin-name { font-size: 11px; font-weight: 700; letter-spacing: 2px; }
   .skin-rarity { font-size: 9px; letter-spacing: 2px; color: var(--rarity); }
 

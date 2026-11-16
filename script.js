@@ -1082,7 +1082,6 @@ function update() {
     }
   }
 
-  maybeDropSkin();   // skins.js — rare random skin drop during play
   updateParticles();
   if (!levelData.infinite && player.x >= levelData.length) advanceLevel();
 }
@@ -1344,7 +1343,17 @@ function drawPlayer(B) {
   ctx.rotate(player.rotation);
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.fillRect(-player.size/2 + 3, -player.size/2 + 4, player.size, player.size);
-  drawSkinCube(ctx, player.size, currentSkin(), B, frame);   // skins.js
+  ctx.fillStyle = B.fg;
+  ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
+  ctx.strokeStyle = B.accent;
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(-player.size/2 + 1, -player.size/2 + 1, player.size - 2, player.size - 2);
+  ctx.fillStyle = B.accent;
+  ctx.fillRect(-player.size/2 + 5, -3, player.size - 10, 6);
+  ctx.fillStyle = B.bg1;
+  ctx.fillRect(-5, -player.size/2 + 7, 10, 6);
+  ctx.fillStyle = B.fg;
+  ctx.fillRect(-2, -player.size/2 + 9, 4, 3);
   ctx.restore();
 }
 
@@ -1364,10 +1373,8 @@ function drawAirplane(B) {
   ctx.restore();
 }
 
-// Original plane silhouette; colors follow the equipped cube skin.
+// Original plane silhouette in the level palette colors.
 function drawClassicPlane(ctx, B) {
-  const k = skinColors(currentSkin(), B, frame);
-  B = Object.assign({}, B, { fg: k.body, accent: k.edge });
   ctx.fillStyle = B.fg;
   ctx.beginPath();
   ctx.moveTo(17, 0);
@@ -2217,10 +2224,16 @@ function formatTime(ms) {
   const m = Math.floor(s / 60);
   return m + ':' + String(s % 60).padStart(2, '0');
 }
-// Fixed 60 Hz physics with render interpolation: the game runs at the same
-// speed on 60/120/144 Hz screens (and matches the level verifier and the
-// 90-frame dash orb). The player chooses only how often frames are drawn.
-const STEP_MS = 1000 / 60;
+// Fixed-rate physics with render interpolation: the game runs at the same
+// speed on 60/120/144 Hz screens. The player chooses only how often frames
+// are drawn.
+//
+// GAME_SPEED speeds up time, not geometry: physics simply runs more steps per
+// second. Every trajectory stays identical in space, so all levels (and the
+// level verifier, which counts in steps) remain valid. 1 = 60 steps/s.
+const GAME_SPEED = 1.4;
+const STEP_MS = 1000 / (60 * GAME_SPEED);
+const FRAME_60_MS = 1000 / 60;
 let lastFrameTime = 0, stepAcc = 0, lastRenderTime = 0;
 const prevPos = { x: 0, y: 0, cam: 0 };
 
@@ -2270,18 +2283,18 @@ function loop(now) {
       return;
     }
     lastRenderTime = now;
-    let dt = lastFrameTime ? now - lastFrameTime : STEP_MS;
+    let dt = lastFrameTime ? now - lastFrameTime : FRAME_60_MS;
     lastFrameTime = now;
-    if (Math.abs(dt - STEP_MS) < 1.5) dt = STEP_MS;   // absorb normal 60 Hz vsync jitter
+    if (Math.abs(dt - FRAME_60_MS) < 1.5) dt = FRAME_60_MS;   // absorb normal 60 Hz vsync jitter
     stepAcc += Math.min(dt, 250);
     let steps = 0;
-    while (stepAcc >= STEP_MS && steps < 5) {
+    while (stepAcc >= STEP_MS && steps < 8) {
       prevPos.x = player.x; prevPos.y = player.y; prevPos.cam = cameraX;
       update();
       stepAcc -= STEP_MS;
       steps++;
     }
-    if (steps === 5) stepAcc = 0;   // way behind (tab was busy) — don't spiral
+    if (steps === 8) stepAcc = 0;   // way behind (tab was busy) — don't spiral
     drawInterpolated(stepAcc / STEP_MS);
     if (levelData) {
       const now = Date.now();
