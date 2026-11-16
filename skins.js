@@ -529,3 +529,17 @@ window.addEventListener('keydown', (e) => {
 });
 
 loadSkins();
+
+// Saved campaign progress (script.js loadProgress) — grant planes for belts the
+// player already beat before plane rewards existed. Reaching belt N means
+// belts 1..N-1 were completed. Silent: no popup on page load.
+(function grantPlanesFromProgress() {
+  let changed = false;
+  for (const p of PLANE_SKINS) {
+    if (p.belt > 0 && p.belt < stats.maxBeltReached && !skinState.planesOwned.has(p.id)) {
+      skinState.planesOwned.add(p.id);
+      changed = true;
+    }
+  }
+  if (changed) saveSkins();
+})();

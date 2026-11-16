@@ -99,6 +99,26 @@
   }
   .play-btn:hover::after { left: 100%; }
   .play-arrow { font-size: 22px; }
+  .mute-btn {
+    position: fixed; right: 14px; bottom: 14px; z-index: 3000;
+    width: 42px; height: 42px; border-radius: 50%;
+    background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.25);
+    color: #fff; font-size: 18px; line-height: 1; cursor: pointer;
+  }
+  .mute-btn:hover { background: rgba(204,0,0,0.8); }
+  .play-btn[hidden] { display: none; }
+  .play-btn.continue-btn {
+    margin-top: 14px; background: #1a1a1a; border: 2px solid #cc0000;
+    padding: 16px 40px; font-size: 15px;
+  }
+  .play-btn.continue-btn:hover { background: #2a0000; }
+  .reset-progress {
+    display: block; margin-top: 14px; background: none; border: none; padding: 0;
+    color: #666; font-family: 'Courier New', monospace; font-size: 11px;
+    letter-spacing: 2px; text-decoration: underline; cursor: pointer;
+  }
+  .reset-progress:hover { color: #cc0000; }
+  .reset-progress[hidden] { display: none; }
   .quick-info {
     margin-top: 28px; font-size: 13px; color: #777;
     font-family: 'Courier New', monospace; letter-spacing: 2px;
@@ -665,6 +685,12 @@
     font: 11px 'Courier New', monospace;
   }
   .published-level-link[hidden] { display: none; }
+  .verify-badge {
+    margin-top: 8px; font-family: 'Courier New', monospace; font-size: 12px;
+    letter-spacing: 1px; color: #ff6a5a;
+  }
+  .verify-badge.ok { color: #3dff7a; }
+  .editor-actions .pauseBtn:disabled { opacity: 0.4; cursor: not-allowed; }
   .editor-actions .pauseBtn { min-width: 190px; }
   @media (max-width: 800px) {
     .lp-hero { min-height: 0; }
