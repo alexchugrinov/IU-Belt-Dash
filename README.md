@@ -6,6 +6,8 @@ A browser-based platform game built with HTML, CSS, and JavaScript.
 
 Open `index.html` in a browser. Tap/click or press `Space` / `Up` to jump. Press `R` to respawn and `P` or `Escape` to pause.
 
+Blue gravity orbs (from the Green belt on) flip gravity: you run on the roof, every control works in reverse, and roof sections end with a spike field you escape by tapping another blue orb.
+
 ## Create and share levels
 
 Choose **Create a Level** on the landing page. Place obstacles on the track, save a draft in this browser, or publish to copy a playable link. The level is encoded in the link, so anyone who opens it can play without an account. Drafts are stored locally in the browser.

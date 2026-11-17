@@ -4,6 +4,8 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 const GROUND_Y = 430, PLAYER_SIZE = 34;
+const CEIL_Y = 50;                 // underside of the roof — you run here when gravity is flipped
+const MIRROR_Y = CEIL_Y + GROUND_Y; // y' = MIRROR_Y - y - h mirrors a box from floor to roof
 
 const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 const IS_MOBILE = IS_TOUCH && Math.min(window.innerWidth, window.innerHeight) < 900;
@@ -149,12 +151,12 @@ let levelData = null, speed = 5, cameraX = 0;
 let particles = [];
 let gameState = 'menu';
 let deathTimer = 0, transitionTimer = 0, frame = 0;
-let attempts = 1, lastCheckpointX = 120;
+let attempts = 1, lastCheckpointX = 120, lastCheckpointGrav = 1;
 let sessionStartTime = 0, iuTalents = 0;
 let pausedDuration = 0, pauseStartTime = 0;
 let levelStartTime = 0, levelPausedDuration = 0;
 
-const player = { x: 120, y: GROUND_Y - PLAYER_SIZE, vy: 0, size: PLAYER_SIZE, onGround: true, rotation: 0 };
+const player = { x: 120, y: GROUND_Y - PLAYER_SIZE, vy: 0, size: PLAYER_SIZE, onGround: true, rotation: 0, grav: 1, trail: [] };
 const keys = {}; let jumpQueued = false, pointerHeld = false, flightMode = false;
 
 // ============== Helpers ==============
@@ -386,6 +388,7 @@ const PATTERNS = [
   ['orbGap',       5, 10],   // NEW: long spike field — tap the orange orb mid-air to jump again
   ['dashGap',      6, 9],    // NEW: very long spike field — hold on the green orb to dash across
   ['airplane',     5, 6],
+  ['gravity',      4, 8],    // NEW: blue orb flips you onto the roof; mirrored patterns; blue orb back down
 ];
 
 function pickPattern(currentBelt, isSecret) {
@@ -409,7 +412,11 @@ function pickPattern(currentBelt, isSecret) {
   return 'spike1';
 }
 
-function placePattern(obstacles, x, p, d, spd = 8) {
+function mirrorObstacle(o) {
+  return Object.assign({}, o, { y: MIRROR_Y - o.y - o.h, flip: !o.flip });
+}
+
+function placePattern(obstacles, x, p, d, spd = 8, tier = 8) {
   switch (p) {
     case 'spike1':
       obstacles.push({ type:'spike', x, y:GROUND_Y-30, w:30, h:30 }); return 30;
@@ -499,6 +506,26 @@ function placePattern(obstacles, x, p, d, spd = 8) {
       obstacles.push({ type:'block', x:x+700, y:280, w:48, h:GROUND_Y-280 });
       obstacles.push({ type:'portal', mode:'cube', x:x+870, y:0, w:46, h:GROUND_Y });
       return 916;
+    case 'gravity': {
+      // Entry: blue orb over a ground spike field too long to jump — tap it to fall UP to the roof.
+      obstacles.push({ type:'gravOrb', x:x+10, y:GROUND_Y-128, w:36, h:36 });
+      for (let i=0;i<13;i++) obstacles.push({ type:'spike', x:x+60+i*30, y:GROUND_Y-30, w:30, h:30 });
+      // Roof: ordinary patterns, mirrored upside down.
+      let cx = x + 520;
+      const inner = Math.random() < 0.5 ? 1 : 2;
+      for (let k = 0; k < inner; k++) {
+        let pat;
+        do { pat = pickPattern(tier, false); } while (pat === 'airplane' || pat === 'gravity' || pat === 'dashGap');
+        const tmp = [];
+        const w = placePattern(tmp, cx, pat, d, spd, tier);
+        for (const o of tmp) obstacles.push(mirrorObstacle(o));
+        cx += w + Math.max(170, spd * 22);
+      }
+      // Exit: roof spike field — the only way out is the blue orb back down.
+      obstacles.push(mirrorObstacle({ type:'gravOrb', x:cx+10, y:GROUND_Y-128, w:36, h:36 }));
+      for (let i=0;i<13;i++) obstacles.push(mirrorObstacle({ type:'spike', x:cx+60+i*30, y:GROUND_Y-30, w:30, h:30 }));
+      return cx + 470 - x;
+    }
   }
   return 50;
 }
@@ -536,7 +563,7 @@ function buildLevel(opts) {
     for (let attempt = 0; attempt < 6 && !placed; attempt++) {
       const pat = pickPattern(tier, isSecret);
       const before = obstacles.length;
-      const placedW = placePattern(obstacles, x, pat, d, spd);
+      const placedW = placePattern(obstacles, x, pat, d, spd, isSecret ? 8 : tier);
       for (let i = before; i < obstacles.length; i++) obstacles[i].pid = before; // pattern id
       if (hitsCpZone(x, x + placedW)) { obstacles.length = before; continue; }
       indexLevel(ld);
@@ -615,20 +642,23 @@ function touchesCircle(s, o, shrink) {
 }
 
 // Player state for a fresh start / respawn at x (mode = last portal passed).
-function makePlayerState(ld, x) {
+function makePlayerState(ld, x, grav = 1) {
   let flight = false, lastPortalX = -Infinity;
   for (const o of ld.obstacles) {
     if (o.type === 'portal' && o.x < x && o.x > lastPortalX) { lastPortalX = o.x; flight = o.mode === 'airplane'; }
   }
-  return { x, y: flight ? GROUND_Y / 2 : GROUND_Y - PLAYER_SIZE, vy: 0, onGround: true, flight, used: [], dash: -1 };
+  const y = flight ? GROUND_Y / 2 : (grav < 0 ? CEIL_Y : GROUND_Y - PLAYER_SIZE);
+  return { x, y, vy: 0, onGround: true, flight, used: [], dash: -1, grav };
 }
 
 // Advance s by one frame. held = jump button down, tapped = pressed this frame.
+// s.grav is 1 (normal) or -1 (flipped by a blue orb): every vertical rule is multiplied by it.
 function stepPhysics(s, held, tapped, ld, spd) {
-  const r = { dead: false, jumped: false, pad: false, orb: null, dash: null, wasOnGround: false };
+  const r = { dead: false, jumped: false, pad: false, orb: null, dash: null, grav: null, wasOnGround: false };
   const size = PLAYER_SIZE;
+  const g = s.grav;
   if (!s.flight && s.dash < 0 && held && s.onGround) {
-    s.vy = -14.5; s.onGround = false; r.jumped = true;
+    s.vy = -14.5 * g; s.onGround = false; r.jumped = true;
   }
   r.wasOnGround = s.onGround;
   s.onGround = false;
@@ -637,11 +667,12 @@ function stepPhysics(s, held, tapped, ld, spd) {
   if (s.dash >= 0 && !(held && s.dash < DASH_FRAMES)) s.dash = -1;
   if (s.dash >= 0) { s.dash++; s.vy = 0; }
   else if (s.flight) {
-    s.vy += held ? -0.72 : 1.15;
+    // Plane: hold pushes against gravity. Flipped, release floats up and hold dives.
+    s.vy += (held ? -0.72 : 1.15) * g;
     s.vy = Math.max(-8.5, Math.min(8.5, s.vy));
   } else {
-    s.vy += 0.88;
-    if (s.vy > 18) s.vy = 18;
+    s.vy += 0.88 * g;
+    s.vy = Math.max(-18, Math.min(18, s.vy));
   }
   const prevX = s.x;
   s.y += s.vy;
@@ -654,31 +685,45 @@ function stepPhysics(s, held, tapped, ld, spd) {
     s.dash = -1;
     s.onGround = false;
   }
-  if (s.flight) s.y = Math.max(12, Math.min(GROUND_Y - size - 12, s.y));
+  if (s.flight) s.y = Math.max(CEIL_Y + 4, Math.min(GROUND_Y - size - 12, s.y));
 
-  // Ground / pit
-  if (!s.flight && s.y + size >= GROUND_Y) {
+  // Floor (normal gravity) / roof (flipped) — both can have pits
+  if (!s.flight && g > 0 && s.y + size >= GROUND_Y) {
     let overPit = false;
     for (const o of near) {
-      if (o.type === 'pit' && s.x + size > o.x + 6 && s.x < o.x + o.w - 6) { overPit = true; break; }
+      if (o.type === 'pit' && !o.flip && s.x + size > o.x + 6 && s.x < o.x + o.w - 6) { overPit = true; break; }
     }
     if (!overPit) { s.y = GROUND_Y - size; s.vy = 0; s.onGround = true; }
     else if (s.y > GROUND_Y + 80) { r.dead = true; return r; }
   }
+  if (!s.flight && g < 0 && s.y <= CEIL_Y) {
+    let overPit = false;
+    for (const o of near) {
+      if (o.type === 'pit' && o.flip && s.x + size > o.x + 6 && s.x < o.x + o.w - 6) { overPit = true; break; }
+    }
+    if (!overPit) { s.y = CEIL_Y; s.vy = 0; s.onGround = true; }
+    else if (s.y + size < CEIL_Y - 80) { r.dead = true; return r; }
+  }
 
-  // Blocks: land on top, die on sides/bottom (always die in the plane)
+  // Blocks: land on the side gravity pulls you onto, die on any other side (always die in the plane)
   for (const o of near) {
     if (o.type !== 'block') continue;
     if (!(s.x < o.x + o.w && s.x + size > o.x && s.y < o.y + o.h && s.y + size > o.y)) continue;
     if (s.flight) { r.dead = true; return r; }
-    const prevBottom = s.y + size - s.vy;
-    if (s.vy >= 0 && prevBottom <= o.y + 2) { s.y = o.y - size; s.vy = 0; s.onGround = true; }
-    else { r.dead = true; return r; }
+    if (g > 0) {
+      const prevBottom = s.y + size - s.vy;
+      if (s.vy >= 0 && prevBottom <= o.y + 2) { s.y = o.y - size; s.vy = 0; s.onGround = true; continue; }
+    } else {
+      const prevTop = s.y - s.vy;
+      if (s.vy <= 0 && prevTop >= o.y + o.h - 2) { s.y = o.y + o.h; s.vy = 0; s.onGround = true; continue; }
+    }
+    r.dead = true; return r;
   }
 
   for (const o of near) {
     if (o.type === 'spike' || o.type === 'fspike') {
-      const sb = o.type === 'spike'
+      const pointsUp = (o.type === 'spike') !== !!o.flip;
+      const sb = pointsUp
         ? { x: o.x + 5, y: o.y + 8, w: o.w - 10, h: o.h - 8 }
         : { x: o.x + 5, y: o.y,     w: o.w - 10, h: o.h - 8 };
       if (s.x < sb.x + sb.w && s.x + size > sb.x && s.y < sb.y + sb.h && s.y + size > sb.y) { r.dead = true; return r; }
@@ -687,30 +732,35 @@ function stepPhysics(s, held, tapped, ld, spd) {
     }
   }
 
-  // Jump pads
+  // Jump pads launch you away from whatever surface gravity holds you to
   for (const o of near) {
     if (o.type !== 'pad') continue;
-    if (s.x < o.x + o.w && s.x + size > o.x && s.y + size > o.y && s.y < o.y + o.h && s.vy >= -10) {
-      s.vy = -22; s.onGround = false; s.dash = -1; r.pad = true;
+    if (s.x < o.x + o.w && s.x + size > o.x && s.y + size > o.y && s.y < o.y + o.h && s.vy * g >= -10) {
+      s.vy = -22 * g; s.onGround = false; s.dash = -1; r.pad = true;
     }
   }
 
-  if (!s.flight) {
-    for (const o of near) {
-      if ((o.type !== 'orb' && o.type !== 'dashOrb') || s.used.includes(o.oid)) continue;
-      if (!touchesCircle(s, o, 0)) continue;
-      // Jump orb (orange): tap while touching → full jump
-      if (o.type === 'orb' && tapped && !r.jumped) {
-        s.used = s.used.concat(o.oid);
-        s.vy = -14.5; s.onGround = false; s.dash = -1; r.orb = o;
-        break;
-      }
-      // Dash orb (green): hold while touching → fly straight
-      if (o.type === 'dashOrb' && held && s.dash < 0) {
-        s.used = s.used.concat(o.oid);
-        s.dash = 0; s.vy = 0; s.onGround = false; r.dash = o;
-        break;
-      }
+  for (const o of near) {
+    if ((o.type !== 'orb' && o.type !== 'dashOrb' && o.type !== 'gravOrb') || s.used.includes(o.oid)) continue;
+    if (s.flight && o.type !== 'gravOrb') continue;   // only the blue orb works in the plane
+    if (!touchesCircle(s, o, 0)) continue;
+    // Gravity orb (blue): tap while touching → gravity flips
+    if (o.type === 'gravOrb' && tapped && !r.jumped) {
+      s.used = s.used.concat(o.oid);
+      s.grav = -g; s.vy = 4 * s.grav; s.onGround = false; s.dash = -1; r.grav = o;
+      break;
+    }
+    // Jump orb (orange): tap while touching → full jump
+    if (o.type === 'orb' && tapped && !r.jumped) {
+      s.used = s.used.concat(o.oid);
+      s.vy = -14.5 * g; s.onGround = false; s.dash = -1; r.orb = o;
+      break;
+    }
+    // Dash orb (green): hold while touching → fly straight
+    if (o.type === 'dashOrb' && held && s.dash < 0) {
+      s.used = s.used.concat(o.oid);
+      s.dash = 0; s.vy = 0; s.onGround = false; r.dash = o;
+      break;
     }
   }
   return r;
@@ -730,10 +780,10 @@ function stepFrontier(states, ld, spd) {
   const next = new Map();
   for (const s of states) {
     for (const held of [false, true]) {
-      const n = { x: s.x, y: s.y, vy: s.vy, onGround: s.onGround, flight: s.flight, used: s.used, dash: s.dash, prevHeld: held };
+      const n = { x: s.x, y: s.y, vy: s.vy, onGround: s.onGround, flight: s.flight, used: s.used, dash: s.dash, grav: s.grav, prevHeld: held };
       if (stepPhysics(n, held, held && !s.prevHeld, ld, spd).dead) continue;
       const key = (n.flight ? Math.round(n.y / 4) : Math.round(n.y / 2)) + '|' + Math.round(n.vy) + '|' +
-        (n.onGround ? 1 : 0) + (n.flight ? 1 : 0) + (held ? 1 : 0) + '|' +
+        (n.onGround ? 1 : 0) + (n.flight ? 1 : 0) + (held ? 1 : 0) + (n.grav < 0 ? 1 : 0) + '|' +
         (n.dash < 0 ? -1 : n.dash >> 2) + '|' + n.used.join(',');
       if (!next.has(key)) next.set(key, n);
     }
@@ -765,9 +815,10 @@ function findImpossibleSpot(ld, spd) {
 
 // ============== Game flow ==============
 function resetPlayer(x) {
-  Object.assign(player, makePlayerState(levelData, x));
+  Object.assign(player, makePlayerState(levelData, x, x === lastCheckpointX ? lastCheckpointGrav : 1));
   flightMode = player.flight;
   player.rotation = 0;
+  player.trail = [];
   pointerHeld = false;
   cameraX = Math.max(0, x - 280);
   particles = [];
@@ -781,7 +832,7 @@ function startLevel(b) {
   // Faster speed scaling with each belt
   speed = beltSpeed(b);
   levelData = generateLevel(b);
-  lastCheckpointX = 120;
+  lastCheckpointX = 120; lastCheckpointGrav = 1;
   resetPlayer(120);
   gameState = 'playing';
   attempts = 1;
@@ -804,7 +855,7 @@ function startSecretLevel(idx, mode) {
   secretMode = mode;
   speed = SECRETS[idx].speed;
   levelData = generateSecretLevel(idx);
-  lastCheckpointX = 120;
+  lastCheckpointX = 120; lastCheckpointGrav = 1;
   resetPlayer(120);
   gameState = 'playing';
   attempts = 1;
@@ -821,6 +872,10 @@ function buildCustomObstacles(level) {
     if (item.type === 'saw') return { type: 'saw', x: item.x, y: GROUND_Y - 95, w: 50, h: 50 };
     if (item.type === 'orb') return { type: 'orb', x: item.x, y: GROUND_Y - 138, w: 36, h: 36 };
     if (item.type === 'dashOrb') return { type: 'dashOrb', x: item.x, y: GROUND_Y - 118, w: 36, h: 36 };
+    if (item.type === 'gravOrb') return { type: 'gravOrb', x: item.x, y: GROUND_Y - 128, w: 36, h: 36 };
+    if (item.type === 'roofGravOrb') return mirrorObstacle({ type: 'gravOrb', x: item.x, y: GROUND_Y - 128, w: 36, h: 36 });
+    if (item.type === 'roofSpike') return mirrorObstacle({ type: 'spike', x: item.x, y: GROUND_Y - 30, w: 30, h: 30 });
+    if (item.type === 'roofBlock') return mirrorObstacle({ type: 'block', x: item.x, y: GROUND_Y - 60, w: 60, h: 60 });
     if (item.type === 'portalFly') return { type: 'portal', mode: 'airplane', x: item.x, y: 0, w: 46, h: GROUND_Y };
     if (item.type === 'portalCube') return { type: 'portal', mode: 'cube', x: item.x, y: 0, w: 46, h: GROUND_Y };
     return { type: 'pad', x: item.x, y: GROUND_Y - 12, w: 60, h: 12 };
@@ -837,7 +892,7 @@ function startCustomLevel(level) {
   // Verification runs have no checkpoints: you must beat the level in one go
   if (!verifyRun) for (let x = 1700; x < level.length - 500; x += 1700) checkpoints.push({ x, reached: false });
   levelData = indexLevel({ obstacles: buildCustomObstacles(level), checkpoints, length: level.length, infinite: false });
-  lastCheckpointX = 120;
+  lastCheckpointX = 120; lastCheckpointGrav = 1;
   resetPlayer(120);
   gameState = 'playing';
   attempts = 1;
@@ -1008,15 +1063,17 @@ function update() {
   else if (player.dash >= 0 || res.wasOnGround) {
     const target = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
     player.rotation += (target - player.rotation) * 0.4;
-  } else player.rotation += 0.18;
+  } else player.rotation += 0.18 * player.grav;
 
   if (res.dead) { die(); return; }
+  player.trail.push({ x: player.x, y: player.y, rot: player.rotation });
+  if (player.trail.length > 7) player.trail.shift();
   if (res.pad) vibrate(VIBE.pad);
-  if (res.orb || res.dash) {
-    const o = res.orb || res.dash;
-    const color = res.orb ? '#ff9a1f' : '#3dff7a';
+  if (res.orb || res.dash || res.grav) {
+    const o = res.orb || res.dash || res.grav;
+    const color = res.orb ? '#ff9a1f' : res.dash ? '#3dff7a' : '#4aa8ff';
     vibrate(VIBE.pad);
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < (res.grav ? 22 : 12); i++) {
       const ang = Math.random() * Math.PI * 2;
       const sp = 2 + Math.random() * 4;
       particles.push({ x: o.x + o.w/2, y: o.y + o.h/2, vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp,
@@ -1034,7 +1091,7 @@ function update() {
   for (const cp of levelData.checkpoints) {
     if (!cp.reached && player.x > cp.x) {
       cp.reached = true;
-      if (cp.x > lastCheckpointX) lastCheckpointX = cp.x;
+      if (cp.x > lastCheckpointX) { lastCheckpointX = cp.x; lastCheckpointGrav = player.grav; }
       vibrate(VIBE.checkpoint);
       const B = getPalette();
       for (let i = 0; i < 18; i++) {
@@ -1062,6 +1119,38 @@ function updateParticles() {
   particles = particles.filter(p => p.life > 0);
 }
 
+// ============== Colour helpers ==============
+const colorCache = new Map();
+function rgbOf(c) {
+  if (c[0] !== '#') return c.match(/\d+/g).slice(0, 3).map(Number);   // 'rgb(r,g,b)' from mix()
+  let h = c.slice(1);
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function mix(a, b, t) {
+  const key = a + '|' + b + '|' + t;
+  let v = colorCache.get(key);
+  if (!v) {
+    const A = rgbOf(a), Z = rgbOf(b);
+    v = 'rgb(' + A.map((x, i) => Math.round(x + (Z[i] - x) * t)).join(',') + ')';
+    colorCache.set(key, v);
+  }
+  return v;
+}
+const lighten = (c, t) => mix(c, '#ffffff', t);
+const darken  = (c, t) => mix(c, '#000000', t);
+function rgba(c, a) {
+  const key = c + '@' + a;
+  let v = colorCache.get(key);
+  if (!v) { v = 'rgba(' + rgbOf(c).join(',') + ',' + a + ')'; colorCache.set(key, v); }
+  return v;
+}
+function hash(n) { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+function roundRectPath(x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+}
+
 // ============== Textures (each belt / trial has its own look) ==============
 // Floor, background wall and blocks are filled with a repeating 64px tile drawn once
 // per belt and cached. Colours come from the belt palette, the pattern from the style.
@@ -1083,12 +1172,33 @@ function getTexture(kind) {
   const c = document.createElement('canvas');
   c.width = c.height = TEX;
   const g = c.getContext('2d');
-  if (kind === 'floor') { g.fillStyle = B.floor; g.fillRect(0, 0, TEX, TEX); }
-  if (kind === 'block') { g.fillStyle = B.block; g.fillRect(0, 0, TEX, TEX); }
+  if (kind === 'floor' || kind === 'block') {
+    const base = kind === 'floor' ? B.floor : B.block;
+    // soft diagonal shading so the tile isn't a flat colour
+    const lg = g.createLinearGradient(0, 0, TEX, TEX);
+    lg.addColorStop(0, lighten(base, 0.07));
+    lg.addColorStop(1, darken(base, 0.07));
+    g.fillStyle = lg;
+    g.fillRect(0, 0, TEX, TEX);
+    speckle(g, B.fg, B.glow, kind === 'floor' ? 11 : 23);
+  }
   paintTexture(g, style, B.fg, kind === 'floor' ? B.accent : B.glow);
   pat = ctx.createPattern(c, 'repeat');
   textureCache.set(key, pat);
   return pat;
+}
+
+// Fine grain: tiny dark and light flecks, seeded so every tile is identical (seamless).
+function speckle(g, ink, hi, seed) {
+  let s = seed;
+  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 110; i++) {
+    g.globalAlpha = 0.04 + rnd() * 0.08;
+    g.fillStyle = rnd() < 0.55 ? ink : hi;
+    const sz = 1 + Math.floor(rnd() * 2);
+    g.fillRect(Math.floor(rnd() * TEX), Math.floor(rnd() * TEX), sz, sz);
+  }
+  g.globalAlpha = 1;
 }
 
 function paintTexture(g, style, ink, hi) {
@@ -1106,57 +1216,73 @@ function paintTexture(g, style, ink, hi) {
   const dot = (x, y, r, color, alpha) => {
     g.fillStyle = color; g.globalAlpha = alpha; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
   };
+  // bevelled panel: light top/left edge, dark bottom/right edge
+  const panel = (x, y, w, h, alpha) => {
+    line([[x, y + h], [x, y], [x + w, y]], hi, 1.5, alpha);
+    line([[x + w, y], [x + w, y + h], [x, y + h]], ink, 1.5, alpha * 1.2);
+  };
   switch (style) {
     case 'mats':      // training dojo mats
       for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
-        box(i * 32 + 2, j * 32 + 2, 28, 28, ink, 2, 0.25);
-        dot(i * 32 + 16, j * 32 + 16, 3, hi, 0.4);
+        panel(i * 32 + 2, j * 32 + 2, 28, 28, 0.3);
+        box(i * 32 + 6, j * 32 + 6, 20, 20, ink, 1, 0.12);
+        dot(i * 32 + 16, j * 32 + 16, 3, hi, 0.45);
       }
       break;
     case 'tatami':    // woven straw mats
-      box(1, 1, 62, 30, ink, 2, 0.3);
-      box(1, 33, 30, 30, ink, 2, 0.3);
-      box(33, 33, 30, 30, ink, 2, 0.3);
-      for (let y = 5; y < 30; y += 4) line([[3, y], [61, y]], ink, 1, 0.1);
-      for (let x = 5; x < 64; x += 4) line([[x, 35], [x, 61]], ink, 1, 0.1);
+      panel(1, 1, 62, 30, 0.35);
+      panel(1, 33, 30, 30, 0.35);
+      panel(33, 33, 30, 30, 0.35);
+      for (let y = 5; y < 30; y += 3) line([[3, y], [61, y]], y % 6 ? ink : hi, 1, 0.12);
+      for (let x = 5; x < 64; x += 3) if (x < 30 || x > 34) line([[x, 35], [x, 61]], x % 6 ? ink : hi, 1, 0.12);
+      line([[1, 1], [63, 1]], ink, 3, 0.25);
       break;
     case 'bricks':
       for (let r = 0; r < 4; r++) {
         const off = r % 2 ? 16 : 0;
         for (let bx = -32; bx < 64; bx += 32) {
-          box(bx + off + 1, r * 16 + 1, 30, 14, ink, 2, 0.3);
-          line([[bx + off + 3, r * 16 + 3], [bx + off + 28, r * 16 + 3]], hi, 2, 0.35);
+          panel(bx + off + 1, r * 16 + 1, 30, 14, 0.35);
+          line([[bx + off + 4, r * 16 + 4], [bx + off + 20, r * 16 + 4]], hi, 2, 0.3);
+          dot(bx + off + 24, r * 16 + 10, 1, ink, 0.35);
         }
       }
       break;
     case 'planks':    // wooden floorboards
       for (let r = 0; r < 4; r++) {
-        line([[0, r * 16], [64, r * 16]], ink, 2, 0.35);
+        line([[0, r * 16], [64, r * 16]], ink, 2, 0.4);
+        line([[0, r * 16 + 1.5], [64, r * 16 + 1.5]], hi, 1, 0.25);
         const seam = (r * 23) % 64;
-        line([[seam, r * 16], [seam, r * 16 + 16]], ink, 2, 0.3);
-        dot(seam + 4, r * 16 + 4, 1.5, ink, 0.5);
-        dot(seam - 4, r * 16 + 12, 1.5, ink, 0.5);
+        line([[seam, r * 16], [seam, r * 16 + 16]], ink, 2, 0.35);
+        dot(seam + 4, r * 16 + 4, 1.5, ink, 0.55);
+        dot(seam - 4, r * 16 + 12, 1.5, ink, 0.55);
         for (let k = 0; k < 2; k++) {
           const y = r * 16 + 5 + k * 6;
           line([[0, y], [20, y + 1], [40, y - 1], [64, y]], hi, 1, 0.25);
         }
+        g.strokeStyle = ink; g.globalAlpha = 0.25; g.lineWidth = 1;   // knot
+        g.beginPath(); g.ellipse((seam + 32) % 64, r * 16 + 8, 3, 1.6, 0, 0, Math.PI * 2); g.stroke();
       }
       break;
     case 'scales':    // jade scales
       for (let r = 0; r < 5; r++) {
         const off = r % 2 ? 16 : 0;
         for (let cx = -32; cx <= 96; cx += 32) {
-          g.strokeStyle = ink; g.lineWidth = 2; g.globalAlpha = 0.3;
+          g.strokeStyle = ink; g.lineWidth = 2; g.globalAlpha = 0.32;
           g.beginPath(); g.arc(cx + off, r * 16, 16, 0, Math.PI); g.stroke();
-          g.strokeStyle = hi; g.lineWidth = 1; g.globalAlpha = 0.3;
+          g.strokeStyle = hi; g.lineWidth = 1.5; g.globalAlpha = 0.35;
           g.beginPath(); g.arc(cx + off, r * 16, 11, 0.3, Math.PI - 0.3); g.stroke();
+          dot(cx + off, r * 16 + 7, 1.5, hi, 0.35);
         }
       }
       break;
     case 'stone':     // cobblestones
       [[1, 1, 26, 18], [29, 1, 34, 22], [1, 21, 18, 22], [21, 25, 24, 18], [47, 25, 16, 20], [1, 45, 28, 18], [31, 45, 32, 18]]
         .forEach(([x, y, w, h]) => {
-          g.globalAlpha = 0.3; g.strokeStyle = ink; g.lineWidth = 2;
+          g.globalAlpha = 0.12; g.fillStyle = hi;
+          g.beginPath();
+          if (g.roundRect) g.roundRect(x + 2, y + 2, w - 4, h / 2, 4); else g.rect(x + 2, y + 2, w - 4, h / 2);
+          g.fill();
+          g.globalAlpha = 0.35; g.strokeStyle = ink; g.lineWidth = 2;
           g.beginPath();
           if (g.roundRect) g.roundRect(x, y, w, h, 5); else g.rect(x, y, w, h);
           g.stroke();
@@ -1165,27 +1291,33 @@ function paintTexture(g, style, ink, hi) {
       break;
     case 'diamond':   // diagonal lattice
       for (let k = -64; k <= 64; k += 16) {
-        line([[k, 0], [k + 64, 64]], ink, 1.5, 0.25);
-        line([[k, 64], [k + 64, 0]], ink, 1.5, 0.25);
+        line([[k, 0], [k + 64, 64]], ink, 1.5, 0.28);
+        line([[k + 1, 0], [k + 65, 64]], hi, 1, 0.12);
+        line([[k, 64], [k + 64, 0]], ink, 1.5, 0.28);
       }
-      for (let x = 0; x <= 64; x += 16) for (let y = 0; y <= 64; y += 16) if ((x + y) % 32 === 0) dot(x, y, 2, hi, 0.5);
+      for (let x = 0; x <= 64; x += 16) for (let y = 0; y <= 64; y += 16) if ((x + y) % 32 === 0) {
+        dot(x, y, 2.5, hi, 0.55); dot(x, y, 1, ink, 0.5);
+      }
       break;
     case 'bamboo':
       for (let i = 0; i < 4; i++) {
         const x = i * 16;
-        line([[x + 1, 0], [x + 1, 64]], ink, 2, 0.35);
-        line([[x + 6, 0], [x + 6, 64]], hi, 2, 0.2);
+        line([[x + 1, 0], [x + 1, 64]], ink, 2, 0.4);
+        line([[x + 5, 0], [x + 5, 64]], hi, 2.5, 0.22);
+        line([[x + 12, 0], [x + 12, 64]], ink, 1, 0.15);
         const ny = (i * 21 + 9) % 64;
-        line([[x + 1, ny], [x + 15, ny]], ink, 3, 0.35);
-        line([[x + 2, ny + 3], [x + 14, ny + 3]], hi, 1, 0.35);
+        line([[x + 1, ny], [x + 15, ny]], ink, 3, 0.4);
+        line([[x + 2, ny + 3], [x + 14, ny + 3]], hi, 1, 0.4);
+        line([[x + 10, ny - 2], [x + 15, ny - 8]], ink, 1, 0.25);   // leaf scar
       }
       break;
     case 'metal':     // riveted steel plates
       for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
         const x = i * 32, y = j * 32;
-        box(x + 1, y + 1, 30, 30, ink, 2, 0.35);
-        [[5, 5], [27, 5], [5, 27], [27, 27]].forEach(([dx, dy]) => dot(x + dx, y + dy, 2, hi, 0.6));
-        line([[x + 8, y + 24], [x + 24, y + 8]], hi, 1, 0.2);
+        panel(x + 1, y + 1, 30, 30, 0.4);
+        [[5, 5], [27, 5], [5, 27], [27, 27]].forEach(([dx, dy]) => { dot(x + dx, y + dy, 2.2, hi, 0.65); dot(x + dx + 0.6, y + dy + 0.6, 1, ink, 0.5); });
+        line([[x + 8, y + 24], [x + 24, y + 8]], hi, 1, 0.22);
+        line([[x + 11, y + 24], [x + 24, y + 11]], hi, 1, 0.12);
       }
       break;
     case 'cracks':    // glowing lava cracks
@@ -1193,28 +1325,35 @@ function paintTexture(g, style, ink, hi) {
        [[10, 64], [18, 44], [34, 40], [38, 26]],
        [[48, 64], [52, 48], [64, 44]],
        [[0, 44], [8, 40], [18, 44]]]
-        .forEach((pts) => { line(pts, hi, 4, 0.18); line(pts, hi, 1.5, 0.55); });
+        .forEach((pts) => { line(pts, hi, 6, 0.1); line(pts, hi, 3, 0.2); line(pts, hi, 1.2, 0.7); });
       break;
     case 'stars':     // void starfield
-      for (let i = 0; i < 14; i++) {
+      for (let i = 0; i < 16; i++) {
         const x = rnd() * 64, y = rnd() * 64, r = 0.6 + rnd() * 1.4;
+        dot(x, y, r * 2.2, hi, 0.08);
         dot(x, y, r, hi, 0.4 + rnd() * 0.5);
       }
-      line([[44, 14], [52, 14]], hi, 1, 0.5); line([[48, 10], [48, 18]], hi, 1, 0.5);
+      line([[44, 14], [52, 14]], hi, 1, 0.6); line([[48, 10], [48, 18]], hi, 1, 0.6);
       break;
     case 'circuit':   // neon circuit traces
       [[[0, 12], [20, 12], [28, 20], [28, 40], [64, 40]],
        [[40, 0], [40, 24], [64, 24]],
        [[0, 52], [16, 52], [16, 64]],
        [[48, 64], [48, 54], [56, 46]]]
-        .forEach((pts) => { line(pts, hi, 2, 0.45); const p = pts[pts.length - 1]; dot(p[0], p[1], 2.5, hi, 0.7); });
+        .forEach((pts) => {
+          line(pts, hi, 5, 0.1); line(pts, hi, 2, 0.5);
+          const p = pts[pts.length - 1]; dot(p[0], p[1], 3, hi, 0.75); dot(p[0], p[1], 1.2, ink, 0.6);
+        });
       dot(28, 30, 3, hi, 0.6);
+      box(34, 46, 10, 10, hi, 1.5, 0.35);
       break;
   }
   g.globalAlpha = 1;
 }
 
 // ============== Drawing ==============
+let vignette = null;
+
 function draw() {
   if (!levelData) {
     ctx.fillStyle = '#f8f8f8';
@@ -1223,27 +1362,13 @@ function draw() {
   }
   const B = getPalette();
 
-  const grad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
-  grad.addColorStop(0, B.bg1);
-  grad.addColorStop(1, B.bg2);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, GROUND_Y);
-
-  // Background wall texture (slow parallax)
-  ctx.save();
-  ctx.translate(-((cameraX * 0.25) % TEX), 0);
-  ctx.globalAlpha = 0.28;
-  ctx.fillStyle = getTexture('wall');
-  ctx.fillRect(0, 0, W + TEX, GROUND_Y);
-  ctx.globalAlpha = 1;
-  ctx.restore();
-
-  drawBeltMotif(B);
+  drawBackground(B);
 
   ctx.save();
   ctx.translate(-cameraX, 0);
 
   for (const o of levelData.obstacles) {
+    if (o.type === 'pit') continue;
     if (o.x + o.w < cameraX - 80) continue;
     if (o.x > cameraX + W + 80) continue;
     drawObstacle(o, B);
@@ -1260,27 +1385,43 @@ function draw() {
   for (const p of particles) {
     ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
     ctx.fillStyle = p.color;
-    ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+    const s = p.size * (0.5 + p.life * 0.5);
+    ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
   }
   ctx.globalAlpha = 1;
   ctx.restore();
 
-  drawGround(B);
+  drawSurface(B, false);
+  drawSurface(B, true);
 
   if (!levelData.infinite) {
     const ex = levelData.length - cameraX;
     if (ex > -20 && ex < W + 80) {
       ctx.save();
       const pulse = 0.5 + Math.sin(frame * 0.1) * 0.5;
-      ctx.fillStyle = B.accent;
-      ctx.globalAlpha = 0.6 + pulse * 0.4;
-      ctx.fillRect(ex, 0, 10, GROUND_Y);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = B.fg;
-      for (let y = 0; y < GROUND_Y; y += 32) ctx.fillRect(ex, y, 10, 16);
+      const fg = ctx.createLinearGradient(ex - 60, 0, ex, 0);
+      fg.addColorStop(0, rgba(B.glow, 0));
+      fg.addColorStop(1, rgba(B.glow, 0.35 + pulse * 0.25));
+      ctx.fillStyle = fg;
+      ctx.fillRect(ex - 60, CEIL_Y, 60, GROUND_Y - CEIL_Y);
+      // checkered finish banner
+      for (let y = CEIL_Y; y < GROUND_Y; y += 12) {
+        for (let c = 0; c < 2; c++) {
+          ctx.fillStyle = ((y / 12 + c) % 2 < 1) ? B.fg : B.accent;
+          ctx.fillRect(ex + c * 6, y, 6, 12);
+        }
+      }
       ctx.restore();
     }
   }
+
+  if (!vignette) {
+    vignette = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, W * 0.7);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.28)');
+  }
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, W, H);
 
   if (gameState === 'dead')         drawDeathOverlay();
   if (gameState === 'transition')   drawTransitionOverlay();
@@ -1289,9 +1430,116 @@ function draw() {
   if (gameState === 'won-custom')   drawCustomWonOverlay();
 }
 
+function drawBackground(B) {
+  const grad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+  grad.addColorStop(0, B.bg1);
+  grad.addColorStop(0.7, B.bg2);
+  grad.addColorStop(1, darken(B.bg2, 0.12));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, GROUND_Y);
+
+  // soft sun / lantern glow behind the belt emblem
+  const sun = ctx.createRadialGradient(W * 0.78, 150, 8, W * 0.78, 150, 300);
+  sun.addColorStop(0, rgba(B.glow, 0.4));
+  sun.addColorStop(1, rgba(B.glow, 0));
+  ctx.fillStyle = sun;
+  ctx.fillRect(0, 0, W, GROUND_Y);
+
+  // Background wall texture (slow parallax)
+  ctx.save();
+  ctx.translate(-((cameraX * 0.25) % TEX), 0);
+  ctx.globalAlpha = 0.2;
+  ctx.fillStyle = getTexture('wall');
+  ctx.fillRect(0, 0, W + TEX, GROUND_Y);
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  drawBeltMotif(B);
+  drawPeaks(0.06, 180, 130, GROUND_Y - 60, mix(B.bg2, B.fg, 0.1), lighten(mix(B.bg2, B.fg, 0.1), 0.25), 11);
+  drawDojos(0.2, 260, GROUND_Y, mix(B.bg2, B.fg, 0.2), B.glow, 37);
+
+  // haze where the scenery meets the floor
+  const haze = ctx.createLinearGradient(0, GROUND_Y - 70, 0, GROUND_Y);
+  haze.addColorStop(0, rgba(B.bg2, 0));
+  haze.addColorStop(1, rgba(B.bg2, 0.55));
+  ctx.fillStyle = haze;
+  ctx.fillRect(0, GROUND_Y - 70, W, 70);
+}
+
+// Far mountain range with snow caps, scrolling very slowly.
+function drawPeaks(par, seg, amp, baseY, color, capColor, seed) {
+  const off = cameraX * par;
+  const i0 = Math.floor(off / seg) - 1, i1 = i0 + Math.ceil(W / seg) + 2;
+  const peaks = [];
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(-20, GROUND_Y);
+  for (let i = i0; i <= i1; i++) {
+    const x = i * seg - off, py = baseY - amp * (0.35 + hash(i + seed) * 0.65);
+    ctx.lineTo(x, py);
+    ctx.lineTo(x + seg / 2, baseY - amp * hash(i + seed + 0.5) * 0.3);
+    peaks.push([x, py]);
+  }
+  ctx.lineTo(W + 20, GROUND_Y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = capColor;
+  ctx.globalAlpha = 0.6;
+  for (const [x, py] of peaks) {
+    ctx.beginPath();
+    ctx.moveTo(x, py);
+    ctx.lineTo(x - seg * 0.12, py + 22);
+    ctx.lineTo(x - seg * 0.03, py + 16);
+    ctx.lineTo(x + seg * 0.05, py + 24);
+    ctx.lineTo(x + seg * 0.11, py + 18);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Nearer row of dojo / pagoda silhouettes with lit windows.
+function drawDojos(par, seg, baseY, color, light, seed) {
+  const off = cameraX * par;
+  const i0 = Math.floor(off / seg) - 1, i1 = i0 + Math.ceil(W / seg) + 2;
+  for (let i = i0; i <= i1; i++) {
+    const r = hash(i + seed);
+    if (r < 0.3) continue;
+    const w = 70 + r * 60, h = 40 + hash(i + seed + 7) * 60;
+    const x = i * seg - off + hash(i + seed + 3) * (seg - w - 30);
+    let top = baseY - h;
+    ctx.fillStyle = color;
+    ctx.fillRect(x, top, w, h);
+    const roof = (rx, ry, rw) => {
+      ctx.beginPath();
+      ctx.moveTo(rx - 18, ry + 6);
+      ctx.quadraticCurveTo(rx - 4, ry + 2, rx + 6, ry - 12);
+      ctx.lineTo(rx + rw - 6, ry - 12);
+      ctx.quadraticCurveTo(rx + rw + 4, ry + 2, rx + rw + 18, ry + 6);
+      ctx.closePath();
+      ctx.fill();
+    };
+    roof(x, top, w);
+    if (r > 0.65) {   // second storey
+      const w2 = w * 0.6, x2 = x + (w - w2) / 2, h2 = 26;
+      ctx.fillRect(x2, top - 12 - h2, w2, h2);
+      roof(x2, top - 12 - h2, w2);
+      top -= 12 + h2;
+    }
+    ctx.fillStyle = light;
+    ctx.globalAlpha = 0.35;
+    const wins = Math.max(1, Math.floor(w / 28));
+    for (let k = 0; k < wins; k++) {
+      if (hash(i * 7 + k + seed) < 0.4) continue;
+      ctx.fillRect(x + 10 + k * ((w - 20) / wins), baseY - h + 14, 9, 12);
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
 function drawBeltMotif(B) {
   ctx.save();
-  ctx.globalAlpha = 0.07;
+  ctx.globalAlpha = 0.08;
   ctx.fillStyle = B.fg;
   const cx = W * 0.78, cy = 130;
   ctx.fillRect(cx - 80, cy, 160, 18);
@@ -1302,36 +1550,87 @@ function drawBeltMotif(B) {
 }
 
 function drawPlayer(B) {
+  // motion trail
+  const n = player.trail.length;
+  for (let i = 0; i < n - 1; i++) {
+    const t = player.trail[i];
+    const k = (i + 1) / n;
+    const s = player.size * (0.35 + k * 0.45);
+    ctx.save();
+    ctx.globalAlpha = k * 0.28;
+    ctx.fillStyle = B.accent;
+    ctx.translate(t.x + player.size / 2, t.y + player.size / 2);
+    ctx.rotate(flightMode ? 0 : t.rot);
+    ctx.fillRect(-s / 2, -s / 2, s, s);
+    ctx.restore();
+  }
   if (flightMode) {
     drawAirplane(B);
     return;
   }
+  const s = player.size, hs = s / 2;
   ctx.save();
-  ctx.translate(player.x + player.size/2, player.y + player.size/2);
-  ctx.rotate(player.rotation);
+  ctx.translate(player.x + hs, player.y + hs);
+  if (player.grav < 0) ctx.scale(1, -1);   // upside down: the cube's face flips too
+  ctx.rotate(player.grav < 0 ? -player.rotation : player.rotation);
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(-player.size/2 + 3, -player.size/2 + 4, player.size, player.size);
-  ctx.fillStyle = B.fg;
-  ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
+  ctx.fillRect(-hs + 3, -hs + 4, s, s);
+  const body = ctx.createLinearGradient(-hs, -hs, hs, hs);
+  body.addColorStop(0, lighten(B.fg, 0.22));
+  body.addColorStop(0.5, B.fg);
+  body.addColorStop(1, darken(B.fg, 0.3));
+  ctx.fillStyle = body;
+  ctx.fillRect(-hs, -hs, s, s);
+  ctx.fillStyle = rgba(B.accent, 0.3);
+  ctx.fillRect(-hs + 6, -hs + 6, s - 12, s - 12);
   ctx.strokeStyle = B.accent;
   ctx.lineWidth = 2.5;
-  ctx.strokeRect(-player.size/2 + 1, -player.size/2 + 1, player.size - 2, player.size - 2);
-  ctx.fillStyle = B.accent;
-  ctx.fillRect(-player.size/2 + 5, -3, player.size - 10, 6);
+  ctx.strokeRect(-hs + 1.5, -hs + 1.5, s - 3, s - 3);
+  // the belt around the cube, tied with a knot
   ctx.fillStyle = B.bg1;
-  ctx.fillRect(-5, -player.size/2 + 7, 10, 6);
-  ctx.fillStyle = B.fg;
-  ctx.fillRect(-2, -player.size/2 + 9, 4, 3);
+  ctx.fillRect(-hs + 2, 3, s - 4, 6);
+  ctx.strokeStyle = darken(B.bg1, 0.45);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-hs + 2.5, 3.5, s - 5, 5);
+  ctx.fillStyle = B.bg1;
+  ctx.fillRect(-4, 1, 8, 10);
+  ctx.fillRect(-7, 10, 4, 7);
+  ctx.fillRect(3, 10, 4, 7);
+  // eyes
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-10, -10, 7, 7);
+  ctx.fillRect(3, -10, 7, 7);
+  ctx.fillStyle = '#111';
+  ctx.fillRect(-6, -8, 3, 4);
+  ctx.fillRect(7, -8, 3, 4);
+  // gloss
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.fillRect(-hs + 3, -hs + 3, s - 6, 4);
   ctx.restore();
 }
 
 function drawAirplane(B) {
   ctx.save();
   ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
-  ctx.rotate(Math.max(-0.35, Math.min(0.35, player.vy * 0.035)));
+  if (player.grav < 0) ctx.scale(1, -1);   // flipped plane flies belly-up
+  ctx.rotate(Math.max(-0.35, Math.min(0.35, player.vy * 0.035 * player.grav)));
+  // exhaust flame
+  const fl = 6 + Math.random() * 7;
+  const fg = ctx.createLinearGradient(-17 - fl, 0, -15, 0);
+  fg.addColorStop(0, 'rgba(255,80,0,0)');
+  fg.addColorStop(0.5, 'rgba(255,150,30,0.85)');
+  fg.addColorStop(1, '#fff6c0');
+  ctx.fillStyle = fg;
+  ctx.beginPath();
+  ctx.moveTo(-15, -3); ctx.lineTo(-17 - fl, 0); ctx.lineTo(-15, 3);
+  ctx.closePath(); ctx.fill();
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(-15, 7, 30, 5);
-  ctx.fillStyle = B.fg;
+  ctx.fillRect(-15, 9, 30, 4);
+  const body = ctx.createLinearGradient(0, -10, 0, 10);
+  body.addColorStop(0, lighten(B.fg, 0.25));
+  body.addColorStop(0.55, B.fg);
+  body.addColorStop(1, darken(B.fg, 0.3));
+  ctx.fillStyle = body;
   ctx.beginPath();
   ctx.moveTo(17, 0);
   ctx.lineTo(-10, -5);
@@ -1345,8 +1644,12 @@ function drawAirplane(B) {
   ctx.fill();
   ctx.strokeStyle = B.accent;
   ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
   ctx.stroke();
-  ctx.fillStyle = B.accent;
+  const wing = ctx.createLinearGradient(-11, -15, -11, 15);
+  wing.addColorStop(0, lighten(B.accent, 0.3));
+  wing.addColorStop(1, darken(B.accent, 0.25));
+  ctx.fillStyle = wing;
   ctx.beginPath();
   ctx.moveTo(2, 0);
   ctx.lineTo(-7, -15);
@@ -1356,68 +1659,107 @@ function drawAirplane(B) {
   ctx.lineTo(-7, 15);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = B.bg1;
-  ctx.fillRect(6, -2, 6, 4);
-  ctx.fillStyle = B.glow;
-  ctx.fillRect(-17, -2, 3, 4);
+  // cockpit glass
+  const glass = ctx.createLinearGradient(5, -3, 12, 3);
+  glass.addColorStop(0, '#e8fbff');
+  glass.addColorStop(1, '#3aa6d8');
+  ctx.fillStyle = glass;
+  ctx.beginPath();
+  ctx.ellipse(8, -1, 4.5, 2.6, 0, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
 function drawObstacle(o, B) {
-  if (o.type === 'spike') {
-    drawTriUp(o, B);
-  } else if (o.type === 'fspike') {
-    drawTriDown(o, B);
-  } else if (o.type === 'block') {
-    drawBlock(o, B);
-  } else if (o.type === 'saw') {
-    drawSaw(o, B);
-  } else if (o.type === 'pad') {
-    drawPad(o, B);
-  } else if (o.type === 'orb' || o.type === 'dashOrb') {
-    drawOrb(o);
-  } else if (o.type === 'portal') {
-    drawPortal(o, B);
-  }
+  // Roof obstacles that have an "up" (spikes, pads) are drawn through a mirror,
+  // so they hang from the ceiling exactly like the floor version stands on the ground.
+  if (o.flip && (o.type === 'spike' || o.type === 'fspike' || o.type === 'pad')) {
+    ctx.save();
+    ctx.translate(0, MIRROR_Y);
+    ctx.scale(1, -1);
+    drawUpright(Object.assign({}, o, { y: MIRROR_Y - o.y - o.h }), B);
+    ctx.restore();
+  } else drawUpright(o, B);
+}
+
+function drawUpright(o, B) {
+  if (o.type === 'spike') drawSpike(o.x, o.y, o.w, o.h, B);
+  else if (o.type === 'fspike') drawTriDown(o, B);
+  else if (o.type === 'block') drawBlock(o, B);
+  else if (o.type === 'saw') drawSaw(o, B);
+  else if (o.type === 'pad') drawPad(o, B);
+  else if (o.type === 'orb' || o.type === 'dashOrb' || o.type === 'gravOrb') drawOrb(o);
+  else if (o.type === 'portal') drawPortal(o, B);
 }
 
 const ORB_COLORS = {
-  orb:     { ring: '#ffb347', body: '#ff8c00', core: '#ffc266' },   // jump orb (orange)
-  dashOrb: { ring: '#7dffa8', body: '#1fcc55', core: '#9dffbf' },   // dash orb (green)
+  orb:     { ring: '#ffb347', body: '#ff8c00', core: '#ffe0a8', dark: '#9a4300' },   // jump orb (orange)
+  dashOrb: { ring: '#7dffa8', body: '#1fcc55', core: '#c8ffdc', dark: '#0a6528' },   // dash orb (green)
+  gravOrb: { ring: '#8cc8ff', body: '#2a7bff', core: '#d2e8ff', dark: '#0b2a78' },   // gravity orb (blue)
 };
 
 function drawOrb(o) {
   const c = ORB_COLORS[o.type];
   const used = player.used && player.used.includes(o.oid);
-  const cx = o.x + o.w/2, cy = o.y + o.h/2, r = o.w/2;
+  const cx = o.x + o.w / 2, cy = o.y + o.h / 2, r = o.w / 2;
   const pulse = 0.5 + Math.sin(frame * 0.15 + o.x * 0.01) * 0.5;
   const alpha = used ? 0.3 : 1;
   ctx.save();
-  // outer pulsing ring
-  ctx.strokeStyle = c.ring;
-  ctx.lineWidth = 2;
-  ctx.globalAlpha = alpha * (0.5 + pulse * 0.4);
-  ctx.beginPath(); ctx.arc(cx, cy, r + 5 + pulse * 4, 0, Math.PI * 2); ctx.stroke();
+  // halo
   ctx.globalAlpha = alpha;
-  // orb body
-  ctx.shadowColor = c.body;
-  ctx.shadowBlur = used ? 0 : 16;
-  ctx.fillStyle = c.body;
+  const halo = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r + 16);
+  halo.addColorStop(0, rgba(c.body, 0.5));
+  halo.addColorStop(1, rgba(c.body, 0));
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.arc(cx, cy, r + 16, 0, Math.PI * 2); ctx.fill();
+  // spinning dashed ring
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(frame * 0.04 * (o.type === 'gravOrb' ? -1 : 1));
+  ctx.globalAlpha = alpha * (0.55 + pulse * 0.4);
+  ctx.strokeStyle = c.ring;
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([7, 5]);
+  ctx.beginPath(); ctx.arc(0, 0, r + 6 + pulse * 3, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+  ctx.globalAlpha = alpha;
+  // glossy body
+  const body = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.4, 2, cx, cy, r);
+  body.addColorStop(0, c.core);
+  body.addColorStop(0.55, c.body);
+  body.addColorStop(1, c.dark);
+  ctx.fillStyle = body;
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = c.core;
-  ctx.beginPath(); ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = alpha * 0.9;
+  ctx.beginPath(); ctx.arc(cx, cy, r - 1, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath(); ctx.ellipse(cx - r * 0.28, cy - r * 0.48, r * 0.36, r * 0.17, -0.45, 0, Math.PI * 2); ctx.fill();
   if (o.type === 'dashOrb') {
     // forward arrow: "hold to dash"
-    ctx.fillStyle = '#0a3a18';
+    ctx.fillStyle = c.dark;
     ctx.beginPath();
     ctx.moveTo(cx + 9, cy);
     ctx.lineTo(cx - 5, cy - 8);
     ctx.lineTo(cx - 5, cy + 8);
     ctx.closePath(); ctx.fill();
+  } else if (o.type === 'gravOrb') {
+    // double chevron pointing to where it sends you (up from the floor, down from the roof)
+    const dir = o.flip ? 1 : -1;
+    ctx.strokeStyle = c.dark;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const off of [-4, 4]) {
+      ctx.beginPath();
+      ctx.moveTo(cx - 7, cy - dir * 3 + off);
+      ctx.lineTo(cx, cy + dir * 4 + off);
+      ctx.lineTo(cx + 7, cy - dir * 3 + off);
+      ctx.stroke();
+    }
   }
   ctx.restore();
 }
@@ -1425,152 +1767,201 @@ function drawOrb(o) {
 function drawPortal(o, B) {
   const color = o.mode === 'airplane' ? '#38e8ff' : '#ffe34d';
   const pulse = 0.7 + Math.sin(frame * 0.12 + o.x) * 0.3;
+  const cx = o.x + o.w / 2;
   ctx.save();
-  ctx.globalAlpha = 0.18 * pulse;
-  ctx.fillStyle = color;
-  ctx.fillRect(o.x - 8, o.y - 8, o.w + 16, o.h + 8);
-  ctx.globalAlpha = pulse;
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 6;
-  ctx.strokeRect(o.x + 3, o.y + 3, o.w - 6, o.h - 6);
-  ctx.lineWidth = 2;
-  ctx.strokeRect(o.x + 11, o.y + 11, o.w - 22, o.h - 22);
+  // light column
+  const col = ctx.createLinearGradient(o.x - 16, 0, o.x + o.w + 16, 0);
+  col.addColorStop(0, rgba(color, 0));
+  col.addColorStop(0.5, rgba(color, 0.3 * pulse));
+  col.addColorStop(1, rgba(color, 0));
+  ctx.fillStyle = col;
+  ctx.fillRect(o.x - 16, o.y, o.w + 32, o.h);
+  // flowing chevrons (up = into the plane, down = back to the cube)
+  ctx.save();
+  ctx.beginPath(); ctx.rect(o.x + 10, o.y, o.w - 20, o.h); ctx.clip();
+  const up = o.mode === 'airplane';
+  const step = 30, off = (frame * 1.6) % step;
+  ctx.strokeStyle = rgba(color, 0.75);
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  for (let y = o.y - step; y < o.y + o.h + step; y += step) {
+    const yy = up ? y - off : y + off;
+    const d = up ? -8 : 8;
+    ctx.beginPath();
+    ctx.moveTo(cx - 9, yy - d / 2);
+    ctx.lineTo(cx, yy + d / 2);
+    ctx.lineTo(cx + 9, yy - d / 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+  // glowing side pillars
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 14 * pulse;
+  const pil = ctx.createLinearGradient(o.x, 0, o.x + 10, 0);
+  pil.addColorStop(0, lighten(color, 0.5));
+  pil.addColorStop(1, darken(color, 0.25));
+  ctx.fillStyle = pil;
+  roundRectPath(o.x + 1, o.y, 9, o.h, 4); ctx.fill();
+  roundRectPath(o.x + o.w - 10, o.y, 9, o.h, 4); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#fff';
+  ctx.globalAlpha = 0.6;
+  ctx.fillRect(o.x + 3, o.y, 2, o.h);
+  ctx.fillRect(o.x + o.w - 8, o.y, 2, o.h);
+  ctx.globalAlpha = 1;
   ctx.fillStyle = color;
   ctx.font = 'bold 12px Courier New';
   ctx.textAlign = 'center';
-  ctx.fillText(o.mode === 'airplane' ? 'FLY' : 'EXIT', o.x + o.w / 2, o.y + 22);
+  ctx.fillText(up ? 'FLY' : 'EXIT', cx, CEIL_Y + 22);
   ctx.restore();
 }
 
-function drawTriUp(o, B) {
+// A spike pointing up, base at y + h: lit left face, shaded right face.
+function drawSpike(x, y, w, h, B) {
+  const tx = x + w / 2, by = y + h;
   ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
   ctx.beginPath();
-  ctx.moveTo(o.x + 2, o.y + o.h + 2);
-  ctx.lineTo(o.x + o.w/2 + 2, o.y + 2);
-  ctx.lineTo(o.x + o.w + 2, o.y + o.h + 2);
+  ctx.moveTo(x + 3, by + 2); ctx.lineTo(tx + 3, y + 3); ctx.lineTo(x + w + 3, by + 2);
   ctx.closePath(); ctx.fill();
-
-  ctx.fillStyle = B.spike;
-  ctx.beginPath();
-  ctx.moveTo(o.x, o.y + o.h);
-  ctx.lineTo(o.x + o.w/2, o.y);
-  ctx.lineTo(o.x + o.w, o.y + o.h);
-  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = lighten(B.spike, 0.2);
+  ctx.beginPath(); ctx.moveTo(tx, y); ctx.lineTo(x, by); ctx.lineTo(tx, by); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = darken(B.spike, 0.28);
+  ctx.beginPath(); ctx.moveTo(tx, y); ctx.lineTo(tx, by); ctx.lineTo(x + w, by); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = rgba(B.accent, 0.55);
+  ctx.beginPath(); ctx.moveTo(tx, y + 7); ctx.lineTo(tx - 6, by - 3); ctx.lineTo(tx - 1, by - 3); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = B.fg;
-  ctx.lineWidth = 1.5; ctx.stroke();
-
-  ctx.fillStyle = B.accent;
-  ctx.globalAlpha = 0.45;
-  ctx.beginPath();
-  ctx.moveTo(o.x + o.w/2, o.y + 6);
-  ctx.lineTo(o.x + 7, o.y + o.h - 4);
-  ctx.lineTo(o.x + o.w - 7, o.y + o.h - 4);
-  ctx.closePath(); ctx.fill();
-  ctx.globalAlpha = 1;
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(x, by); ctx.lineTo(tx, y); ctx.lineTo(x + w, by); ctx.closePath(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.beginPath(); ctx.arc(tx - 0.5, y + 4, 1.3, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
 function drawTriDown(o, B) {
-  // Floating spike — triangle pointing DOWN, hanging in air
+  // Floating spike — points DOWN, hanging from the roof on a chain
   ctx.save();
-  // Hanging chain visual hint
-  ctx.fillStyle = B.fg;
-  ctx.globalAlpha = 0.35;
-  ctx.fillRect(o.x + o.w/2 - 1, 0, 2, o.y);
-  ctx.globalAlpha = 1;
-
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.18)';
-  ctx.beginPath();
-  ctx.moveTo(o.x + 2, o.y + 2);
-  ctx.lineTo(o.x + o.w + 2, o.y + 2);
-  ctx.lineTo(o.x + o.w/2 + 2, o.y + o.h + 2);
-  ctx.closePath(); ctx.fill();
-
-  // Body
-  ctx.fillStyle = B.spike;
-  ctx.beginPath();
-  ctx.moveTo(o.x, o.y);
-  ctx.lineTo(o.x + o.w, o.y);
-  ctx.lineTo(o.x + o.w/2, o.y + o.h);
-  ctx.closePath(); ctx.fill();
   ctx.strokeStyle = B.fg;
-  ctx.lineWidth = 1.5; ctx.stroke();
-
-  // Highlight
-  ctx.fillStyle = B.accent;
+  ctx.lineWidth = 1.5;
   ctx.globalAlpha = 0.45;
-  ctx.beginPath();
-  ctx.moveTo(o.x + 7, o.y + 4);
-  ctx.lineTo(o.x + o.w - 7, o.y + 4);
-  ctx.lineTo(o.x + o.w/2, o.y + o.h - 6);
-  ctx.closePath(); ctx.fill();
+  for (let y = CEIL_Y, k = 0; y < o.y; y += 7, k++) {
+    if (k % 2) ctx.strokeRect(o.x + o.w / 2 - 1, y, 2, 7);
+    else ctx.strokeRect(o.x + o.w / 2 - 3, y, 6, 7);
+  }
   ctx.globalAlpha = 1;
+  ctx.translate(0, o.y * 2 + o.h);
+  ctx.scale(1, -1);
+  drawSpike(o.x, o.y, o.w, o.h, B);
   ctx.restore();
 }
 
 function drawBlock(o, B) {
+  const { x, y, w, h } = o;
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.fillRect(x + 4, y + 4, w, h);
   ctx.fillStyle = getTexture('block');
-  ctx.fillRect(o.x, o.y, o.w, o.h);
-  ctx.fillStyle = B.glow;
-  ctx.globalAlpha = 0.5;
-  ctx.fillRect(o.x + 2, o.y + 2, o.w - 4, 5);
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(o.x + 2, o.y + o.h - 5, o.w - 4, 4);
+  ctx.fillRect(x, y, w, h);
+  const sh = ctx.createLinearGradient(0, y, 0, y + h);
+  sh.addColorStop(0, 'rgba(255,255,255,0.18)');
+  sh.addColorStop(0.45, 'rgba(255,255,255,0)');
+  sh.addColorStop(1, 'rgba(0,0,0,0.3)');
+  ctx.fillStyle = sh;
+  ctx.fillRect(x, y, w, h);
+  // bevel
+  ctx.fillStyle = rgba(B.glow, 0.55);
+  ctx.fillRect(x + 2, y + 2, w - 4, 3);
+  ctx.fillRect(x + 2, y + 2, 3, h - 4);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(x + 2, y + h - 5, w - 4, 3);
+  ctx.fillRect(x + w - 5, y + 2, 3, h - 4);
+  if (w > 26 && h > 26) {
+    ctx.strokeStyle = rgba(B.fg, 0.22);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 8.5, y + 8.5, w - 17, h - 17);
+  }
   ctx.strokeStyle = B.fg;
   ctx.lineWidth = 2;
-  ctx.strokeRect(o.x + 1, o.y + 1, o.w - 2, o.h - 2);
+  ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
 }
 
 function drawSaw(o, B) {
-  const cx = o.x + o.w/2, cy = o.y + o.h/2;
-  const r = Math.min(o.w, o.h)/2;
+  const cx = o.x + o.w / 2, cy = o.y + o.h / 2;
+  const r = Math.min(o.w, o.h) / 2;
+  const spin = frame * 0.22;
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.rotate(frame * 0.22);
-  // 8 teeth
-  ctx.fillStyle = B.spike;
-  for (let i = 0; i < 8; i++) {
-    ctx.beginPath();
-    ctx.moveTo(r - 4, -4);
-    ctx.lineTo(r + 5, 0);
-    ctx.lineTo(r - 4, 4);
-    ctx.closePath();
-    ctx.fill();
-    ctx.rotate(Math.PI * 2 / 8);
+  // motion blur ring
+  ctx.strokeStyle = rgba(B.accent, 0.22);
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(0, 0, r + 5, 0, Math.PI * 2); ctx.stroke();
+  // teeth
+  ctx.save();
+  ctx.rotate(spin);
+  ctx.fillStyle = mix('#cfd3da', B.spike, 0.35);
+  ctx.beginPath();
+  const n = 12;
+  for (let i = 0; i < n; i++) {
+    const a0 = i / n * Math.PI * 2, a1 = (i + 0.6) / n * Math.PI * 2;
+    ctx.lineTo(Math.cos(a0) * (r - 4), Math.sin(a0) * (r - 4));
+    ctx.lineTo(Math.cos(a1) * (r + 5), Math.sin(a1) * (r + 5));
   }
-  // Hub disk
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = B.fg;
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.restore();
+  // steel disc (lit from the top-left, so not rotated)
+  const disc = ctx.createRadialGradient(-r * 0.35, -r * 0.35, 2, 0, 0, r);
+  disc.addColorStop(0, '#f6f8fa');
+  disc.addColorStop(0.6, mix('#9aa0a8', B.spike, 0.3));
+  disc.addColorStop(1, mix('#40454d', B.spike, 0.4));
+  ctx.fillStyle = disc;
+  ctx.beginPath(); ctx.arc(0, 0, r - 5, 0, Math.PI * 2); ctx.fill();
+  ctx.save();
+  ctx.rotate(spin);
+  ctx.fillStyle = darken(B.spike, 0.35);
+  for (let i = 0; i < 3; i++) {
+    const a = i / 3 * Math.PI * 2;
+    ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.45, Math.sin(a) * r * 0.45, 3.5, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+  ctx.strokeStyle = B.accent;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2); ctx.stroke();
   ctx.fillStyle = B.fg;
-  ctx.beginPath();
-  ctx.arc(0, 0, r - 6, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = B.accent;
-  ctx.beginPath();
-  ctx.arc(0, 0, r - 12, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = B.fg;
-  ctx.beginPath();
-  ctx.arc(0, 0, 3, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
 function drawPad(o, B) {
-  // Striped neon pad with up-arrow
-  ctx.fillStyle = '#1a3a1a';
-  ctx.fillRect(o.x - 1, o.y - 1, o.w + 2, o.h + 2);
-  ctx.fillStyle = '#22cc44';
-  ctx.fillRect(o.x, o.y, o.w, o.h);
-  ctx.fillStyle = '#ddff44';
-  for (let i = 0; i < o.w; i += 12) ctx.fillRect(o.x + i, o.y, 6, o.h);
-  // Top glow
-  ctx.fillStyle = '#aaffaa';
-  ctx.globalAlpha = 0.6 + Math.sin(frame * 0.3 + o.x * 0.01) * 0.3;
-  ctx.fillRect(o.x, o.y - 3, o.w, 3);
-  ctx.globalAlpha = 1;
-  // Up arrows
+  const glow = 0.25 + Math.sin(frame * 0.3 + o.x * 0.01) * 0.12;
+  const beam = ctx.createLinearGradient(0, o.y - 44, 0, o.y);
+  beam.addColorStop(0, 'rgba(140,255,150,0)');
+  beam.addColorStop(1, 'rgba(140,255,150,' + glow.toFixed(3) + ')');
+  ctx.fillStyle = beam;
+  ctx.fillRect(o.x + 4, o.y - 44, o.w - 8, 44);
+  ctx.fillStyle = '#123a1a';
+  roundRectPath(o.x - 2, o.y + 1, o.w + 4, o.h + 1, 3); ctx.fill();
+  const body = ctx.createLinearGradient(0, o.y, 0, o.y + o.h);
+  body.addColorStop(0, '#b4ff7a');
+  body.addColorStop(1, '#1f9e38');
+  ctx.fillStyle = body;
+  roundRectPath(o.x, o.y, o.w, o.h - 1, 4); ctx.fill();
+  ctx.save();
+  roundRectPath(o.x, o.y, o.w, o.h - 1, 4); ctx.clip();
+  ctx.fillStyle = 'rgba(255,255,140,0.5)';
+  const off = (frame * 0.6) % 14;
+  for (let i = -14; i < o.w + 14; i += 14) {
+    ctx.beginPath();
+    ctx.moveTo(o.x + i + off, o.y + o.h);
+    ctx.lineTo(o.x + i + off + 6, o.y);
+    ctx.lineTo(o.x + i + off + 11, o.y);
+    ctx.lineTo(o.x + i + off + 5, o.y + o.h);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
   ctx.fillStyle = '#fff';
   for (let i = 0; i < 2; i++) {
     const ax = o.x + (i + 0.5) * (o.w / 2);
@@ -1584,59 +1975,119 @@ function drawPad(o, B) {
 }
 
 function drawCheckpoint(cp, B) {
-  const cx = cp.x, cy = GROUND_Y - 100;
-  ctx.fillStyle = cp.reached ? B.accent : B.fg;
-  ctx.fillRect(cx - 2, cy, 4, 100);
+  const cx = cp.x, top = GROUND_Y - 100;
+  const pole = cp.reached ? B.accent : B.fg;
+  ctx.save();
+  if (cp.reached) {
+    const g = ctx.createRadialGradient(cx, top + 14, 2, cx, top + 14, 50);
+    g.addColorStop(0, rgba(B.glow, 0.45));
+    g.addColorStop(1, rgba(B.glow, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - 50, top - 36, 100, 100);
+  }
+  ctx.fillStyle = darken(pole, 0.2);
+  ctx.fillRect(cx - 9, GROUND_Y - 5, 18, 5);
+  ctx.fillStyle = pole;
+  ctx.fillRect(cx - 2, top, 4, 100);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fillRect(cx - 2, top, 1.5, 100);
+  ctx.fillStyle = pole;
+  ctx.beginPath(); ctx.arc(cx, top, 5, 0, Math.PI * 2); ctx.fill();
+  // waving flag
+  const w1 = Math.sin(frame * 0.12 + cp.x * 0.01) * 3;
+  const w2 = Math.sin(frame * 0.12 + cp.x * 0.01 + 1.4) * 3;
+  const flagColor = cp.reached ? B.accent : B.glow;
+  const fg = ctx.createLinearGradient(cx, 0, cx + 40, 0);
+  fg.addColorStop(0, lighten(flagColor, 0.15));
+  fg.addColorStop(1, darken(flagColor, 0.15));
+  ctx.fillStyle = fg;
   ctx.beginPath();
-  ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
-  const wave = Math.sin(frame * 0.12 + cp.x * 0.01) * 3;
-  ctx.fillStyle = cp.reached ? B.accent : B.glow;
-  ctx.beginPath();
-  ctx.moveTo(cx + 2, cy + 2);
-  ctx.lineTo(cx + 36 + wave, cy + 12);
-  ctx.lineTo(cx + 2, cy + 26);
+  ctx.moveTo(cx + 2, top + 2);
+  ctx.quadraticCurveTo(cx + 18, top + 2 + w1, cx + 38 + w2, top + 12);
+  ctx.quadraticCurveTo(cx + 18, top + 24 + w1, cx + 2, top + 26);
   ctx.closePath(); ctx.fill();
   ctx.strokeStyle = B.fg;
   ctx.lineWidth = 1.5; ctx.stroke();
   ctx.fillStyle = B.fg;
   ctx.font = 'bold 11px Courier New';
   ctx.textAlign = 'center';
-  ctx.fillText(cp.reached ? '✓' : 'CP', cx + 14, cy + 18);
+  ctx.fillText(cp.reached ? '✓' : 'CP', cx + 15, top + 18);
+  ctx.restore();
 }
 
-function drawGround(B) {
-  // Floor texture scrolls with the world
+// Floor, or (roof = true) the ceiling: the same surface drawn through a mirror.
+function drawSurface(B, roof) {
+  ctx.save();
+  if (roof) { ctx.translate(0, MIRROR_Y); ctx.scale(1, -1); }
   ctx.save();
   ctx.translate(-(cameraX % TEX), 0);
   ctx.fillStyle = getTexture('floor');
   ctx.fillRect(0, GROUND_Y, W + TEX, H - GROUND_Y);
   ctx.restore();
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  const depth = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+  depth.addColorStop(0, 'rgba(0,0,0,0)');
+  depth.addColorStop(1, 'rgba(0,0,0,' + (roof ? 0.55 : 0.45) + ')');
+  ctx.fillStyle = depth;
+  ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+  // glow above the edge, contact shadow, bright edge line
+  const eg = ctx.createLinearGradient(0, GROUND_Y - 16, 0, GROUND_Y);
+  eg.addColorStop(0, rgba(B.glow, 0));
+  eg.addColorStop(1, rgba(B.glow, 0.22));
+  ctx.fillStyle = eg;
+  ctx.fillRect(0, GROUND_Y - 16, W, 16);
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
   ctx.fillRect(0, GROUND_Y + 4, W, 6);
   ctx.fillStyle = B.accent;
   ctx.fillRect(0, GROUND_Y, W, 4);
+  ctx.fillStyle = lighten(B.accent, 0.5);
+  ctx.globalAlpha = 0.7;
+  ctx.fillRect(0, GROUND_Y, W, 1.5);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = darken(B.accent, 0.35);
+  for (let x = -(cameraX % 48); x < W; x += 48) ctx.fillRect(x, GROUND_Y + 4, 2, 5);
 
-  ctx.save();
   ctx.translate(-cameraX, 0);
   for (const o of levelData.obstacles) {
-    if (o.type !== 'pit') continue;
+    if (o.type !== 'pit' || !!o.flip !== roof) continue;
     if (o.x + o.w < cameraX - 80) continue;
     if (o.x > cameraX + W + 80) continue;
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(o.x, GROUND_Y, o.w, H - GROUND_Y);
-    const lavaY = GROUND_Y + 28;
-    ctx.fillStyle = '#cc1f00';
-    ctx.fillRect(o.x, lavaY, o.w, H - lavaY);
-    ctx.fillStyle = '#ff6a1a';
-    for (let i = 0; i < o.w; i += 9) {
-      const w = Math.sin((frame + i * 2) * 0.13) * 4;
-      ctx.fillRect(o.x + i, lavaY + w, 5, 5);
-    }
-    ctx.fillStyle = B.accent;
-    ctx.fillRect(o.x - 2, GROUND_Y, 3, 18);
-    ctx.fillRect(o.x + o.w - 1, GROUND_Y, 3, 18);
+    drawPit(o, B);
   }
   ctx.restore();
+}
+
+function drawPit(o, B) {
+  const lavaY = GROUND_Y + 28;
+  ctx.fillStyle = '#070707';
+  ctx.fillRect(o.x, GROUND_Y, o.w, H - GROUND_Y);
+  const heat = ctx.createLinearGradient(0, GROUND_Y - 40, 0, lavaY);
+  heat.addColorStop(0, 'rgba(255,90,20,0)');
+  heat.addColorStop(1, 'rgba(255,90,20,0.35)');
+  ctx.fillStyle = heat;
+  ctx.fillRect(o.x, GROUND_Y - 40, o.w, lavaY - GROUND_Y + 40);
+  const lava = ctx.createLinearGradient(0, lavaY, 0, H);
+  lava.addColorStop(0, '#ffb02e');
+  lava.addColorStop(0.25, '#ff4a0a');
+  lava.addColorStop(1, '#8a1000');
+  ctx.fillStyle = lava;
+  ctx.fillRect(o.x, lavaY, o.w, H - lavaY);
+  ctx.fillStyle = '#ffd36a';
+  for (let i = 0; i < o.w; i += 9) {
+    const wv = Math.sin((frame + i * 2) * 0.13) * 4;
+    ctx.fillRect(o.x + i, lavaY + wv - 1, 6, 4);
+  }
+  for (let k = 0; k < 4; k++) {   // rising bubbles
+    const t = (frame * 0.015 + k * 0.27 + o.x * 0.001) % 1;
+    const bx = o.x + 8 + ((k * 37 + o.x) % Math.max(1, o.w - 16));
+    ctx.globalAlpha = 1 - t;
+    ctx.strokeStyle = '#ffe9a0';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(bx, lavaY + 34 - t * 34, 2 + t * 2.5, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = B.accent;
+  ctx.fillRect(o.x - 2, GROUND_Y, 3, 18);
+  ctx.fillRect(o.x + o.w - 1, GROUND_Y, 3, 18);
 }
 
 function drawDeathOverlay() {
@@ -1793,6 +2244,10 @@ const EDITOR_OBSTACLES = {
   portalFly:  { w: 46, y: 0, h: GROUND_Y, color: '#38e8ff' },
   portalCube: { w: 46, y: 0, h: GROUND_Y, color: '#ffe34d' },
   dashOrb:    { w: 36, y: GROUND_Y - 118, h: 36, color: '#1fcc55' },
+  gravOrb:     { w: 36, y: GROUND_Y - 128, h: 36, color: '#3d8bff' },
+  roofGravOrb: { w: 36, y: MIRROR_Y - (GROUND_Y - 128) - 36, h: 36, color: '#3d8bff' },
+  roofSpike:   { w: 30, y: CEIL_Y, h: 30, color: '#ff5555' },
+  roofBlock:   { w: 60, y: CEIL_Y, h: 60, color: '#f0a070' },
 };
 const CUSTOM_LEVELS_KEY = 'iuBeltDashPlayerLevels';
 
@@ -1860,6 +2315,11 @@ function drawEditor() {
   editorCtx.fillRect(0, groundY, editorCanvas.width, editorCanvas.height - groundY);
   editorCtx.fillStyle = '#cc0000';
   editorCtx.fillRect(0, groundY, editorCanvas.width, 3);
+  const ceilY = editorCanvas.height * (CEIL_Y / H);
+  editorCtx.fillStyle = '#333';
+  editorCtx.fillRect(0, 0, editorCanvas.width, ceilY);
+  editorCtx.fillStyle = '#3d8bff';
+  editorCtx.fillRect(0, ceilY - 2, editorCanvas.width, 2);
   editorCtx.fillStyle = '#66ccff';
   editorCtx.fillRect(120 / length * editorCanvas.width, groundY - 38, 3, 38);
   editorCtx.fillStyle = '#ffd700';
