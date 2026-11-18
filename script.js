@@ -2250,8 +2250,10 @@ const EDITOR_OBSTACLES = {
   roofBlock:   { w: 60, y: CEIL_Y, h: 60, color: '#f0a070' },
 };
 const CUSTOM_LEVELS_KEY = 'iuBeltDashPlayerLevels';
+const DEFAULT_MUSIC = 3;   // ORANGE
 
 function openLevelEditor() {
+  editorMusicPreview = Number(document.getElementById('levelMusicInput').value);
   document.getElementById('levelEditorModal').classList.add('open');
   document.getElementById('levelEditorModal').setAttribute('aria-hidden', 'false');
   document.getElementById('editorStatus').textContent = '';
@@ -2259,7 +2261,22 @@ function openLevelEditor() {
   drawEditor();
 }
 
+let editorMusicPreview = null;   // track index being auditioned in the editor (null = menu loop)
+
+function initMusicPicker() {
+  const select = document.getElementById('levelMusicInput');
+  Music.names.forEach((name, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
+  select.value = DEFAULT_MUSIC;
+  select.addEventListener('change', () => { editorMusicPreview = Number(select.value); });
+}
+
 function closeLevelEditor() {
+  editorMusicPreview = null;
   const modal = document.getElementById('levelEditorModal');
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
@@ -2377,6 +2394,7 @@ function readEditorLevel() {
     name,
     author,
     length,
+    music: Number(document.getElementById('levelMusicInput').value),
     obstacles: editorObstacles.map(({ type, x }) => ({ type, x })),
   });
 }
@@ -2411,7 +2429,9 @@ function validateCustomLevel(value) {
     }
     return { type: item.type, x: item.x };
   });
-  return { version: 1, name, author, length: value.length, obstacles };
+  // Older links have no music field — they get the default track
+  const music = (Number.isInteger(value.music) && value.music >= 0 && value.music < Music.count) ? value.music : DEFAULT_MUSIC;
+  return { version: 1, name, author, length: value.length, music, obstacles };
 }
 
 function encodeLevel(level) {
@@ -2484,6 +2504,7 @@ function saveLevelDraft() {
 }
 
 function editSavedLevel(level) {
+  document.getElementById('levelMusicInput').value = level.music;
   document.getElementById('levelNameInput').value = level.name;
   document.getElementById('levelAuthorInput').value = level.author;
   document.getElementById('levelLengthInput').value = level.length;
@@ -2630,6 +2651,7 @@ function refreshTrialsUI() {
   });
   prog.textContent = unlocked + ' OF 3 TRIALS UNLOCKED';
 }
+initMusicPicker();
 loadProgress();
 loadSharedLevelFromHash();
 refreshCommunityLevels();
@@ -2642,9 +2664,17 @@ function formatTime(ms) {
   const m = Math.floor(s / 60);
   return m + ':' + String(s % 60).padStart(2, '0');
 }
+// Which track plays: belts use their own (0 = training … 8 = black), the three secret trials
+// use 9-11, community levels use the one their creator picked, and the menu loop otherwise.
+function currentMusicTrack(inGame) {
+  if (!inGame) return editorMusicPreview;
+  if (customLevelActive && activeCustomLevel) return activeCustomLevel.music;
+  if (inSecret) return BELTS.length + secretIdx;
+  return belt;
+}
 function loop() {
   const inGame = document.body.classList.contains('playing');
-  Music.setMode(inGame ? 'game' : 'menu');
+  Music.setTrack(currentMusicTrack(inGame));
   Music.setDucked(inGame && gameState === 'paused');
   if (inGame) {
     update();

@@ -628,7 +628,7 @@
   }
   .editor-fields {
     display: grid;
-    grid-template-columns: 1fr 1fr 1.4fr;
+    grid-template-columns: 1fr 1fr 1fr 1.4fr;
     gap: 14px;
     margin: 22px 0;
   }
@@ -637,7 +637,7 @@
     font: 10px 'Courier New', monospace;
     letter-spacing: 2px;
   }
-  .editor-fields input:not([type="range"]) {
+  .editor-fields input:not([type="range"]), .editor-fields select {
     display: block;
     width: 100%;
     margin-top: 7px;
