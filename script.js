@@ -208,7 +208,12 @@ window.addEventListener('keydown', (e) => {
   if ((e.key === 'q' || e.key === 'Q') && inSecret && gameState === 'playing') abandonTrial();
   if (e.key === 'r' || e.key === 'R') {
     if (gameState === 'won' || gameState === 'won-secret' || gameState === 'won-custom') { returnToMenu(); }
-    else respawn();
+    else {
+      // R while paused: close the pause menu first (it used to stay on screen
+      // while the game kept running underneath it).
+      if (gameState === 'paused') resumeGame();
+      respawn();
+    }
   }
   if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
     if (gameState === 'playing') pauseGame();
@@ -261,7 +266,13 @@ bindBtn('restartBtn', () => {
 });
 bindBtn('abandonBtn', () => { resumeGame(); abandonTrial(); });
 bindBtn('quitBtn', () => { resumeGame(); returnToMenu(); });
-bindBtn('playBtnTop', () => enterGame(1));
+bindBtn('playBtnTop', () => {
+  // NEW RUN restarts from the white belt and replaces the CONTINUE save — ask first.
+  if (stats.savedBelt > 1 &&
+      !window.confirm('Start a new run from the WHITE belt?\nYour saved progress (' +
+        BELTS[stats.savedBelt].name + ' BELT) will be replaced. Achievements and trials stay unlocked.')) return;
+  enterGame(1);
+});
 bindBtn('playBtnBottom', () => enterGame(1));
 bindBtn('continueBtn', () => enterGame(Math.max(1, stats.savedBelt)));
 bindBtn('resetProgressBtn', resetProgress);
@@ -598,7 +609,7 @@ function generateSecretLevel(idx) {
 // ============== Physics (shared by the game AND the level checker) ==============
 // One step = one frame. The game and the solver call the same function, so if the
 // solver can beat a level, a player pressing the same inputs can too.
-const DASH_FRAMES = 90;      // dash orb: max 1.5 s of straight flight (60 fps)
+const DASH_FRAMES = 90;      // dash orb: max 90 physics steps of straight flight (≈1.1 s at GAME_SPEED 1.4)
 const BUCKET = 120;          // spatial index cell width
 const NEAR = [];
 
@@ -650,7 +661,7 @@ function stepPhysics(s, held, tapped, ld, spd) {
   r.wasOnGround = s.onGround;
   s.onGround = false;
 
-  // Dash: straight flight while held, until released or 1.5 s pass
+  // Dash: straight flight while held, until released or DASH_FRAMES steps pass
   if (s.dash >= 0 && !(held && s.dash < DASH_FRAMES)) s.dash = -1;
   if (s.dash >= 0) { s.dash++; s.vy = 0; }
   else if (s.flight) {
@@ -853,16 +864,48 @@ function buildCustomObstacles(level) {
   });
 }
 
+// Player levels get a checkpoint roughly every 1700 px, but only where a respawn
+// can actually survive: the checker must find a route from the checkpoint to the
+// next one. A fixed spot could fall inside a block → endless instant deaths.
+const CUSTOM_CP_STEP = 1700;
+const CUSTOM_CP_SHIFTS = [0, -60, 60, -120, 120, -180, 180, -240, 240, -300, 300];
+const CP_REACTION_STEPS = 20;   // ≈0.25 s with no input must be survivable after a respawn
+
+function safeCustomCheckpoints(ld, spd) {
+  const cps = [];
+  for (let target = CUSTOM_CP_STEP; target < ld.length - 500; target += CUSTOM_CP_STEP) {
+    const minX = (cps.length ? cps[cps.length - 1].x : 120) + 600;
+    for (const shift of CUSTOM_CP_SHIFTS) {
+      const x = target + shift;
+      if (x < minX || x > ld.length - 300) continue;
+      // A human needs a moment after respawning: survive the first steps without input…
+      const start = frontierStart(ld, x)[0];
+      let survived = true;
+      for (let i = 0; i < CP_REACTION_STEPS && survived; i++) {
+        survived = !stepPhysics(start, false, false, ld, spd).dead;
+        start.prevHeld = false;
+      }
+      if (!survived) continue;
+      // …and from there a route to the next checkpoint must exist.
+      const goal = Math.min(ld.length, x + CUSTOM_CP_STEP);
+      if (advanceFrontier([start], ld, spd, goal).length) {
+        cps.push({ x, reached: false });
+        break;
+      }
+    }
+  }
+  return cps;
+}
+
 function startCustomLevel(level) {
   inSecret = false;
   customLevelActive = true;
   activeCustomLevel = level;
   belt = 3;
   speed = 6;
-  const checkpoints = [];
+  levelData = indexLevel({ obstacles: buildCustomObstacles(level), checkpoints: [], length: level.length, infinite: false });
   // Verification runs have no checkpoints: you must beat the level in one go
-  if (!verifyRun) for (let x = 1700; x < level.length - 500; x += 1700) checkpoints.push({ x, reached: false });
-  levelData = indexLevel({ obstacles: buildCustomObstacles(level), checkpoints, length: level.length, infinite: false });
+  if (!verifyRun) levelData.checkpoints = safeCustomCheckpoints(levelData, speed);
   lastCheckpointX = 120;
   resetPlayer(120);
   gameState = 'playing';
@@ -2201,6 +2244,10 @@ function refreshTrialsUI() {
         e.stopPropagation();
         document.body.classList.add('playing');
         attempts = 1;
+        // New session: without this TOTAL TIME counted from 1970 (sessionStartTime = 0)
+        sessionStartTime = Date.now();
+        pausedDuration = 0;
+        iuTalents = 0;
         startSecretLevel(idx, 'direct');
         if (IS_MOBILE) tryFullscreen();
         requestWakeLock();
@@ -2235,6 +2282,12 @@ const GAME_SPEED = 1.4;
 const STEP_MS = 1000 / (60 * GAME_SPEED);
 const FRAME_60_MS = 1000 / 60;
 let lastFrameTime = 0, stepAcc = 0, lastRenderTime = 0;
+
+// Landing tip shows the real dash duration, so it stays right if GAME_SPEED changes.
+(function () {
+  const el = document.getElementById('dashSeconds');
+  if (el) el.textContent = (DASH_FRAMES / (60 * GAME_SPEED)).toFixed(1);
+})();
 const prevPos = { x: 0, y: 0, cam: 0 };
 
 // Player-selectable frame rate cap (0 = AUTO: every screen refresh).
