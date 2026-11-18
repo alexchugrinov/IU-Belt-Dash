@@ -157,6 +157,17 @@ let levelStartTime = 0, levelPausedDuration = 0;
 const player = { x: 120, y: GROUND_Y - PLAYER_SIZE, vy: 0, size: PLAYER_SIZE, onGround: true, rotation: 0 };
 const keys = {}; let jumpQueued = false, pointerHeld = false, flightMode = false;
 
+// Airplane handling (per 60 Hz physics step).
+const PLANE = {
+  lift: -0.7,        // vertical acceleration while holding jump
+  gravity: 0.8,      // vertical acceleration while released (was 1.15 — felt like dropping)
+  maxSpeed: 8,
+  entrySpeed: 4,     // max |vy| kept when flying through the airplane portal
+  maxTilt: 0.4,
+  tiltPerSpeed: 0.05,
+  tiltEase: 0.2,
+};
+
 // ============== Helpers ==============
 function vibrate(p) { if (navigator.vibrate) { try { navigator.vibrate(p); } catch(e){} } }
 const VIBE = {
@@ -197,7 +208,12 @@ window.addEventListener('keydown', (e) => {
   if ((e.key === 'q' || e.key === 'Q') && inSecret && gameState === 'playing') abandonTrial();
   if (e.key === 'r' || e.key === 'R') {
     if (gameState === 'won' || gameState === 'won-secret' || gameState === 'won-custom') { returnToMenu(); }
-    else respawn();
+    else {
+      // R while paused: close the pause menu first (it used to stay on screen
+      // while the game kept running underneath it).
+      if (gameState === 'paused') resumeGame();
+      respawn();
+    }
   }
   if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
     if (gameState === 'playing') pauseGame();
@@ -230,8 +246,9 @@ function bindBtn(id, handler) {
   const el = document.getElementById(id);
   if (!el) return;
   const fire = (e) => { e.preventDefault(); e.stopPropagation(); handler(); };
+  // 'click' only: touchstart is not a user activation in Chrome, so fullscreen /
+  // orientation lock requested from it were rejected on Android phones.
   el.addEventListener('click', fire);
-  el.addEventListener('touchstart', fire, { passive: false });
 }
 
 bindBtn('pauseBtn', () => { if (gameState === 'playing') pauseGame(); else if (gameState === 'paused') resumeGame(); });
@@ -249,7 +266,13 @@ bindBtn('restartBtn', () => {
 });
 bindBtn('abandonBtn', () => { resumeGame(); abandonTrial(); });
 bindBtn('quitBtn', () => { resumeGame(); returnToMenu(); });
-bindBtn('playBtnTop', () => enterGame(1));
+bindBtn('playBtnTop', () => {
+  // NEW RUN restarts from the white belt and replaces the CONTINUE save — ask first.
+  if (stats.savedBelt > 1 &&
+      !window.confirm('Start a new run from the WHITE belt?\nYour saved progress (' +
+        BELTS[stats.savedBelt].name + ' BELT) will be replaced. Achievements and trials stay unlocked.')) return;
+  enterGame(1);
+});
 bindBtn('playBtnBottom', () => enterGame(1));
 bindBtn('continueBtn', () => enterGame(Math.max(1, stats.savedBelt)));
 bindBtn('resetProgressBtn', resetProgress);
@@ -325,7 +348,12 @@ function returnToMenu() {
 function tryFullscreen() {
   const el = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-  if (req) { try { req.call(el); } catch(e){} }
+  if (req) {
+    try {
+      const p = req.call(el);
+      if (p && p.catch) p.catch(() => {});   // denied (no gesture / iOS) — play windowed
+    } catch(e){}
+  }
   if (screen.orientation && screen.orientation.lock) {
     try { screen.orientation.lock('landscape').catch(()=>{}); } catch(e){}
   }
@@ -581,7 +609,7 @@ function generateSecretLevel(idx) {
 // ============== Physics (shared by the game AND the level checker) ==============
 // One step = one frame. The game and the solver call the same function, so if the
 // solver can beat a level, a player pressing the same inputs can too.
-const DASH_FRAMES = 90;      // dash orb: max 1.5 s of straight flight (60 fps)
+const DASH_FRAMES = 90;      // dash orb: max 90 physics steps of straight flight (≈1.1 s at GAME_SPEED 1.4)
 const BUCKET = 120;          // spatial index cell width
 const NEAR = [];
 
@@ -633,12 +661,12 @@ function stepPhysics(s, held, tapped, ld, spd) {
   r.wasOnGround = s.onGround;
   s.onGround = false;
 
-  // Dash: straight flight while held, until released or 1.5 s pass
+  // Dash: straight flight while held, until released or DASH_FRAMES steps pass
   if (s.dash >= 0 && !(held && s.dash < DASH_FRAMES)) s.dash = -1;
   if (s.dash >= 0) { s.dash++; s.vy = 0; }
   else if (s.flight) {
-    s.vy += held ? -0.72 : 1.15;
-    s.vy = Math.max(-8.5, Math.min(8.5, s.vy));
+    s.vy += held ? PLANE.lift : PLANE.gravity;
+    s.vy = Math.max(-PLANE.maxSpeed, Math.min(PLANE.maxSpeed, s.vy));
   } else {
     s.vy += 0.88;
     if (s.vy > 18) s.vy = 18;
@@ -650,11 +678,20 @@ function stepPhysics(s, held, tapped, ld, spd) {
 
   for (const o of near) {
     if (o.type !== 'portal' || prevX + size > o.x || s.x + size <= o.x) continue;
+    const enteringFlight = o.mode === 'airplane' && !s.flight;
     s.flight = o.mode === 'airplane';
     s.dash = -1;
     s.onGround = false;
+    // Soften the jump momentum carried into the plane instead of a hard clamp.
+    if (enteringFlight) s.vy = Math.max(-PLANE.entrySpeed, Math.min(PLANE.entrySpeed, s.vy * 0.4));
   }
-  if (s.flight) s.y = Math.max(12, Math.min(GROUND_Y - size - 12, s.y));
+  if (s.flight) {
+    // Ceiling / floor: stop vertical speed so the plane reacts on the next frame
+    // when input changes (previously it "stuck" to the edge for ~8 frames).
+    const top = 12, bottom = GROUND_Y - size - 12;
+    if (s.y <= top) { s.y = top; if (s.vy < 0) s.vy = 0; }
+    if (s.y >= bottom) { s.y = bottom; if (s.vy > 0) s.vy = 0; }
+  }
 
   // Ground / pit
   if (!s.flight && s.y + size >= GROUND_Y) {
@@ -827,16 +864,48 @@ function buildCustomObstacles(level) {
   });
 }
 
+// Player levels get a checkpoint roughly every 1700 px, but only where a respawn
+// can actually survive: the checker must find a route from the checkpoint to the
+// next one. A fixed spot could fall inside a block → endless instant deaths.
+const CUSTOM_CP_STEP = 1700;
+const CUSTOM_CP_SHIFTS = [0, -60, 60, -120, 120, -180, 180, -240, 240, -300, 300];
+const CP_REACTION_STEPS = 20;   // ≈0.25 s with no input must be survivable after a respawn
+
+function safeCustomCheckpoints(ld, spd) {
+  const cps = [];
+  for (let target = CUSTOM_CP_STEP; target < ld.length - 500; target += CUSTOM_CP_STEP) {
+    const minX = (cps.length ? cps[cps.length - 1].x : 120) + 600;
+    for (const shift of CUSTOM_CP_SHIFTS) {
+      const x = target + shift;
+      if (x < minX || x > ld.length - 300) continue;
+      // A human needs a moment after respawning: survive the first steps without input…
+      const start = frontierStart(ld, x)[0];
+      let survived = true;
+      for (let i = 0; i < CP_REACTION_STEPS && survived; i++) {
+        survived = !stepPhysics(start, false, false, ld, spd).dead;
+        start.prevHeld = false;
+      }
+      if (!survived) continue;
+      // …and from there a route to the next checkpoint must exist.
+      const goal = Math.min(ld.length, x + CUSTOM_CP_STEP);
+      if (advanceFrontier([start], ld, spd, goal).length) {
+        cps.push({ x, reached: false });
+        break;
+      }
+    }
+  }
+  return cps;
+}
+
 function startCustomLevel(level) {
   inSecret = false;
   customLevelActive = true;
   activeCustomLevel = level;
   belt = 3;
   speed = 6;
-  const checkpoints = [];
+  levelData = indexLevel({ obstacles: buildCustomObstacles(level), checkpoints: [], length: level.length, infinite: false });
   // Verification runs have no checkpoints: you must beat the level in one go
-  if (!verifyRun) for (let x = 1700; x < level.length - 500; x += 1700) checkpoints.push({ x, reached: false });
-  levelData = indexLevel({ obstacles: buildCustomObstacles(level), checkpoints, length: level.length, infinite: false });
+  if (!verifyRun) levelData.checkpoints = safeCustomCheckpoints(levelData, speed);
   lastCheckpointX = 120;
   resetPlayer(120);
   gameState = 'playing';
@@ -914,6 +983,7 @@ function advanceLevel() {
     if (stats.currentBeltDeaths === 0) stats.flawlessBeltAchieved = true;
     iuTalents += 1 / attempts;
     checkAchievements();
+    unlockPlaneForBelt(belt);   // skins.js — each belt rewards a plane skin
     saveProgress();
   }
 
@@ -1003,7 +1073,12 @@ function update() {
   flightMode = player.flight;
 
   if (res.jumped && IS_MOBILE) vibrate(VIBE.jump);
-  if (flightMode) player.rotation = 0;
+  if (flightMode) {
+    // Nose follows vertical speed with easing instead of snapping (visual only).
+    if (!wasFlying) player.rotation = 0;
+    const tilt = Math.max(-PLANE.maxTilt, Math.min(PLANE.maxTilt, player.vy * PLANE.tiltPerSpeed));
+    player.rotation += (tilt - player.rotation) * PLANE.tiltEase;
+  }
   else if (wasFlying) player.rotation = 0;
   else if (player.dash >= 0 || res.wasOnGround) {
     const target = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
@@ -1328,9 +1403,21 @@ function drawPlayer(B) {
 function drawAirplane(B) {
   ctx.save();
   ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
-  ctx.rotate(Math.max(-0.35, Math.min(0.35, player.vy * 0.035)));
+  ctx.rotate(player.rotation);   // eased tilt, computed in update()
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.fillRect(-15, 7, 30, 5);
+  const planeSkin = currentPlane();   // skins.js
+  if (planeSkin.draw) {
+    planeSkin.draw(ctx, frame);
+    ctx.restore();
+    return;
+  }
+  drawClassicPlane(ctx, B);
+  ctx.restore();
+}
+
+// Original plane silhouette in the level palette colors.
+function drawClassicPlane(ctx, B) {
   ctx.fillStyle = B.fg;
   ctx.beginPath();
   ctx.moveTo(17, 0);
@@ -1360,7 +1447,6 @@ function drawAirplane(B) {
   ctx.fillRect(6, -2, 6, 4);
   ctx.fillStyle = B.glow;
   ctx.fillRect(-17, -2, 3, 4);
-  ctx.restore();
 }
 
 function drawObstacle(o, B) {
@@ -2158,13 +2244,16 @@ function refreshTrialsUI() {
         e.stopPropagation();
         document.body.classList.add('playing');
         attempts = 1;
+        // New session: without this TOTAL TIME counted from 1970 (sessionStartTime = 0)
+        sessionStartTime = Date.now();
+        pausedDuration = 0;
+        iuTalents = 0;
         startSecretLevel(idx, 'direct');
         if (IS_MOBILE) tryFullscreen();
         requestWakeLock();
         checkOrientation();
       };
       card.addEventListener('click', fire);
-      card.addEventListener('touchstart', fire, { passive: false });
     }
     cont.appendChild(card);
   });
@@ -2182,13 +2271,84 @@ function formatTime(ms) {
   const m = Math.floor(s / 60);
   return m + ':' + String(s % 60).padStart(2, '0');
 }
-function loop() {
+// Fixed-rate physics with render interpolation: the game runs at the same
+// speed on 60/120/144 Hz screens. The player chooses only how often frames
+// are drawn.
+//
+// GAME_SPEED speeds up time, not geometry: physics simply runs more steps per
+// second. Every trajectory stays identical in space, so all levels (and the
+// level verifier, which counts in steps) remain valid. 1 = 60 steps/s.
+const GAME_SPEED = 1.4;
+const STEP_MS = 1000 / (60 * GAME_SPEED);
+const FRAME_60_MS = 1000 / 60;
+let lastFrameTime = 0, stepAcc = 0, lastRenderTime = 0;
+
+// Landing tip shows the real dash duration, so it stays right if GAME_SPEED changes.
+(function () {
+  const el = document.getElementById('dashSeconds');
+  if (el) el.textContent = (DASH_FRAMES / (60 * GAME_SPEED)).toFixed(1);
+})();
+const prevPos = { x: 0, y: 0, cam: 0 };
+
+// Player-selectable frame rate cap (0 = AUTO: every screen refresh).
+const FPS_OPTIONS = [0, 120, 60, 30];
+const FPS_STORE_KEY = 'iuBeltDash.fpsCap';
+let fpsCap = 0;
+try {
+  const v = Number(localStorage.getItem(FPS_STORE_KEY));
+  if (FPS_OPTIONS.includes(v)) fpsCap = v;
+} catch (e) { /* storage unavailable */ }
+
+function refreshFpsBtn() {
+  const b = document.getElementById('fpsBtn');
+  if (b) b.textContent = 'FRAME RATE: ' + (fpsCap ? fpsCap + ' FPS' : 'AUTO');
+}
+bindBtn('fpsBtn', () => {
+  fpsCap = FPS_OPTIONS[(FPS_OPTIONS.indexOf(fpsCap) + 1) % FPS_OPTIONS.length];
+  try { localStorage.setItem(FPS_STORE_KEY, String(fpsCap)); } catch (e) {}
+  refreshFpsBtn();
+});
+refreshFpsBtn();
+
+function drawInterpolated(alpha) {
+  const real = { x: player.x, y: player.y, cam: cameraX };
+  // Skip interpolation across teleports (respawn, level start).
+  if (Math.abs(real.x - prevPos.x) < 60 && Math.abs(real.y - prevPos.y) < 60 &&
+      Math.abs(real.cam - prevPos.cam) < 60) {
+    player.x = prevPos.x + (real.x - prevPos.x) * alpha;
+    player.y = prevPos.y + (real.y - prevPos.y) * alpha;
+    cameraX = prevPos.cam + (real.cam - prevPos.cam) * alpha;
+  }
+  draw();
+  player.x = real.x; player.y = real.y; cameraX = real.cam;
+}
+
+function loop(now) {
+  now = now || performance.now();
   const inGame = document.body.classList.contains('playing');
   Music.setMode(inGame ? 'game' : 'menu');
   Music.setDucked(inGame && gameState === 'paused');
   if (inGame) {
-    update();
-    draw();
+    // Frame rate cap: skip this refresh if it's too early (2 ms tolerance so a
+    // 60 Hz screen with a 60 FPS cap doesn't drop every other frame).
+    if (fpsCap && lastRenderTime && now - lastRenderTime < 1000 / fpsCap - 2) {
+      requestAnimationFrame(loop);
+      return;
+    }
+    lastRenderTime = now;
+    let dt = lastFrameTime ? now - lastFrameTime : FRAME_60_MS;
+    lastFrameTime = now;
+    if (Math.abs(dt - FRAME_60_MS) < 1.5) dt = FRAME_60_MS;   // absorb normal 60 Hz vsync jitter
+    stepAcc += Math.min(dt, 250);
+    let steps = 0;
+    while (stepAcc >= STEP_MS && steps < 8) {
+      prevPos.x = player.x; prevPos.y = player.y; prevPos.cam = cameraX;
+      update();
+      stepAcc -= STEP_MS;
+      steps++;
+    }
+    if (steps === 8) stepAcc = 0;   // way behind (tab was busy) — don't spiral
+    drawInterpolated(stepAcc / STEP_MS);
     if (levelData) {
       const now = Date.now();
       const onPause = (gameState === 'paused') ? (now - pauseStartTime) : 0;
@@ -2197,7 +2357,11 @@ function loop() {
       document.getElementById('timeHud').textContent = formatTime(now - sessionStartTime - pausedDuration - onPause);
       document.getElementById('talentsHud').textContent = iuTalents.toFixed(2);
     }
+  } else {
+    lastFrameTime = 0;
+    lastRenderTime = 0;
+    stepAcc = 0;
   }
   requestAnimationFrame(loop);
 }
-loop();
+requestAnimationFrame(loop);

@@ -2,6 +2,8 @@
 
 A browser-based platform game built with HTML, CSS, and JavaScript.
 
+### ▶ [Play IU Belt Dash](https://alexchugrinov.github.io/IU-Belt-Dash/)
+
 ## Play
 
 Open `index.html` in a browser. Tap/click or press `Space` / `Up` to jump. Press `R` to respawn and `P` or `Escape` to pause.

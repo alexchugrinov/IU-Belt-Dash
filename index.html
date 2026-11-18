@@ -44,6 +44,7 @@
       <button class="play-btn continue-btn" id="continueBtn" type="button" hidden>
         <span id="continueLabel">CONTINUE</span><span class="play-arrow">▶</span>
       </button>
+      <div><button class="skins-btn" id="skinsBtn" type="button">✈ PLANES</button></div>
       <div class="quick-info">PHONE &amp; DESKTOP &nbsp;·&nbsp; NO INSTALL &nbsp;·&nbsp; FREE</div>
       <button class="reset-progress" id="resetProgressBtn" type="button" hidden>RESET SAVED PROGRESS</button>
     </div>
@@ -52,7 +53,7 @@
       <div class="section-label">— HOW TO PLAY —</div>
       <div class="tip-list">
         <div class="tip-item"><span class="tip-num">01</span>TAP / <kbd>SPACE</kbd> / <kbd>↑</kbd> — jump over spikes, blocks, saws and pits of lava</div>
-        <div class="tip-item"><span class="tip-num">●</span>Orange orb — tap while touching it to jump again &nbsp;·&nbsp; Green orb — hold while touching it to dash straight (up to 1.5 s), release to fall</div>
+        <div class="tip-item"><span class="tip-num">●</span>Orange orb — tap while touching it to jump again &nbsp;·&nbsp; Green orb — hold while touching it to dash straight (up to <span id="dashSeconds">1</span> s), release to fall</div>
         <div class="tip-item"><span class="tip-num">✈</span>Find a portal to fly a plane — hold jump to climb and release to descend</div>
         <div class="tip-item"><span class="tip-num">02</span>Reach checkpoints to save progress &nbsp;·&nbsp; <kbd>R</kbd> to respawn &nbsp;·&nbsp; <kbd>P</kbd> to pause</div>
         <div class="tip-item"><span class="tip-num">03</span>Climb 8 belts from White to Black — each belt is faster and longer than the last</div>
@@ -146,6 +147,7 @@
       <button class="pauseBtn primary" id="resumeBtn">RESUME</button>
       <button class="pauseBtn" id="restartBtn">RESTART LEVEL</button>
       <button class="pauseBtn hidden" id="abandonBtn">ABANDON TRIAL</button>
+      <button class="pauseBtn" id="fpsBtn" title="How often frames are drawn. Game speed is the same at any setting.">FRAME RATE: AUTO</button>
       <button class="pauseBtn" id="quitBtn">RETURN TO MENU</button>
     </div>
   </div>
@@ -165,9 +167,31 @@
   <div class="ach-trial" id="achTrial">CRIMSON TRIAL UNLOCKED</div>
 </div>
 
+<!-- Skins collection -->
+<div class="skins-modal" id="skinsModal" hidden>
+  <div class="skins-box" role="dialog" aria-labelledby="skinsTitle">
+    <div class="skins-title" id="skinsTitle">PLANES</div>
+    <div class="skins-count" id="skinCount"></div>
+    <div class="skins-note">Beat a belt to unlock its plane. Tap a plane to equip it — it appears after a FLY portal.</div>
+    <div class="skin-grid" id="planeGrid"></div>
+    <div class="skins-actions">
+      <button class="skins-btn primary" id="skinsCloseBtn" type="button">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- Plane unlock popup -->
+<div id="skinToast">
+  <div class="st-label">✈ NEW PLANE UNLOCKED ✈</div>
+  <canvas id="skinToastPreview" width="64" height="64"></canvas>
+  <div class="st-name" id="skinToastName"></div>
+  <div class="st-rarity" id="skinToastRarity"></div>
+</div>
+
 <button id="muteBtn" class="mute-btn" type="button" aria-label="Mute music" title="Mute / unmute music (M)">🔊</button>
 
 <script src="music.js"></script>
 <script src="script.js"></script>
+<script src="skins.js"></script>
 </body>
 </html>
