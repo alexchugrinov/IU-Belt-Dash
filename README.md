@@ -1,12 +1,16 @@
 # IU Belt Dash
 
-A browser-based platform game built with HTML, CSS, and JavaScript.
+A Geometry Dash-inspired browser game. Run and jump through eight belts, unlock secret trials, collect runner skins, and create levels to share with friends.
 
 ### ▶ [Play IU Belt Dash](https://alexchugrinov.github.io/IU-Belt-Dash/)
 
 ## Play
 
-Open `index.html` in a browser. Tap/click or press `Space` / `Up` to jump. Press `R` to respawn and `P` or `Escape` to pause.
+Open `index.html` in a modern browser. Tap/click or press `Space`, `Up`, or `W` to jump. Press `R` to respawn and `P` or `Escape` to pause.
+
+## Skins
+
+Each belt has an Oman-inspired runner skin. Choose a skin in the Runner Garage, create a custom cube or interface theme, and unlock bonus and secret skins as you progress. Skin selection, custom skins, and belt unlocks are saved on this device.
 
 Blue gravity orbs (from the Green belt on) flip gravity: you run on the roof, every control works in reverse, and roof sections end with a spike field you escape by tapping another blue orb.
 
@@ -16,8 +20,8 @@ Choose **Create a Level** on the landing page. Place obstacles on the track, sav
 
 This project is a static site and has no server-side level directory: shared links work across players, but published levels are not listed globally for everyone.
 
-## Files
+## Project files
 
-- `index.html` — game page, community levels, and level editor
-- `style.css` — layout and styling
-- `script.js` — game logic, level editor, sharing, and input handling
+- `index.html` — landing page, skin garage, community levels, level editor, and game canvas
+- `style.css` — responsive interface, skin cards, editor, and animations
+- `script.js` — game logic, skin artwork, level editor and sharing, save data, and input handling
