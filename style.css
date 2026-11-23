@@ -39,7 +39,7 @@
     align-items: center; justify-content: center;
     padding: 40px 24px; position: relative;
   }
-  .hero-inner { max-width: 880px; width: 100%; text-align: center; }
+  .hero-inner {  width: 100%; text-align: center; }
   .brand {
     display: inline-block; font-size: 11px; font-weight: 700;
     letter-spacing: 6px; color: #cc0000;
@@ -129,7 +129,7 @@
     background: #0a0a0a;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
-  .info-inner { max-width: 1000px; margin: 0 auto; }
+  .info-inner {  margin: 0 auto; }
   .section-label {
     text-align: center;
     font-family: 'Courier New', monospace;
@@ -464,8 +464,8 @@
     flex: 1; display: flex; align-items: center; justify-content: center;
     gap: 52px; padding: 16px 40px; min-height: 0;
   }
-  .lp-left { flex: 0 0 auto; text-align: center; max-width: 400px; }
-  .lp-right { flex: 1; min-width: 0; max-width: 560px; }
+  .lp-left { flex: 0 0 auto; text-align: center;  }
+  .lp-right { flex: 1; min-width: 0;  }
   .tip-list { margin: 10px 0; }
   .tip-item {
     display: flex; align-items: flex-start; gap: 10px;
@@ -482,7 +482,7 @@
   }
   @media (max-width: 800px) {
     .lp-hero { flex-direction: column; gap: 16px; padding: 12px 20px; overflow-y: auto; }
-    .lp-left, .lp-right { max-width: 100%; width: 100%; }
+    .lp-left, .lp-right {  width: 100%; }
   }
 
   /* ============ GARAGE MENU & SKIN SYSTEM ============ */
@@ -533,7 +533,7 @@
     position: sticky;
     top: 24px;
     flex: 0 1 40%;
-    max-width: 490px;
+
     padding: clamp(24px, 3vw, 40px);
     overflow: hidden;
     isolation: isolate;
@@ -585,7 +585,7 @@
     line-height: 1.7;
   }
   .hero-copy {
-    max-width: 340px;
+
     margin: 0 0 18px;
     color: var(--ui-muted);
     font-size: 13px;
@@ -787,7 +787,7 @@
   .quick-info b { color: #465166; }
   .lp-right {
     flex: 1 1 60%;
-    max-width: 790px;
+
     min-width: 0;
     padding: clamp(18px, 2.5vw, 30px);
     border: 1px solid var(--ui-line);
@@ -865,7 +865,7 @@
   }
   .skin-section .section-label { margin: 0 0 5px; text-align: left; }
   .skin-help {
-    max-width: 480px;
+
     margin: 0;
     color: #9aa5b7;
     font: 10px/1.6 'Courier New', monospace;
@@ -1051,7 +1051,7 @@
   .custom-preview-name {
     position: absolute;
     bottom: 12px;
-    max-width: 80%;
+
     overflow: hidden;
     color: #d7e1ef;
     font: 700 8px 'Courier New', monospace;
@@ -1165,8 +1165,8 @@
   }
   @media (max-width: 800px) {
     .lp-hero { display: flex; align-items: stretch; gap: 16px; padding: 20px 16px 30px; overflow: visible; }
-    .lp-left { position: relative; top: auto; max-width: none; padding: 26px 22px; border-radius: 20px; text-align: center; }
-    .lp-right { max-width: none; padding: 18px; border-radius: 18px; }
+    .lp-left { position: relative; top: auto;  padding: 26px 22px; border-radius: 20px; text-align: center; }
+    .lp-right {  padding: 18px; border-radius: 18px; }
     .hero-copy { margin-right: auto; margin-left: auto; }
     .hero-pills, .belt-strip { justify-content: center; margin-right: auto; margin-left: auto; }
     .belt-strip { margin-bottom: 18px; }
@@ -1942,7 +1942,7 @@
   }
   .lp-left {
     flex-basis: 41%;
-    max-width: 560px;
+
     padding: clamp(28px, 3.4vw, 48px);
     border-color: rgba(176,197,231,0.17);
     border-radius: 30px;
@@ -1990,7 +1990,7 @@
     letter-spacing: 1.7px;
   }
   .hero-copy {
-    max-width: 390px;
+
     color: #b7c2d4;
     font-size: 15px;
     line-height: 1.75;
@@ -2046,7 +2046,7 @@
   }
   .lp-right {
     flex-basis: 59%;
-    max-width: 850px;
+
     padding: clamp(22px, 3vw, 38px);
     border-color: rgba(176,197,231,0.14);
     border-radius: 30px;
@@ -2109,7 +2109,7 @@
   }
   .skin-section .section-label { font-size: 12px; }
   .skin-help {
-    max-width: 520px;
+
     color: #b5c2d1;
     font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 12px;
@@ -2435,7 +2435,7 @@
   }
   .skin-progress {
     width: fit-content;
-    max-width: 100%;
+
     margin: 4px auto 15px;
     padding: 8px 13px;
     border: 1px solid color-mix(in srgb, var(--user-ui-secondary) 25%, transparent);
@@ -3203,7 +3203,7 @@
   }
   .skin-progress {
     width: fit-content;
-    max-width: 100%;
+
     margin: 14px auto 0;
     padding: 9px 13px;
     border: 1px solid rgba(98,229,219,0.18);
@@ -3376,7 +3376,7 @@
   .skin-card-copy small { color: #b2bfd2; font-size: 8px; letter-spacing: 0.85px; }
   .skin-progress {
     width: fit-content;
-    max-width: 100%;
+
     margin: 4px auto 15px;
     padding: 8px 13px;
     border: 1px solid color-mix(in srgb, var(--user-ui-secondary) 25%, transparent);
@@ -3861,6 +3861,7 @@
     stroke: #d9b866;
     stroke-width: 1.8;
     opacity: 0.95;
+  }
   /* ============ PLAYER LEVELS ============ */
   #landingPage { height: auto; min-height: 100vh; overflow: visible; }
   .lp-hero { min-height: 100vh; flex: none; }
@@ -3883,7 +3884,7 @@
   }
   .community-section > .pauseBtn { margin-bottom: 24px; }
   .community-grid {
-    max-width: 900px;
+
     margin: 0 auto;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -3920,7 +3921,7 @@
   }
   .community-card button { margin: 0 6px 6px 0; }
   .shared-level-feature {
-    max-width: 900px;
+
     margin: 0 auto 14px;
     border-color: rgba(204,0,0,0.6);
   }
@@ -4116,3 +4117,53 @@
   body.mobile .st-label { font-size: 8px; letter-spacing: 2px; text-align: left; }
   body.mobile .st-name { font-size: 12px; letter-spacing: 2px; text-align: left; }
   body.mobile .st-rarity { font-size: 8px; letter-spacing: 2px; text-align: left; }
+
+
+  /* Readable copy in the landing page, editors and reward overlays. */
+  .hero-copy, .skin-help, .community-copy, .editor-help,
+  .community-card p, .shared-level-feature p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #cbd5e1;
+  }
+  .brand, .hero-kicker, .tagline, .hero-pills span, .quick-info,
+  .site-brand-copy small, .site-nav a, .site-nav .site-nav-play,
+  .section-label, .garage-badge, .trial-progress, footer,
+  .skin-card-copy small, .skin-progress, .skin-field,
+  .editor-fields label, .editor-status, .verify-badge,
+  .skins-note, .skin-name, .skin-rarity, .skins-section,
+  .st-label, .st-rarity, body.mobile .st-label, body.mobile .st-rarity {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+    letter-spacing: 0.06em;
+  }
+  .quick-info, .skin-card-copy small, .skins-note,
+  .editor-fields label, .trial-progress { color: #cbd5e1; }
+  .tip-item, .skin-card-copy, .trial-desc, .custom-preview-name,
+  .skin-customizer summary, .theme-customizer summary,
+  .editor-tools button, .editor-fields input, .editor-fields select {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .skin-card-copy, .custom-preview-name {
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: anywhere;
+  }
+  .custom-preview-name { inset-inline: 12px; text-align: center; }
+  .skin-progress { width: 100%; }
+  .skin-heading { flex-wrap: wrap; }
+  .skin-heading > div { flex: 1 1 240px; }
+  #skinGallery .skin-card-copy { font-size: 14px; letter-spacing: 0.04em; }
+  #skinGallery .skin-card-copy small {
+    font-size: 12px;
+    color: #cbd5e1;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+  }
+  .skin-rarity, .trial-status { color: #cbd5e1; }
+  .skins-count, .skins-section, .community-section > .section-label,
+  .editor-dialog > .section-label { color: #ff9baf; }
+  .trial-card.locked { opacity: 1; }
+  .trial-name, .trial-status { font-size: 12px; line-height: 1.5; }

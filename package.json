@@ -1,0 +1,11 @@
+{
+  "name": "iu-belt-dash",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "check": "node --check script.js && node --check music.js && node --check skins.js"
+  },
+  "devDependencies": {
+    "playwright": "1.61.1"
+  }
+}

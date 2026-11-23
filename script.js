@@ -467,15 +467,16 @@ bindBtn('restartBtn', () => {
 });
 bindBtn('abandonBtn', () => { resumeGame(); abandonTrial(); });
 bindBtn('quitBtn', () => { resumeGame(); returnToMenu(); });
-bindBtn('playBtnTop', () => {
+function startNewRun() {
   // NEW RUN restarts from the white belt and replaces the CONTINUE save — ask first.
   if (stats.savedBelt > 1 &&
       !window.confirm('Start a new run from the WHITE belt?\nYour saved progress (' +
         BELTS[stats.savedBelt].name + ' BELT) will be replaced. Achievements and trials stay unlocked.')) return;
   enterGame(1);
-});
-bindBtn('playBtnBottom', () => enterGame(1));
-bindBtn('playBtnNav', () => enterGame(1));
+}
+bindBtn('playBtnTop', startNewRun);
+bindBtn('playBtnBottom', startNewRun);
+bindBtn('playBtnNav', startNewRun);
 bindBtn('continueBtn', () => enterGame(Math.max(1, stats.savedBelt)));
 bindBtn('resetProgressBtn', resetProgress);
 
