@@ -519,7 +519,7 @@ function placePattern(obstacles, x, p, d, spd = 8, tier = 8) {
         const tmp = [];
         const w = placePattern(tmp, cx, pat, d, spd, tier);
         for (const o of tmp) obstacles.push(mirrorObstacle(o));
-        cx += w + Math.max(170, spd * 22);
+        cx += w + spd * (JUMP_AIR_FRAMES + 10);
       }
       // Exit: roof spike field — the only way out is the blue orb back down.
       obstacles.push(mirrorObstacle({ type:'gravOrb', x:cx+10, y:GROUND_Y-128, w:36, h:36 }));
@@ -534,8 +534,8 @@ function placePattern(obstacles, x, p, d, spd = 8, tier = 8) {
 // Patterns are placed one at a time. After each one the checker advances every possible
 // player route past it; if no route survives, that pattern is swapped for another.
 function buildLevel(opts) {
-  // opts: { length, cpStep, tier, isSecret, minGap, d, spd }
-  const { length, cpStep, tier, isSecret, minGap, d, spd } = opts;
+  // opts: { length, cpStep, tier, isSecret, minGap, d, spd, react }
+  const { length, cpStep, tier, isSecret, minGap, d, spd, react } = opts;
   const obstacles = [], checkpoints = [];
   const ld = { obstacles, checkpoints, length, infinite: false };
   indexLevel(ld);
@@ -570,7 +570,7 @@ function buildLevel(opts) {
       const after = advanceFrontier(routes, ld, spd, x + placedW + 20);
       if (after.length) {
         routes = after;
-        x += placedW + minGap + Math.random() * 80;
+        x += placedW + Math.max(minGap, patternGap(spd, react));
         placed = true;
       } else {
         obstacles.length = before;   // impossible from here — try a different pattern
@@ -588,11 +588,24 @@ function generateLevel(b) {
   const length = 6000 + b * 1500;
   // FEWER checkpoints — wider spacing
   const cpStep = Math.max(2000, 3000 - b * 100);
-  // Tighter obstacle spacing at higher belts
-  const minGap = Math.max(130, 250 - b * 18);
+  // Spacing is measured in time, not pixels: higher belts are faster, so the same
+  // pixel gap would give far less time to react. Reaction window shrinks gently per belt.
+  const react = Math.max(9, 19 - b * 1.25);
   return buildLevel({
-    length, cpStep, tier: b, isSecret: false, minGap, d: b / 8, spd: beltSpeed(b),
+    length, cpStep, tier: b, isSecret: false, minGap: 160, d: b / 8, spd: beltSpeed(b), react,
   });
+}
+
+// One normal jump spends ~33 frames in the air (vy -14.5, gravity 0.88).
+const JUMP_AIR_FRAMES = 33;
+
+// Distance between two patterns: a full jump's length (so you can land after clearing
+// the previous obstacle) plus `react` frames of ground time before the next one.
+// Occasionally adds a longer breather so the rhythm isn't relentless.
+function patternGap(spd, react) {
+  let frames = JUMP_AIR_FRAMES + react + Math.random() * 10;
+  if (Math.random() < 0.15) frames += 25;
+  return spd * frames;
 }
 
 function beltSpeed(b) { return 5 + b * 0.5; }
@@ -601,7 +614,7 @@ function generateSecretLevel(idx) {
   const s = SECRETS[idx];
   return buildLevel({
     length: s.length, cpStep: s.cpStep, tier: 8, isSecret: true,
-    minGap: 110, d: 1.1, spd: s.speed,
+    minGap: 110, d: 1.1, spd: s.speed, react: 6,
   });
 }
 
