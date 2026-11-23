@@ -1830,10 +1830,6 @@ function placeEditorObstacle(event) {
     drawEditor();
     return;
   }
-  if (editorObstacles.length >= 50) {
-    document.getElementById('editorStatus').textContent = 'This level already has the maximum of 50 obstacles.';
-    return;
-  }
   const obstacle = EDITOR_OBSTACLES[editorTool];
   if (!obstacle || worldX < 420 || worldX + obstacle.w > length - 180) {
     document.getElementById('editorStatus').textContent = 'Place obstacles after the start and before the finish.';
@@ -1874,7 +1870,7 @@ function drawEditor() {
     editorCtx.fillStyle = shape.color;
     editorCtx.fillRect(x, y, Math.max(w, 4), h);
   });
-  document.getElementById('editorStatus').textContent = editorObstacles.length + ' / 50 obstacles';
+  document.getElementById('editorStatus').textContent = editorObstacles.length + ' obstacles';
   updateVerifyUI();
 }
 
@@ -1938,7 +1934,7 @@ function persistLevel(level) {
 function validateCustomLevel(value) {
   if (!value || value.version !== 1 || typeof value.name !== 'string' || typeof value.author !== 'string' ||
       !Number.isInteger(value.length) || value.length < 3000 || value.length > 9000 ||
-      !Array.isArray(value.obstacles) || value.obstacles.length < 1 || value.obstacles.length > 50) {
+      !Array.isArray(value.obstacles) || value.obstacles.length < 1) {
     throw new Error('This level link is invalid or uses an unsupported format.');
   }
   const name = value.name.trim().slice(0, 40);
@@ -1962,8 +1958,8 @@ function encodeLevel(level) {
 }
 
 function decodeLevel(encoded) {
-  if (!/^[A-Za-z0-9_-]+$/.test(encoded) || encoded.length > 8000) {
-    throw new Error('This level link is malformed or too large.');
+  if (!/^[A-Za-z0-9_-]+$/.test(encoded)) {
+    throw new Error('This level link is malformed.');
   }
   const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
   const binary = atob(base64 + '='.repeat((4 - base64.length % 4) % 4));
@@ -1989,8 +1985,7 @@ async function publishLevel() {
     if (levelSignature(level.length, level.obstacles) !== verifiedSignature) {
       throw new Error('Beat your level first: press TEST & VERIFY and finish it in one run.');
     }
-    const link =window.location.href.split('#')[0] + '#level=' + encodeLevel(level);
-    if (link.length > 6000) throw new Error('This level link is too long to share. Remove some obstacles and try again.');
+    const link = window.location.href.split('#')[0] + '#level=' + encodeLevel(level);
     linkField.value = link;
     linkField.hidden = false;
     let localSaveError = '';
