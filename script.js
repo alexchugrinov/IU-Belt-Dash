@@ -389,6 +389,16 @@ const PATTERNS = [
   ['dashGap',      6, 9],    // NEW: very long spike field — hold on the green orb to dash across
   ['airplane',     5, 6],
   ['gravity',      4, 8],    // NEW: blue orb flips you onto the roof; mirrored patterns; blue orb back down
+  // Block + spike structures
+  ['blockHop',     2, 14],   // block, spike, block — hop from one block to the next
+  ['spikeBlockSpike', 3, 12],// jump the spike onto a block, jump off over another spike
+  ['stepTower',    3, 10],   // low block, spike, taller block
+  ['wideTopSpike', 4, 11],   // wide block with a spike sitting on top
+  ['lowPlatform',  4, 10],   // long low platform with a spike on it, then a ground spike
+  ['blockChain',   5, 10],   // three blocks separated by spike pits
+  ['spikeCeiling', 6, 9],    // hanging spikes overhead (don't jump!), then a ground spike
+  ['spikeStairs',  6, 9],    // rising blocks with spikes in the gaps
+  ['towerSpike',   7, 8],    // tall block with a spike on top of a lower step
 ];
 
 function pickPattern(currentBelt, isSecret) {
@@ -492,6 +502,68 @@ function placePattern(obstacles, x, p, d, spd = 8, tier = 8) {
       obstacles.push({ type:'dashOrb', x:x+10, y:GROUND_Y-128, w:36, h:36 });
       for (let i=0;i<15;i++) obstacles.push({ type:'spike', x:x+60+i*30, y:GROUND_Y-30, w:30, h:30 });
       return 510;
+    // BLOCK + SPIKE STRUCTURES
+    case 'blockHop':
+      obstacles.push({ type:'block', x,        y:GROUND_Y-60, w:60, h:60 });
+      obstacles.push({ type:'spike', x:x+75,   y:GROUND_Y-30, w:30, h:30 });
+      obstacles.push({ type:'block', x:x+120,  y:GROUND_Y-60, w:60, h:60 });
+      return 180;
+    case 'spikeBlockSpike': {
+      // block width scales with speed so the landing spot fits the jump arc at every belt
+      const bw = Math.round(spd * 17);
+      obstacles.push({ type:'spike', x,             y:GROUND_Y-30, w:30, h:30 });
+      obstacles.push({ type:'block', x:x+45,        y:GROUND_Y-60, w:bw, h:60 });
+      obstacles.push({ type:'spike', x:x+60+bw,     y:GROUND_Y-30, w:30, h:30 });
+      return 90 + bw;
+    }
+    case 'stepTower':
+      obstacles.push({ type:'block', x,        y:GROUND_Y-40, w:60, h:40 });
+      obstacles.push({ type:'spike', x:x+75,   y:GROUND_Y-30, w:30, h:30 });
+      obstacles.push({ type:'block', x:x+120,  y:GROUND_Y-80, w:60, h:80 });
+      return 180;
+    case 'wideTopSpike':
+      obstacles.push({ type:'block', x,        y:GROUND_Y-50, w:150, h:50 });
+      obstacles.push({ type:'spike', x:x+60,   y:GROUND_Y-80, w:30, h:30 });
+      return 150;
+    case 'lowPlatform': {
+      // platform length scales with speed: room to land, jump the top spike, land again
+      const L = Math.round(spd * 32);
+      const sx = Math.round(L * 0.45);
+      const gx = L + Math.round(spd * 8);
+      obstacles.push({ type:'block', x,        y:GROUND_Y-30, w:L, h:30 });
+      obstacles.push({ type:'spike', x:x+sx,   y:GROUND_Y-60, w:30, h:30 });
+      obstacles.push({ type:'spike', x:x+gx,   y:GROUND_Y-30, w:30, h:30 });
+      return gx + 30;
+    }
+    case 'blockChain':
+      obstacles.push({ type:'block', x,        y:GROUND_Y-60, w:60, h:60 });
+      obstacles.push({ type:'spike', x:x+60,   y:GROUND_Y-30, w:30, h:30 });
+      obstacles.push({ type:'spike', x:x+90,   y:GROUND_Y-30, w:30, h:30 });
+      obstacles.push({ type:'block', x:x+120,  y:GROUND_Y-60, w:60, h:60 });
+      obstacles.push({ type:'spike', x:x+180,  y:GROUND_Y-30, w:30, h:30 });
+      obstacles.push({ type:'spike', x:x+210,  y:GROUND_Y-30, w:30, h:30 });
+      obstacles.push({ type:'block', x:x+240,  y:GROUND_Y-60, w:60, h:60 });
+      return 300;
+    case 'spikeCeiling':
+      for (let i=0;i<3;i++) obstacles.push({ type:'fspike', x:x+i*30, y:GROUND_Y-105, w:30, h:30 });
+      obstacles.push({ type:'spike', x:x+90+Math.round(spd*14), y:GROUND_Y-30, w:30, h:30 });
+      return 120 + Math.round(spd*14);
+    case 'spikeStairs': {
+      // step width scales with speed so each hop lands on the next step, not past it
+      const sw = Math.round(spd * 12);
+      obstacles.push({ type:'block', x,              y:GROUND_Y-30, w:sw, h:30 });
+      obstacles.push({ type:'spike', x:x+sw,         y:GROUND_Y-30, w:30, h:30 });
+      obstacles.push({ type:'block', x:x+sw+30,      y:GROUND_Y-60, w:sw, h:60 });
+      obstacles.push({ type:'spike', x:x+2*sw+30,    y:GROUND_Y-30, w:30, h:30 });
+      obstacles.push({ type:'block', x:x+2*sw+60,    y:GROUND_Y-90, w:sw, h:90 });
+      return 3 * sw + 60;
+    }
+    case 'towerSpike':
+      obstacles.push({ type:'block', x,        y:GROUND_Y-50, w:90, h:50 });
+      obstacles.push({ type:'spike', x:x+30,   y:GROUND_Y-80, w:30, h:30 });
+      obstacles.push({ type:'block', x:x+90,   y:GROUND_Y-90, w:60, h:90 });
+      return 150;
+
     case 'saw':
       // rotating saw at jump-arc height
       obstacles.push({ type:'saw', x:x+10, y:GROUND_Y-95, w:50, h:50 });
@@ -533,9 +605,39 @@ function placePattern(obstacles, x, p, d, spd = 8, tier = 8) {
 // ============== Level generation ==============
 // Patterns are placed one at a time. After each one the checker advances every possible
 // player route past it; if no route survives, that pattern is swapped for another.
+// Every finished level is then re-checked from the start and from every checkpoint with the
+// real (un-padded) physics, and graded against its belt. Failures are regenerated.
 function buildLevel(opts) {
-  // opts: { length, cpStep, tier, isSecret, minGap, d, spd, react }
+  const MAX_TRIES = 6;
+  let best = null;
+  for (let t = 0; t < MAX_TRIES; t++) {
+    const ld = buildLevelOnce(opts);
+    if (findImpossibleSpot(ld, opts.spd) !== null) continue;   // must be beatable, always
+    const grade = gradeLevel(ld, opts);
+    if (grade.ok) return ld;
+    if (!best || grade.score > best.grade.score) best = { ld, grade };
+  }
+  // Nothing hit the target exactly: use the closest beatable one (or a guaranteed-safe one).
+  return best ? best.ld : buildLevelOnce(Object.assign({}, opts, { pad: 0, safeOnly: true }));
+}
+
+// Does the level's content match its belt?
+//  - dense enough: few slots were skipped because no pattern fit
+//  - fresh enough: from belt 3 on, a fair share of patterns are ones unlocked recently
+function gradeLevel(ld, opts) {
+  const st = ld.stats;
+  const fill = st.slots ? st.placed / st.slots : 0;
+  const recent = st.placed ? st.recent / st.placed : 0;
+  const needRecent = opts.isSecret || opts.tier < 3 ? 0 : 0.25;
+  const ok = fill >= 0.85 && recent >= needRecent;
+  return { ok, score: fill + Math.min(recent, needRecent) };
+}
+
+function buildLevelOnce(opts) {
+  // opts: { length, cpStep, tier, isSecret, minGap, d, spd, react, pad, safeOnly }
   const { length, cpStep, tier, isSecret, minGap, d, spd, react } = opts;
+  const pad = opts.pad || 0;
+  const stats = { placed: 0, slots: 0, recent: 0 };
   const obstacles = [], checkpoints = [];
   const ld = { obstacles, checkpoints, length, infinite: false };
   indexLevel(ld);
@@ -560,28 +662,45 @@ function buildLevel(opts) {
       continue;
     }
     let placed = false;
-    for (let attempt = 0; attempt < 6 && !placed; attempt++) {
-      const pat = pickPattern(tier, isSecret);
+    stats.slots++;
+    for (let attempt = 0; attempt < 8 && !placed; attempt++) {
+      const pat = opts.safeOnly ? 'spike1' : pickPattern(tier, isSecret);
       const before = obstacles.length;
       const placedW = placePattern(obstacles, x, pat, d, spd, isSecret ? 8 : tier);
       for (let i = before; i < obstacles.length; i++) obstacles[i].pid = before; // pattern id
       if (hitsCpZone(x, x + placedW)) { obstacles.length = before; continue; }
       indexLevel(ld);
-      const after = advanceFrontier(routes, ld, spd, x + placedW + 20);
+      // Check with the belt's leniency margin: hazards count as `pad` px bigger, so only
+      // patterns that can be cleared with room to spare (not frame-perfect) are accepted.
+      checkPad = pad;
+      let after;
+      try { after = advanceFrontier(routes, ld, spd, x + placedW + 20); }
+      finally { checkPad = 0; }
       if (after.length) {
         routes = after;
         x += placedW + Math.max(minGap, patternGap(spd, react));
         placed = true;
+        stats.placed++;
+        if (patternTier(pat) >= tier - 2) stats.recent++;
       } else {
-        obstacles.length = before;   // impossible from here — try a different pattern
+        obstacles.length = before;   // impossible (or too tight) from here — try another pattern
         indexLevel(ld);
       }
     }
     if (!placed) x += 120;
   }
   for (const cz of cpZones) checkpoints.push({ x: cz.x, reached: false });
+  ld.stats = stats;
   return indexLevel(ld);
 }
+
+function patternTier(name) {
+  const p = PATTERNS.find((q) => q[0] === name);
+  return p ? p[1] : 1;
+}
+
+// Leniency margin (px) by belt: early belts demand lots of slack, later belts less.
+function beltPad(b) { return Math.max(1.5, 7 - b * 0.7); }
 
 function generateLevel(b) {
   // LONGER levels — roughly 2x the previous version
@@ -593,6 +712,7 @@ function generateLevel(b) {
   const react = Math.max(9, 19 - b * 1.25);
   return buildLevel({
     length, cpStep, tier: b, isSecret: false, minGap: 160, d: b / 8, spd: beltSpeed(b), react,
+    pad: beltPad(b),
   });
 }
 
@@ -614,7 +734,7 @@ function generateSecretLevel(idx) {
   const s = SECRETS[idx];
   return buildLevel({
     length: s.length, cpStep: s.cpStep, tier: 8, isSecret: true,
-    minGap: 110, d: 1.1, spd: s.speed, react: 6,
+    minGap: 110, d: 1.1, spd: s.speed, react: 6, pad: 1,
   });
 }
 
@@ -622,6 +742,10 @@ function generateSecretLevel(idx) {
 // One step = one frame. The game and the solver call the same function, so if the
 // solver can beat a level, a player pressing the same inputs can too.
 const DASH_FRAMES = 90;      // dash orb: max 1.5 s of straight flight (60 fps)
+// Leniency margin used only by the level generator's checker. 0 during real play.
+// Hazards grow by this many px, so a route the checker accepts still works if the
+// player is a little early or late.
+let checkPad = 0;
 const BUCKET = 120;          // spatial index cell width
 const NEAR = [];
 
@@ -733,15 +857,30 @@ function stepPhysics(s, held, tapped, ld, spd) {
     r.dead = true; return r;
   }
 
+  const pad = checkPad;
+  // Checker only: count a near-miss of a block's front face as a crash, so block landings
+  // need some height to spare instead of clipping the corner on the exact frame.
+  if (pad > 0) {
+    for (const o of near) {
+      if (o.type !== 'block') continue;
+      if (!(s.x + size <= o.x && s.x + size + pad > o.x)) continue;
+      const vHit = s.flight
+        ? (s.y < o.y + o.h + pad && s.y + size + pad > o.y)
+        : g > 0 ? (s.y + size > o.y + pad && s.y < o.y + o.h)
+                : (s.y < o.y + o.h - pad && s.y + size > o.y);
+      if (vHit) { r.dead = true; return r; }
+    }
+  }
+
   for (const o of near) {
     if (o.type === 'spike' || o.type === 'fspike') {
       const pointsUp = (o.type === 'spike') !== !!o.flip;
       const sb = pointsUp
-        ? { x: o.x + 5, y: o.y + 8, w: o.w - 10, h: o.h - 8 }
-        : { x: o.x + 5, y: o.y,     w: o.w - 10, h: o.h - 8 };
+        ? { x: o.x + 5 - pad, y: o.y + 8 - pad, w: o.w - 10 + 2*pad, h: o.h - 8 + pad }
+        : { x: o.x + 5 - pad, y: o.y,           w: o.w - 10 + 2*pad, h: o.h - 8 + pad };
       if (s.x < sb.x + sb.w && s.x + size > sb.x && s.y < sb.y + sb.h && s.y + size > sb.y) { r.dead = true; return r; }
     } else if (o.type === 'saw') {
-      if (touchesCircle(s, o, 3)) { r.dead = true; return r; }
+      if (touchesCircle(s, o, 3 - pad)) { r.dead = true; return r; }
     }
   }
 
